@@ -3,9 +3,10 @@
 ## Reporting a vulnerability
 
 If you believe you have found a security vulnerability in Swarpius, please
-do **not** open a public issue. Email the maintainer directly:
+do **not** open a public issue. Report it privately through one of:
 
-- **[security@paraseva.ai](mailto:security@paraseva.ai)**
+- **GitHub (preferred):** use the **["Report a vulnerability"](https://github.com/paraseva/swarpius/security/advisories/new)** button on the repository's **Security** tab — this opens a private security advisory visible only to you and the maintainers.
+- **Email:** **[security@paraseva.ai](mailto:security@paraseva.ai)**
 
 Please include:
 

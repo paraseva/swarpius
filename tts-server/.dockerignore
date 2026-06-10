@@ -1,0 +1,11 @@
+# Voice reference clips are bind-mounted at runtime via compose
+# (./tts-server/voices → /tts/ref) — they should never end up in an
+# image layer.
+voices/
+.env
+.env.*
+__pycache__/
+*.pyc
+.venv*/
+Dockerfile
+.dockerignore

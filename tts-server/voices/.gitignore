@@ -1,0 +1,4 @@
+*.wav
+*.txt
+!.gitignore
+!README.md

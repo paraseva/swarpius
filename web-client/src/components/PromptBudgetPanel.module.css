@@ -1,0 +1,90 @@
+.providers {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  margin-top: 0.55rem;
+  font-size: 0.72rem;
+}
+
+.providersLabel {
+  font-weight: 600;
+  color: var(--color-text-faint);
+  font-size: 0.66rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.providerRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.1rem 0;
+}
+
+.providerName {
+  color: var(--color-text-muted);
+}
+
+.providerTokens {
+  color: var(--color-text-accent);
+  font-variant-numeric: tabular-nums;
+  font-family: var(--font-mono);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.72rem;
+}
+
+.table th {
+  text-align: right;
+  padding: 0.2rem 0.4rem;
+  font-weight: 600;
+  font-size: 0.66rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-text-faint);
+  border-bottom: 1px solid var(--color-border-subtle);
+  cursor: help;
+}
+
+.table th:first-child {
+  text-align: left;
+}
+
+.table td {
+  padding: 0.15rem 0.4rem;
+  color: var(--color-text-muted);
+}
+
+.table td:not(:first-child) {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-family: var(--font-mono);
+  color: var(--color-text-accent);
+}
+
+.rowBold td {
+  font-weight: 600;
+  color: var(--color-text-primary);
+  border-top: 1px solid var(--color-border-subtle);
+}
+
+.rowBold td:not(:first-child) {
+  color: var(--color-text-accent-light);
+}
+
+.rowIndent td:first-child {
+  padding-left: 1rem;
+}
+
+.rowSeparator td {
+  padding-top: 0.5rem;
+  font-weight: 600;
+  font-size: 0.66rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-text-faint);
+  border-bottom: 1px solid var(--color-border-subtle);
+}

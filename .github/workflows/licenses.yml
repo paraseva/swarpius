@@ -1,0 +1,94 @@
+name: Licences
+
+# Single source of truth for dependency-licence hygiene. On every PR + push it:
+#   1. resolves the included closures (server Python + npm production),
+#   2. fails on any disallowed licence (allow-list; AGPL/SSPL/BUSL hard-blocked),
+#   3. runs the publish/SaaS trigger-guards,
+#   4. regenerates THIRD_PARTY_NOTICES.md + web-client/public/licenses.json and,
+#      on a PR, commits them back so the notices are always current (incl. on
+#      Dependabot bumps — see dependabot-auto-merge.yml).
+#
+# REPO SETUP REQUIRED (one-time, in repo settings — cannot be done from code):
+#   • Add the "licences" check to branch-protection REQUIRED status checks on
+#     main (it only appears in the dropdown AFTER this workflow has run once),
+#     so a failing gate blocks merge / auto-merge.
+#   • Create a fine-grained PAT (contents: write) as secret LICENCES_BOT_TOKEN.
+#     The default GITHUB_TOKEN cannot (a) push on Dependabot-triggered runs, nor
+#     (b) re-trigger required checks after its own push — so without the PAT the
+#     auto-commit step doesn't work and Dependabot auto-merge would stall. With it,
+#     the regenerated notices land on the PR and checks re-run cleanly.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  licences:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          # PAT so the auto-commit below can push and re-trigger checks;
+          # falls back to the default token.
+          token: ${{ secrets.LICENCES_BOT_TOKEN || github.token }}
+          # Explicit (already the default) — this step pushes back, so guard
+          # against a future checkout major flipping the default to false.
+          persist-credentials: true
+          # On a PR, check out the head branch so we can commit back to it.
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.ref || '' }}
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+
+      - name: Install included closures
+        run: |
+          python -m pip install --upgrade pip
+          # The server closure the installer + agent image freeze in.
+          pip install -r agent/requirements-server.txt
+          # Production node_modules so the generator can read licence files.
+          npm --prefix web-client ci --omit=dev
+
+      - name: Licence gate
+        run: python3 licensing/licenses.py check
+
+      - name: Publish/SaaS trigger-guards
+        run: python3 licensing/guard_publish.py
+
+      - name: Regenerate notices + attributions
+        run: python3 licensing/licenses.py generate
+
+      - name: Commit refreshed notices (PRs only)
+        if: github.event_name == 'pull_request'
+        run: |
+          if git diff --quiet -- THIRD_PARTY_NOTICES.md web-client/public/licenses.json; then
+            echo "Notices already current."
+            exit 0
+          fi
+          git config user.name "swarpius-licences[bot]"
+          git config user.email "licences@users.noreply.github.com"
+          git add THIRD_PARTY_NOTICES.md web-client/public/licenses.json
+          # No [skip ci]: this push MUST re-trigger the required checks on the
+          # new commit (that's what the PAT is for), so auto-merge sees them
+          # green on the final SHA. Re-running is loop-safe — generate is
+          # deterministic, so the second run finds nothing to commit.
+          git commit -s -m "deps(licences): refresh third-party notices"
+          git push
+
+      - name: Fail if notices are stale (push to main)
+        if: github.event_name == 'push'
+        run: |
+          if ! git diff --quiet -- THIRD_PARTY_NOTICES.md web-client/public/licenses.json; then
+            echo "::error::Third-party notices are stale. Run 'python3 licensing/licenses.py generate' and commit."
+            git --no-pager diff --stat -- THIRD_PARTY_NOTICES.md web-client/public/licenses.json
+            exit 1
+          fi

@@ -1,0 +1,40 @@
+.bar {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0;
+  font-size: 0.7rem;
+  color: var(--color-text-faint);
+  margin-block: 0;
+  padding: 0;
+  /* Inter sits high — nudge the stats text down to the row centreline. */
+  transform: translateY(var(--row-text-shift));
+}
+
+.item {
+  display: contents;
+}
+
+.item dd {
+  margin: 0;
+  white-space: nowrap;
+}
+
+.item + .item dd::before {
+  content: '·';
+  margin: 0 0.35rem;
+  color: var(--color-text-dim);
+}
+
+.warnings {
+  color: var(--color-warning-text);
+  font-weight: 600;
+}
+
+.errors {
+  color: var(--color-error-text);
+  font-weight: 600;
+}

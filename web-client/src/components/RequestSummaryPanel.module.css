@@ -1,0 +1,261 @@
+/* ── Conversations / Requests / Steps (3-level hierarchy) ──────── */
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+/* Level 1: Conversation groups */
+
+.conversationGroup {
+  border-radius: 0.45rem;
+  border: 1px solid var(--color-border-subtle);
+  background: var(--color-bg-overlay);
+  overflow: hidden;
+}
+
+.conversationHeader {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+  width: 100%;
+  padding: 0.35rem 0.5rem;
+  border: none;
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: 0.7rem;
+  cursor: pointer;
+  text-align: left;
+}
+
+.conversationHeader:hover {
+  background: var(--color-bg-elevated);
+}
+
+.conversationId {
+  flex-shrink: 0;
+  font-weight: 600;
+  color: var(--color-text-faint);
+  font-size: 0.68rem;
+  margin-right: 0.25rem;
+  transform: translateY(var(--row-text-shift));
+}
+
+/* Stats + tokens wrap within this column, keeping the ID and dots on the first row. */
+.conversationMiddle {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: 0.4rem;
+  row-gap: 0.05rem;
+  transform: translateY(var(--row-text-shift));
+}
+
+.conversationStats {
+  flex-shrink: 0;
+  color: var(--color-text-dim);
+  font-size: 0.64rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.statusDots {
+  display: flex;
+  gap: 3px;
+  align-items: center;
+  flex-shrink: 0;
+  /* Centre the dots on the first text line (not the top of a wrapped row). */
+  min-height: 0.95rem;
+}
+
+.statusDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+.statusDotOk {
+  background: var(--color-success-text);
+}
+
+:global([data-theme='light']) .statusDotOk {
+  background: #16a34a;
+}
+
+.statusDotError {
+  background: var(--color-error-text);
+}
+
+/* Level 2: Requests within a conversation */
+
+.conversationRequests {
+  list-style: none;
+  margin: 0;
+  padding: 0.2rem 0.3rem 0.35rem;
+  border-top: 1px solid var(--color-border-subtle);
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.requestItem {
+  border-radius: 0.35rem;
+  border: 1px solid var(--color-border-subtle);
+  background: var(--color-bg-elevated);
+  overflow: hidden;
+}
+
+.requestStatusError {
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+.requestHeader {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  width: 100%;
+  padding: 0.25rem 0.4rem;
+  border: none;
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: 0.68rem;
+  cursor: pointer;
+  text-align: left;
+}
+
+.requestHeader:hover {
+  background: var(--color-bg-overlay);
+}
+
+.requestId {
+  flex-shrink: 0;
+}
+
+.requestTime {
+  flex-shrink: 0;
+  color: var(--color-text-faint);
+  font-size: 0.85em;
+}
+
+.requestModel {
+  flex-shrink: 0;
+  color: var(--color-text-dim);
+  font-size: 0.62rem;
+  background: var(--color-bg-overlay);
+  padding: 0.05rem 0.3rem;
+  border-radius: 0.2rem;
+  border: 1px solid var(--color-border-subtle);
+}
+
+.requestInput {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--color-text-muted);
+  min-width: 0;
+}
+
+/* Stats wrap within this column, keeping the badge and status on the first row. */
+.requestMiddle {
+  display: inline-flex;
+  flex-wrap: wrap;
+  flex-shrink: 1;
+  min-width: 0;
+  justify-content: flex-end;
+  align-items: baseline;
+  column-gap: 0.4rem;
+  row-gap: 0.05rem;
+}
+
+.requestSteps,
+.requestDuration {
+  flex-shrink: 0;
+  text-align: right;
+  color: var(--color-text-faint);
+  font-variant-numeric: tabular-nums;
+}
+
+.requestTokens {
+  flex-shrink: 0;
+  color: var(--color-text-dim);
+  font-size: 0.64rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.requestStatus {
+  flex-shrink: 0;
+  font-size: 0.64rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.requestStatusLabelOk {
+  color: var(--color-success-text);
+}
+
+.requestStatusLabelError {
+  color: var(--color-error-text);
+}
+
+/* Level 3: Steps within a request */
+
+.stepList {
+  list-style: none;
+  margin: 0;
+  padding: 0.2rem 0.4rem 0.35rem;
+  border-top: 1px solid var(--color-border-subtle);
+}
+
+.stepItem {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.15rem 0;
+  font-size: 0.66rem;
+  color: var(--color-text-faint);
+}
+
+.stepItemFailed {
+  color: var(--color-error-text);
+}
+
+.stepIndicator {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.stepIndicatorOk {
+  background: var(--color-success-text);
+}
+
+:global([data-theme='light']) .stepIndicatorOk {
+  background: #16a34a;
+}
+
+.stepIndicatorError {
+  background: var(--color-error-text);
+}
+
+.stepLabel {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stepDuration,
+.stepTokens {
+  flex-shrink: 0;
+  color: var(--color-text-dim);
+  font-variant-numeric: tabular-nums;
+}

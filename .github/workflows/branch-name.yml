@@ -1,0 +1,29 @@
+name: Branch name
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  branch-name:
+    name: Branch name
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify head branch matches naming convention
+        run: |
+          name="${{ github.head_ref }}"
+          if [[ "$name" =~ ^(feature|fix|docs|chore|refactor)/[a-z0-9._-]+$ ]]; then
+            echo "Matches conventional prefix: $name"
+          elif [[ "$name" =~ ^dependabot/ ]]; then
+            echo "Dependabot branch (allowed): $name"
+          else
+            echo "::error::Branch name '$name' doesn't match required pattern"
+            echo ""
+            echo "Required: feature|fix|docs|chore|refactor/<lowercase-name>"
+            echo "  Examples: feature/per-zone-history, fix/parse-edge-case,"
+            echo "            chore/dep-bumps, docs/contributing-md,"
+            echo "            refactor/runtime-state-split"
+            echo ""
+            echo "See CONTRIBUTING.md for the full naming convention."
+            exit 1
+          fi

@@ -1,0 +1,16 @@
+.venv*/
+__pycache__/
+*.pyc
+tests/
+logs/
+data/
+.env
+.env.example.*
+.env.test
+swarpius-test-data-*
+.pytest_cache/
+browse-debugging.md
+Dockerfile
+.dockerignore
+dev
+requirements_windows.txt

@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Swarpius
+GenericName=Voice/Chat Assistant for Roon
+Comment=LLM-driven voice and chat assistant for controlling a Roon music player.
+Exec=swarpius
+Icon=swarpius
+Terminal=true
+Categories=AudioVideo;Audio;Player;
+StartupNotify=false

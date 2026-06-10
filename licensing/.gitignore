@@ -1,0 +1,2 @@
+# CycloneDX SBOMs are generated per-run as CI/release artifacts, not committed.
+sbom/

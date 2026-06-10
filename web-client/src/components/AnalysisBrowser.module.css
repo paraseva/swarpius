@@ -1,0 +1,1711 @@
+/* ── Analysis browser ────────────────────────────────────────── */
+
+.analysisBrowser {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.analysisContent {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Full-view analysis layout (when rendered in main content area) */
+:global(.app-main-analysis) .analysisContent {
+  flex-direction: row;
+}
+
+:global(.app-main-analysis) .analysisListSection {
+  max-height: none;
+  border-bottom: none;
+  border-right: 1px solid var(--color-border);
+}
+
+:global(.app-main-analysis) .analysisDetailSection {
+  flex: 1;
+  min-width: 0;
+}
+
+@media (max-width: 960px) {
+  :global(.app-main-analysis) .analysisContent {
+    flex-direction: column;
+  }
+
+  :global(.app-main-analysis) .analysisListSection {
+    flex: 0 0 auto;
+    max-height: 40vh;
+    border-right: none;
+    border-bottom: 1px solid var(--color-border);
+  }
+}
+
+.analysisHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.7rem 1rem;
+  border-bottom: 1px solid var(--color-border);
+  flex: 0 0 auto;
+}
+
+.analysisHeader h3 {
+  margin: 0;
+  font-size: var(--text-base);
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.analysisSubTabBar {
+  display: flex;
+  border-bottom: 1px solid var(--color-border);
+  flex: 0 0 auto;
+}
+
+.analysisSubTab {
+  flex: 1;
+  padding: 0.4rem 0;
+  border: none;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: 0.72rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: color var(--transition-fast), box-shadow var(--transition-fast);
+  text-align: center;
+}
+
+.analysisSubTab.active {
+  color: var(--color-text-accent);
+  box-shadow: inset 0 -2px 0 var(--color-text-accent);
+}
+
+.analysisSubTab:hover:not(.active) {
+  color: var(--color-text-primary);
+}
+
+.analysisListSection {
+  display: flex;
+  flex-direction: column;
+  /* Hard-pin width so filter-driven content changes can't resize the
+     column. flex: 0 0 <n>px alone wasn't sufficient. */
+  flex: 0 0 480px;
+  width: 480px;
+  min-width: 480px;
+  max-width: 480px;
+  min-height: 100px;
+  max-height: 30%;
+  border-bottom: 1px solid var(--color-border);
+  background: rgba(0, 0, 0, 0.15);
+}
+
+:global([data-theme='light']) .analysisListSection {
+  background: #edf0f5;
+}
+
+.analysisListHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 0.75rem;
+  flex: 0 0 auto;
+}
+
+.analysisListTitle {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--color-text-accent);
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.analysisListCount {
+  font-size: 0.68rem;
+  font-weight: 500;
+  background: var(--color-bg-overlay);
+  color: var(--color-text-secondary);
+  padding: 0.05rem 0.4rem;
+  border-radius: var(--radius-full);
+}
+
+.analysisScanButton,
+.analysisRerunButton {
+  padding: 0.25rem 0.6rem;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-overlay);
+  color: var(--color-text-accent);
+  font-size: 0.7rem;
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.analysisScanButton:hover:not(:disabled),
+.analysisRerunButton:hover:not(:disabled) {
+  background: var(--color-bg-hover);
+}
+
+.analysisScanButton:disabled,
+.analysisRerunButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.analysisScanResult {
+  padding: 0.25rem 0.75rem;
+  font-size: 0.7rem;
+  color: var(--color-text-secondary);
+  text-align: center;
+}
+
+.analysisError {
+  padding: 0.25rem 0.75rem;
+  font-size: 0.7rem;
+  color: var(--color-error);
+}
+
+.analysisConversationList {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.analysisEmpty {
+  padding: 1.5rem;
+  text-align: center;
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+}
+
+.analysisConversationCard {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  padding: 0.3rem 0.6rem;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  transition: background var(--transition-fast);
+  color: inherit;
+  font: inherit;
+}
+
+.analysisConversationCard:nth-child(even) {
+  background: var(--color-bg-alt-row);
+}
+
+.analysisConversationCard:hover {
+  background: var(--color-bg-hover);
+}
+
+.analysisConversationCard.selected {
+  background: var(--color-bg-active);
+}
+
+.analysisCardTop {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.7rem;
+}
+
+.analysisCardDate {
+  color: var(--color-text-secondary);
+}
+
+.analysisCardTime {
+  color: var(--color-text-secondary);
+}
+
+.analysisCardConvId {
+  font-weight: 600;
+  color: var(--color-text-accent);
+}
+
+.analysisCardRightGroup {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.analysisFindingBadge {
+  font-size: 0.6rem;
+  font-weight: 600;
+  padding: 0.1rem 0.35rem;
+  border-radius: var(--radius-full);
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  /* Pairs with .analysisCardIndicators min-width so the bottom-row
+     dot / ×N column visually centre-aligns under this badge. */
+  min-width: 1.5rem;
+  box-sizing: border-box;
+}
+
+.analysisFindingBadge.clean {
+  background: #16a34a;
+}
+
+.analysisFindingBadge.severityHigh {
+  background: #ef4444;
+}
+
+.analysisFindingBadge.severityMedium {
+  background: #d97706;
+}
+
+.analysisFindingBadge.severityLow {
+  background: #3b82f6;
+}
+
+:global([data-theme='light']) .analysisFindingBadge.clean {
+  background: var(--color-success);
+}
+
+:global([data-theme='light']) .analysisFindingBadge.severityMedium {
+  background: #f59e0b;
+}
+
+.analysisCardBottom {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.analysisCardTopic {
+  font-size: 0.72rem;
+  color: var(--color-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+  min-width: 0;
+}
+
+.analysisCardIndicators {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  flex-shrink: 0;
+  /* Match FindingBadge's minimum footprint so the dot / ×N visually
+     centre-aligns under the badge rather than right-edge aligning
+     (which reads as 'hanging right' because the dot is tiny). Kept in
+     sync with FindingBadge's min-width so centres line up. */
+  min-width: 1.5rem;
+}
+
+.analysisRevisionBadge {
+  font-size: 0.58rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  opacity: 0.7;
+  /* Explicit line-height trims the text's bounding box so align-items:
+     center on the parent lines the glyph's optical centre up with the
+     feedback dot's centre. Without this the text box is ~1.5× its
+     glyph height and the dot appears to hang high. */
+  line-height: 1;
+}
+
+.analysisFeedbackDot {
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: var(--radius-full);
+  flex-shrink: 0;
+}
+
+.analysisFeedbackDot.pending {
+  background: #f59e0b;
+}
+
+.analysisFeedbackDot.processed {
+  background: var(--color-success);
+}
+
+.analysisCardStats {
+  font-size: 0.65rem;
+  color: var(--color-text-secondary);
+}
+
+.analysisCardRef {
+  font-size: 0.62rem;
+  font-family: var(--font-mono);
+  color: var(--color-text-secondary);
+  opacity: 0.7;
+}
+
+.analysisCardModel {
+  font-size: 0.6rem;
+  color: var(--color-text-dim);
+  background: var(--color-bg-overlay);
+  padding: 0.05rem 0.25rem;
+  border-radius: 0.2rem;
+  border: 1px solid var(--color-border-subtle);
+}
+
+/* ── Analysis detail ─────────────────────────────────────────── */
+
+.analysisDetailSection {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0.5rem 0.75rem;
+}
+
+.analysisDetail {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.analysisDetailHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.analysisDetailTitle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.78rem;
+}
+
+.analysisDetailConvId {
+  font-weight: 700;
+  color: var(--color-text-accent);
+}
+
+.analysisDetailDate {
+  color: var(--color-text-secondary);
+}
+
+.analysisDetailTime {
+  color: var(--color-text-secondary);
+}
+
+.analysisDetailRef {
+  font-size: 0.68rem;
+  font-family: var(--font-mono);
+  padding: 0.05rem 0.35rem;
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-overlay);
+  color: var(--color-text-secondary);
+}
+
+.analysisDetailTopic {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--color-text-primary);
+}
+
+.analysisDetailStats {
+  display: flex;
+  gap: 0.8rem;
+  font-size: 0.7rem;
+  color: var(--color-text-secondary);
+}
+
+.analysisFindings {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.analysisFindingsTitle,
+.analysisNotesTitle {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--color-text-accent);
+  margin-bottom: 0.15rem;
+}
+
+.analysisNoFindings {
+  font-size: 0.72rem;
+  color: var(--color-success);
+  padding: 0.3rem 0;
+  font-weight: 600;
+}
+
+/* ── Request list in analysis detail ────────────────────────── */
+
+.analysisRequests {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.analysisRequestRow {
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.analysisRequestHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.5rem;
+  width: 100%;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+}
+
+.analysisRequestHeader:hover {
+  background: var(--color-bg-hover);
+}
+
+.analysisRequestTime {
+  font-size: 0.68rem;
+  color: var(--color-text-dim);
+  font-family: var(--font-mono);
+  flex-shrink: 0;
+}
+
+.analysisRequestInput {
+  flex: 1;
+  font-size: 0.72rem;
+  color: var(--color-text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.analysisRequestMeta {
+  font-size: 0.65rem;
+  color: var(--color-text-faint);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.analysisRequestFindingBadge {
+  font-size: 0.58rem;
+  font-weight: 600;
+  color: var(--color-warning);
+  border: 1px solid var(--color-warning);
+  border-radius: var(--radius-sm);
+  padding: 0 0.25rem;
+  white-space: nowrap;
+  flex-shrink: 0;
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.analysisRequestFindingBadge:hover,
+.analysisRequestFindingBadge:focus-visible {
+  background: var(--color-warning);
+  color: var(--color-bg);
+  outline: none;
+}
+
+.analysisRequestLoading {
+  font-size: 0.68rem;
+  color: var(--color-text-faint);
+  padding: 0.5rem;
+}
+
+.analysisSectionToggle {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+  padding: 0;
+  margin-bottom: 0.15rem;
+}
+
+.analysisFindingCard {
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.analysisFindingHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.5rem;
+  width: 100%;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  font-size: 0.7rem;
+}
+
+.analysisFindingHeader:hover {
+  background: var(--color-bg-hover);
+}
+
+.analysisFindingSeverity {
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 0.62rem;
+  min-width: 3.2rem;
+}
+
+.analysisFindingMode {
+  font-weight: 600;
+  color: var(--color-text-accent);
+}
+
+.analysisFindingName {
+  color: var(--color-text-primary);
+  flex: 1;
+}
+
+.analysisFindingRequest {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  color: var(--color-text-secondary);
+}
+
+.analysisFindingChevron {
+  width: 0.8rem;
+  height: 0.8rem;
+  flex: 0 0 auto;
+  transition: transform var(--transition-fast);
+}
+
+.analysisFindingChevron.expanded {
+  transform: rotate(90deg);
+}
+
+.analysisFindingSummary {
+  padding: 0.2rem 0.5rem 0.35rem;
+  font-size: 0.7rem;
+  color: var(--color-text-secondary);
+  line-height: 1.4;
+}
+
+.analysisFindingDetail {
+  padding: 0.35rem 0.5rem;
+  font-size: 0.68rem;
+  color: var(--color-text-secondary);
+  line-height: 1.45;
+  border-top: 1px solid var(--color-border-subtle);
+  background: rgba(0, 0, 0, 0.08);
+}
+
+:global([data-theme='light']) .analysisFindingDetail {
+  background: #edf0f5;
+}
+
+/* ── Request log viewer (inline in findings) ── */
+
+.rqLogToggle {
+  display: block;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.65rem;
+  color: var(--color-text-link, #60a5fa);
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+}
+.rqLogToggle:hover:not(:disabled) { text-decoration: underline; }
+.rqLogToggle:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* Inline error message attached to a FindingCard — scoped error for
+   submit/cancel failures so the operator sees the reason next to the
+   thing they tried to act on. */
+.analysisFeedbackError {
+  margin-top: 0.6rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.4rem;
+  background: #450a0a;
+  color: #fca5a5;
+  border: 1px solid #7f1d1d;
+  font-size: 0.78rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+:global([data-theme='light']) .analysisFeedbackError {
+  background: #fef2f2;
+  color: #991b1b;
+  border-color: #fca5a5;
+}
+.analysisFeedbackErrorMessage {
+  flex: 1;
+  line-height: 1.4;
+}
+.analysisFeedbackErrorDismiss {
+  background: none;
+  border: none;
+  color: inherit;
+  font-size: 1.1rem;
+  line-height: 1;
+  padding: 0 0.25rem;
+  cursor: pointer;
+  opacity: 0.7;
+}
+.analysisFeedbackErrorDismiss:hover {
+  opacity: 1;
+}
+
+.analysisFindingActions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.analysisFeedbackStatus {
+  font-size: 0.55rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  padding: 0.1rem 0.3rem;
+  border-radius: 3px;
+  letter-spacing: 0.03em;
+}
+.analysisFeedbackStatus.pending { background: #554400; color: #fbbf24; }
+.analysisFeedbackStatus.validated { background: #14532d; color: #4ade80; }
+.analysisFeedbackStatus.bestEffort { background: #3b3b00; color: #facc15; }
+.analysisFeedbackStatus.error { background: #450a0a; color: #f87171; }
+
+:global([data-theme='light']) .analysisFeedbackStatus.pending { background: #fef3c7; color: #92400e; }
+:global([data-theme='light']) .analysisFeedbackStatus.validated { background: #dcfce7; color: #166534; }
+:global([data-theme='light']) .analysisFeedbackStatus.bestEffort { background: #fef9c3; color: #713f12; }
+:global([data-theme='light']) .analysisFeedbackStatus.error { background: #fee2e2; color: #991b1b; }
+
+.analysisDisputeForm {
+  padding: 0.4rem 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  border-top: 1px solid var(--color-border-subtle);
+}
+.analysisDisputeForm label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  font-size: 0.6rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.analysisDisputeForm select {
+  font-size: 0.65rem;
+  padding: 0.25rem 0.35rem;
+  border-radius: 4px;
+  border: 1px solid var(--color-border-subtle);
+  background: var(--color-bg-elevated);
+  color: var(--color-text-primary);
+}
+.analysisDisputeForm textarea {
+  font-size: 0.65rem;
+  padding: 0.3rem;
+  border-radius: 4px;
+  border: 1px solid var(--color-border-subtle);
+  background: var(--color-bg-elevated);
+  color: var(--color-text-primary);
+  resize: vertical;
+  font-family: inherit;
+}
+.analysisDisputeSubmit {
+  align-self: flex-start;
+  font-size: 0.6rem;
+  font-weight: 600;
+  padding: 0.25rem 0.6rem;
+  border-radius: 4px;
+  border: none;
+  background: #2563eb;
+  color: #fff;
+  cursor: pointer;
+}
+
+:global([data-theme='light']) .analysisDisputeSubmit {
+  background: #1d4ed8;
+}
+.analysisDisputeSubmit:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.analysisDisputeSubmit:hover:not(:disabled) {
+  filter: brightness(1.15);
+}
+
+.rqLogViewer {
+  border-top: 1px solid var(--color-border-subtle);
+  padding: 0.35rem 0.5rem;
+  font-size: 0.65rem;
+}
+
+.rqLogSection { margin-bottom: 0.4rem; }
+.rqLogSectionTitle {
+  font-weight: 600;
+  font-size: 0.65rem;
+  margin-bottom: 0.2rem;
+  color: var(--color-text-secondary);
+}
+
+.rqLogKv { line-height: 1.4; }
+.rqLogKey { font-weight: 500; margin-right: 0.3rem; }
+.rqLogValue { color: var(--color-text-primary); }
+
+.rqLogKvRow {
+  display: flex;
+  gap: 0.8rem;
+  font-size: 0.65rem;
+  color: var(--color-text-secondary);
+  margin-bottom: 0.2rem;
+}
+
+.rqLogResponse { margin-top: 0.2rem; }
+
+.rqLogPre {
+  font-size: 0.6rem;
+  line-height: 1.35;
+  padding: 0.25rem 0.4rem;
+  background: rgba(0, 0, 0, 0.12);
+  border-radius: var(--radius-sm);
+  overflow-x: auto;
+  max-height: 20rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+  margin: 0.15rem 0;
+}
+:global([data-theme='light']) .rqLogPre {
+  background: #edf0f5;
+}
+
+/* ── Collapsible prompt sections ─────────────────────────────── */
+
+.promptSection {
+  margin: 0.15rem 0;
+}
+
+.promptSectionHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  width: 100%;
+  padding: 0.25rem 0.3rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  text-align: left;
+  font-size: 0.65rem;
+  color: var(--color-text-muted);
+}
+
+:global([data-theme='light']) .promptSectionHeader {
+  background: #edf0f5;
+}
+
+.promptSectionHeader:hover {
+  background: var(--color-bg-hover);
+}
+
+.promptSectionHeader .analysisFindingChevron {
+  width: 0.7rem;
+  height: 0.7rem;
+  flex-shrink: 0;
+}
+
+.promptSectionTitle {
+  font-weight: 600;
+  color: var(--color-text-default);
+}
+
+.promptSectionSize {
+  margin-left: auto;
+  color: var(--color-text-dim);
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+}
+
+.promptSectionBody {
+  margin-left: 0.5rem;
+  border-left: 2px solid var(--color-border-subtle);
+  padding-left: 0.5rem;
+}
+
+.promptSkillNested {
+  margin-left: 1rem;
+}
+
+.promptGroupHeader {
+  font-weight: 700;
+}
+
+.promptGroupBody {
+  border-left-color: var(--color-border-default);
+}
+
+.promptSkillField {
+  margin: 0.3rem 0;
+}
+
+.promptSkillFieldLabel {
+  font-size: 0.6rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  margin-bottom: 0.15rem;
+}
+
+/* ── Tool execution / coordinator step cards ─────────────────── */
+
+.rqLogTool {
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-sm);
+  margin-bottom: 0.25rem;
+}
+
+.rqLogToolHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.25rem 0.4rem;
+  font-size: 0.63rem;
+  background: none;
+  border: none;
+  width: 100%;
+  cursor: pointer;
+  text-align: left;
+  color: var(--color-text-primary);
+}
+.rqLogToolHeader:hover { background: rgba(255, 255, 255, 0.04); }
+:global([data-theme='light']) .rqLogToolHeader:hover { background: #edf0f5; }
+
+.rqLogToolStep { font-weight: 600; min-width: 3rem; }
+.rqLogToolSkill { flex: 1; }
+.rqLogToolRetry { color: var(--color-severity-medium, #f59e0b); font-weight: 600; }
+.rqLogToolDuration { color: var(--color-text-secondary); }
+.rqLogToolError { color: var(--color-severity-high, #ef4444); font-weight: 600; }
+
+.rqLogToolBody { padding: 0.2rem 0.4rem 0.3rem; }
+.rqLogToolSection { margin-bottom: 0.2rem; }
+.rqLogToolLabel {
+  font-size: 0.6rem;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  margin-bottom: 0.1rem;
+}
+
+/* ── Revoked findings ────────────────────────────────────────── */
+
+.analysisRevoked {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.analysisRevokedTitle {
+  color: var(--color-text-secondary);
+}
+
+.analysisRevokedCount {
+  color: var(--color-text-faint);
+  font-weight: 400;
+}
+
+.analysisRevokedItem {
+  border: 1px dashed var(--color-border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 0.35rem 0.5rem;
+  font-size: 0.7rem;
+  color: var(--color-text-secondary);
+}
+
+.analysisRevokedHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.2rem;
+}
+
+.analysisRevokedSeverity {
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.6rem;
+  min-width: 3.2rem;
+  opacity: 0.7;
+}
+
+.analysisRevokedMode {
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+.analysisRevokedName {
+  color: var(--color-text-secondary);
+  flex: 1;
+  font-style: italic;
+}
+
+.analysisRevokedSummary {
+  font-size: 0.68rem;
+  color: var(--color-text-faint);
+  margin-bottom: 0.2rem;
+}
+
+.analysisRevokedReason {
+  font-size: 0.68rem;
+  font-style: italic;
+  color: var(--color-text-secondary);
+  border-left: 2px solid var(--color-border-subtle);
+  padding-left: 0.4rem;
+}
+
+.analysisRevokedReasonLabel {
+  font-weight: 600;
+  margin-right: 0.25rem;
+  font-style: normal;
+}
+
+.analysisFindingsBadge {
+  font-size: 0.62rem;
+  color: var(--color-text-faint);
+  margin-left: 0.4rem;
+  font-weight: 400;
+}
+
+.analysisNotes {
+  border-top: 1px solid var(--color-border-subtle);
+  padding-top: 0.4rem;
+}
+
+.analysisNotesBody {
+  font-size: 0.72rem;
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+/* ── Analysis history ────────────────────────────────────────── */
+
+.analysisHistory {
+  border-top: 1px solid var(--color-border-subtle);
+  padding-top: 0.4rem;
+  margin-top: 0.4rem;
+}
+
+.analysisHistoryToggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  padding: 0.2rem 0;
+}
+
+.analysisHistoryTitle {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--color-text-accent);
+}
+
+.analysisHistoryEntry {
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-sm);
+  margin-top: 0.3rem;
+  opacity: 0.85;
+}
+
+.analysisHistoryEntryHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.3rem 0.5rem;
+  width: 100%;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  font-size: 0.65rem;
+}
+
+.analysisHistoryEntryHeader:hover {
+  background: var(--color-bg-hover);
+}
+
+.analysisHistoryVersion {
+  font-weight: 700;
+  color: var(--color-text-accent);
+  min-width: 1.5rem;
+}
+
+.analysisHistoryTimestamp {
+  color: var(--color-text-secondary);
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+}
+
+.analysisHistoryFindingCount {
+  color: var(--color-text-primary);
+}
+
+.analysisHistorySeverityBadge {
+  font-weight: 600;
+  font-size: 0.6rem;
+  text-transform: uppercase;
+}
+
+.analysisHistoryFeedbackCount {
+  color: var(--color-text-secondary);
+  font-style: italic;
+}
+
+.analysisHistoryEntryBody {
+  padding: 0.3rem 0.5rem 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.analysisFindingCard.history {
+  opacity: 0.9;
+  border-color: var(--color-border-subtle);
+}
+
+.analysisHistoryNotes {
+  font-size: 0.65rem;
+  color: var(--color-text-secondary);
+  white-space: pre-wrap;
+  padding-top: 0.2rem;
+  border-top: 1px solid var(--color-border-subtle);
+}
+
+.analysisHistoryFeedbackInline {
+  padding: 0.3rem 0.5rem;
+  font-size: 0.65rem;
+  background: rgba(59, 130, 246, 0.05);
+  border-radius: var(--radius-sm);
+  margin: 0.2rem 0.5rem;
+}
+
+.analysisHistoryFeedbackDisposition {
+  font-weight: 600;
+  text-transform: capitalize;
+  color: var(--color-text-accent);
+}
+
+.analysisHistoryFeedbackRebuttal {
+  color: var(--color-text-secondary);
+}
+
+/* ── Linked references in analysis text ─────────────────────── */
+
+.linkedRef {
+  display: inline;
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+  color: var(--color-text-accent, #60a5fa);
+  background: rgba(59, 130, 246, 0.08);
+  border: 1px solid rgba(59, 130, 246, 0.15);
+  border-radius: 3px;
+  padding: 0 0.2rem;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.linkedRef:hover {
+  background: rgba(59, 130, 246, 0.15);
+  border-color: rgba(59, 130, 246, 0.3);
+  text-decoration: underline;
+}
+
+.linkedRef.active {
+  background: rgba(59, 130, 246, 0.18);
+  border-color: rgba(59, 130, 246, 0.4);
+}
+
+.linkedRefResultHandle {
+  color: var(--color-success-text, #34d399);
+  background: rgba(34, 197, 94, 0.08);
+  border-color: rgba(34, 197, 94, 0.15);
+}
+
+.linkedRefResultHandle:hover {
+  background: rgba(34, 197, 94, 0.15);
+  border-color: rgba(34, 197, 94, 0.3);
+}
+
+.linkedRefResultHandle.active {
+  background: rgba(34, 197, 94, 0.18);
+  border-color: rgba(34, 197, 94, 0.4);
+}
+
+.linkedRefViewers {
+  margin-top: 0.3rem;
+}
+
+.linkedRefPanel {
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 4px;
+  margin-bottom: 0.3rem;
+  overflow: hidden;
+}
+
+.linkedRefPanelHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  font-weight: 600;
+  padding: 0.2rem 0.4rem;
+  background: rgba(255, 255, 255, 0.03);
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.linkedRefLoading {
+  padding: 0.3rem 0.5rem;
+  font-size: 0.65rem;
+  color: var(--color-text-dim);
+  font-style: italic;
+}
+
+@keyframes linkedRefFlashAnim {
+  0%   { outline: 2px solid rgba(59, 130, 246, 0.7); outline-offset: 1px; }
+  100% { outline: 2px solid transparent; outline-offset: 1px; }
+}
+
+/* linked-ref-flash is applied via classList.add, so keep it global */
+:global(.linked-ref-flash) {
+  animation: linkedRefFlashAnim 1s ease-out;
+}
+
+:global([data-theme='light']) .linkedRef {
+  background: #eff6ff;
+  border-color: #93c5fd;
+}
+
+:global([data-theme='light']) .linkedRefResultHandle {
+  background: #f0fdf4;
+  border-color: #86efac;
+}
+
+:global([data-theme='light']) .linkedRefPanelHeader {
+  background: #edf0f5;
+}
+
+/* ── Metrics dashboard ───────────────────────────────────────── */
+
+.analysisMetrics {
+  flex: 1;
+  min-height: 0;
+  padding: 0.5rem 0.75rem 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.metricsHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  flex-shrink: 0;
+}
+
+.metricsBody {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  padding-bottom: 0.6rem;
+}
+
+.filterBar {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.filterDateEmpty {
+  opacity: 0.55;
+}
+
+.filterField {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  font-size: 0.65rem;
+  color: var(--color-text-secondary);
+}
+
+.filterField input {
+  padding: 0.25rem 0.4rem;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-overlay);
+  color: var(--color-text-primary);
+  font-size: 0.7rem;
+  font-family: inherit;
+}
+
+.filterField input:focus {
+  outline: none;
+  border-color: var(--color-text-accent);
+}
+
+.filterMonoInput {
+  width: 7rem;
+  font-family: var(--font-mono) !important;
+}
+
+.filterSelect {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  /* Match the date inputs' box height so the controls align on the row. */
+  padding: 0.25rem 0.4rem;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-overlay);
+  color: var(--color-text-primary);
+  box-sizing: border-box;
+}
+
+.metricsSummaryCards {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.metricsSummaryRow {
+  display: grid;
+  gap: 0.3rem;
+}
+
+.metricsSummaryRowFour {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+.metricsSummaryRowThree {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.metricsRevocationsTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.7rem;
+}
+
+.metricsRevocationsTable th {
+  text-align: left;
+  padding: 0.2rem 0.4rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.metricsRevocationsTable td {
+  padding: 0.2rem 0.4rem;
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.metricsRevocationsTable tr:last-child td {
+  border-bottom: none;
+}
+
+.metricsRevocationsMode {
+  font-weight: 600;
+  color: var(--color-text-accent);
+}
+
+.metricsCard {
+  padding: 0.3rem 0.5rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  text-align: center;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.metricsSubtabBar {
+  display: flex;
+  gap: 0.25rem;
+  border-bottom: 1px solid var(--color-border-subtle);
+  margin: 0.2rem 0 0;
+}
+
+.metricsSubtab {
+  padding: 0.4rem 0.9rem;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--color-text-secondary);
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.metricsSubtab:hover {
+  color: var(--color-text-primary);
+}
+
+.metricsSubtabActive {
+  color: var(--color-text-accent);
+  border-bottom-color: var(--color-text-accent);
+}
+
+.metricsEmpty {
+  padding: 1rem;
+  text-align: center;
+  color: var(--color-text-secondary);
+  font-size: 0.85rem;
+  font-style: italic;
+}
+
+.trendChartStartNote {
+  font-size: 0.72rem;
+  color: var(--color-text-dim);
+  text-align: center;
+  padding: 0.25rem 0 0.1rem;
+  font-style: italic;
+}
+
+.shapeChartWrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.5rem 0;
+}
+
+.shapeBar {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.shapeBarLabel {
+  font-size: 0.78rem;
+  color: var(--color-text-secondary);
+}
+
+.shapeBarTrack {
+  position: relative;
+  height: 1.4rem;
+  background: rgba(128, 128, 128, 0.22);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.shapePartialNote {
+  font-size: 0.72rem;
+  color: var(--color-text-dim);
+  padding: 0.5rem 0 0;
+  font-style: italic;
+}
+
+.shapeBarDim .shapeBarLabel,
+.shapeBarDim .shapeBarValue {
+  opacity: 0.55;
+}
+
+.shapeBarFill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.3s ease-out;
+}
+
+.shapeBarValue {
+  position: absolute;
+  top: 0;
+  left: 0.5rem;
+  line-height: 1.4rem;
+  font-size: 0.75rem;
+  color: var(--color-text-primary);
+  white-space: nowrap;
+}
+
+:global([data-theme='light']) .metricsCard {
+  background: #eef1f5;
+  border: 1px solid #a3adb9;
+}
+
+.metricsCardValue {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--color-text-accent);
+  line-height: 1.15;
+}
+
+.metricsCardLabel {
+  font-size: 0.6rem;
+  color: var(--color-text-secondary);
+  margin-top: 0.05rem;
+}
+
+.metricsSection {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.metricsSectionToggle {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: inherit;
+}
+
+.metricsSectionTitle {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--color-text-accent);
+}
+
+.metricsSectionChevron {
+  width: 0.8rem;
+  height: 0.8rem;
+  flex: 0 0 auto;
+  color: var(--color-text-secondary);
+  transition: transform var(--transition-fast);
+}
+
+.metricsSectionChevron.expanded {
+  transform: rotate(90deg);
+}
+
+.metricsSeverityRow {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  justify-content: center;
+}
+
+.metricsSeverityItem {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.7rem;
+}
+
+.metricsSeverityDot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  flex: 0 0 auto;
+}
+
+.metricsSeverityLabel {
+  color: var(--color-text-secondary);
+  text-transform: capitalize;
+}
+
+.metricsSeverityCount {
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+/* ── Metrics charts ── */
+
+.chartDonutContainer {
+  display: flex;
+  justify-content: center;
+  padding: 0.4rem 0;
+  width: 30%;
+  margin: 0 auto;
+}
+
+.chartDonutTotal {
+  font-size: 1.6rem;
+  font-weight: 700;
+  fill: var(--color-text-primary, #e2e8f0);
+}
+
+.chartDonutLabel {
+  font-size: 0.62rem;
+  fill: var(--color-text-secondary, #94a3b8);
+}
+
+.chartDonutContainer svg { cursor: help; }
+
+.chartBarContainer {
+  padding: 0.4rem 0;
+  width: 56%;
+  margin: 0 auto;
+}
+.chartBarContainer svg { cursor: help; }
+
+.chartBarLabel {
+  font-size: 0.3rem;
+  fill: var(--color-text-secondary, #94a3b8);
+  font-family: var(--font-mono);
+}
+
+.chartBarFill {
+  fill: var(--color-text-link, #60a5fa);
+  opacity: 0.8;
+}
+.chartBarFill:hover {
+  opacity: 1;
+}
+
+.chartBarCount {
+  font-size: 0.3rem;
+  fill: var(--color-text-secondary, #94a3b8);
+}
+
+/* ── Findings trend chart ── */
+
+.trendChartWrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  width: 75%;
+  margin: 0.4rem auto 0;
+}
+
+.trendChartControls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  margin-bottom: -0.35rem;
+}
+
+.trendChartControlsLabel {
+  font-size: 0.65rem;
+  color: var(--color-text-secondary);
+}
+
+.trendChartTitle {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--color-text-accent);
+}
+
+.trendChartContainer {
+  position: relative;
+  overflow: visible;
+  width: 100%;
+}
+
+.trendChartSvg {
+  display: block;
+}
+
+.trendAxisLabel {
+  font-size: 0.45rem;
+  fill: var(--color-text-secondary, #94a3b8);
+  font-family: var(--font-mono);
+}
+
+.trendRefMarker {
+  cursor: help;
+}
+
+.trendRefDiamond {
+  fill: var(--color-text-secondary, #94a3b8);
+  opacity: 0.6;
+}
+
+.trendRefDiamondGroup:hover .trendRefDiamond {
+  opacity: 1;
+  fill: var(--color-text-accent, #60a5fa);
+}
+
+.trendTooltip {
+  position: absolute;
+  transform: translateX(-50%);
+  pointer-events: none;
+  background: var(--color-bg-elevated, #1e293b);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 0.3rem 0.45rem;
+  font-size: 0.6rem;
+  color: var(--color-text-primary);
+  white-space: nowrap;
+  z-index: 10;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.trendTooltipDate {
+  font-weight: 600;
+  font-size: 0.62rem;
+  margin-bottom: 0.15rem;
+  color: var(--color-text-accent);
+}
+
+.trendTooltipRow {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.8rem;
+}
+
+.trendTooltipRow > span:first-child {
+  color: var(--color-text-secondary);
+}
+
+.trendTooltipRef {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+}
+
+.trendLegend {
+  display: flex;
+  gap: 0.7rem;
+  flex-wrap: wrap;
+  justify-content: center;
+  font-size: 0.6rem;
+  color: var(--color-text-secondary);
+  margin-bottom: -1rem;
+}
+
+.trendLegendItem {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.trendLegendSwatch {
+  display: inline-block;
+  width: 0.6rem;
+  height: 0.2rem;
+  border-radius: 1px;
+}
+
+.linkedText {
+  /* wrapper for linked text segments */
+}

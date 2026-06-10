@@ -1,0 +1,127 @@
+version: 2
+updates:
+  # Python — agent
+  - package-ecosystem: pip
+    directory: /agent
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    groups:
+      agent-python:
+        patterns: ["*"]
+        update-types: [minor, patch]
+    commit-message:
+      prefix: "deps(agent)"
+
+  # Node — web-client
+  - package-ecosystem: npm
+    directory: /web-client
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    groups:
+      web-client-prod:
+        dependency-type: production
+        update-types: [minor, patch]
+      web-client-dev:
+        dependency-type: development
+        update-types: [minor, patch]
+    # Deferred majors — see docs/deferred-dependencies.md for each
+    # package's rationale and lift condition. The common thread is
+    # ecosystem coordination: a single major bump lands a broken
+    # toolchain because peer/transitive deps haven't aligned yet.
+    ignore:
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "eslint"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@eslint/js"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@vitejs/plugin-react"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "vitest"
+        update-types: ["version-update:semver-major"]
+    commit-message:
+      prefix: "deps(web-client)"
+
+  # Docker base images
+  #
+  # Major-version bumps are skipped — base-image majors (Node, Python,
+  # alpine, nginx) routinely break native deps and test envs. Bump them
+  # manually when intentional, e.g. when chasing a new LTS line. Patches
+  # and minors are grouped per ecosystem and released monthly; that's
+  # enough cadence for security drift without weekly churn.
+
+  # Docker — agent
+  - package-ecosystem: docker
+    directory: /agent
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 3
+    groups:
+      docker-agent:
+        patterns: ["*"]
+        update-types: [minor, patch]
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+      # Python minor bumps — deferred until litellm supports the
+      # target. See docs/deferred-dependencies.md ("python (Docker
+      # base image)") for the lift condition. 3.13 → 3.14 broke
+      # the build because litellm's Requires-Python caps at <3.14.
+      - dependency-name: "python"
+        update-types: ["version-update:semver-minor"]
+    commit-message:
+      prefix: "deps(docker:agent)"
+
+  # Docker — web-client
+  - package-ecosystem: docker
+    directory: /web-client
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 3
+    groups:
+      docker-web-client:
+        patterns: ["*"]
+        update-types: [minor, patch]
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+    commit-message:
+      prefix: "deps(docker:web-client)"
+
+  # Docker — tts-server
+  - package-ecosystem: docker
+    directory: /tts-server
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 3
+    groups:
+      docker-tts:
+        patterns: ["*"]
+        update-types: [minor, patch]
+    # Python pinned to 3.12.x — F5-TTS's torch/transformers stack
+    # doesn't yet provide wheels for 3.13+. Lift this anchor once the
+    # ML deps catch up.
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "python"
+        versions: [">3.12"]
+    commit-message:
+      prefix: "deps(docker:tts-server)"
+
+  # GitHub Actions
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 3
+    groups:
+      github-actions:
+        patterns: ["*"]
+        update-types: [minor, patch]
+    commit-message:
+      prefix: "deps(actions)"

@@ -1,0 +1,97 @@
+.root {
+  font-family: var(--font-mono);
+  overflow: auto;
+}
+
+.root:global(.rq-log-tree) {
+  font-size: 0.6rem;
+  line-height: 1.35;
+  padding: 0.25rem 0.4rem;
+  background: rgba(0, 0, 0, 0.12);
+  border-radius: var(--radius-sm);
+  max-height: 20rem;
+  margin: 0.15rem 0;
+}
+
+:global([data-theme='light']) .root:global(.rq-log-tree) {
+  background: #edf0f5;
+}
+
+.root:global(.message-tree) {
+  font-size: var(--text-xs);
+  line-height: 1.4;
+}
+
+.toggle {
+  all: unset;
+  cursor: pointer;
+  display: inline;
+  padding: 0 0.2em;
+  vertical-align: baseline;
+}
+
+.arrow {
+  display: inline-block;
+  font-size: 0.75em;
+  transition: transform 0.1s ease;
+  color: var(--color-text-secondary);
+}
+
+.arrowExpanded {
+  transform: rotate(90deg);
+}
+
+.summary {
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  font-style: italic;
+  font-size: 0.9em;
+}
+
+.children {
+  padding-left: 1.2em;
+}
+
+.key { color: #b48ead; }
+.idx { color: var(--color-text-secondary); }
+.sep { color: var(--color-text-secondary); }
+.str { color: #a3be8c; word-break: break-word; }
+.num { color: #88c0d0; }
+.bool { color: #88c0d0; }
+.null { color: var(--color-text-secondary); font-style: italic; }
+.bracket { color: var(--color-text-secondary); }
+
+:global([data-theme='light']) .key { color: #6d28d9; }
+:global([data-theme='light']) .str { color: #166534; }
+:global([data-theme='light']) .num { color: #1d4ed8; }
+:global([data-theme='light']) .bool { color: #1d4ed8; }
+
+.badge {
+  display: inline-block;
+  font-size: 0.7em;
+  padding: 0 0.3em;
+  border-radius: 3px;
+  background: rgba(136, 192, 208, 0.15);
+  color: #88c0d0;
+  margin-right: 0.3em;
+  vertical-align: middle;
+}
+
+:global([data-theme='light']) .badge {
+  background: rgba(30, 102, 245, 0.1);
+  color: #1e66f5;
+}
+
+.multiline {
+  margin: 0.15em 0;
+  padding: 0.3em 0.5em;
+  background: rgba(0, 0, 0, 0.08);
+  border-radius: var(--radius-sm);
+  white-space: pre-wrap;
+  word-break: break-word;
+  font: inherit;
+}
+
+:global([data-theme='light']) .multiline {
+  background: rgba(0, 0, 0, 0.03);
+}

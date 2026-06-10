@@ -1,0 +1,33 @@
+# Markdown — block all, then explicitly allowlist what's tracked
+*.md
+!README.md
+!CLAUDE.md
+!SECURITY.md
+!CONTRIBUTING.md
+!CODE_OF_CONDUCT.md
+!CHANGELOG.md
+!THIRD_PARTY_NOTICES.md
+!docs/**/*.md
+!agent/docs/*.md
+!agent/skills/*/SKILL.md
+!web-client/src/assets/guide.md
+!.github/**/*.md
+
+# Dotfiles — block all, then allowlist what's tracked
+.*
+!.gitignore
+!.gitattributes
+!.github/
+!.pre-commit-config.yaml
+!.secrets.baseline
+!**/.dockerignore
+!.env.template
+!agent/.env.template
+!agent/.env.test.template
+!tts-server/.env.template
+!web-client/.env.template
+
+# Python build artefacts (covers top-level dirs like licensing/;
+# agent/ also has its own .gitignore)
+__pycache__/
+*.pyc

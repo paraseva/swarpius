@@ -1,0 +1,55 @@
+name: Feature request
+description: Suggest a new feature or improvement
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the suggestion. We weight feature requests on
+        their *use case* — describing the problem you're trying to
+        solve helps more than describing the solution. We may end
+        up implementing something different that solves the same
+        problem better.
+
+  - type: checkboxes
+    id: prereqs
+    attributes:
+      label: Pre-flight checks
+      options:
+        - label: I have searched existing issues and discussions for similar requests.
+          required: true
+
+  - type: textarea
+    id: use_case
+    attributes:
+      label: Use case
+      description: |
+        What's the problem you're trying to solve? When does it come
+        up for you? Why does the current behaviour fall short?
+      placeholder: |
+        I often want to … but currently Swarpius … which means …
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposed
+    attributes:
+      label: Proposed solution
+      description: |
+        Optional. If you have a specific implementation in mind,
+        sketch it here — but don't feel obliged. The use case
+        above is the more important part.
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: |
+        Workarounds you've tried, related features that don't quite
+        fit, etc.
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else?
+      description: Mockups, links to similar features in other tools, references.

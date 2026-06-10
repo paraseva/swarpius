@@ -1,0 +1,15 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/paraseva/swarpius/security/advisories/new
+    about: |
+      Do NOT open a public issue for security vulnerabilities.
+      Use the private vulnerability reporting channel above, or
+      email security@paraseva.ai directly. See SECURITY.md.
+  - name: Bug report needing private logs
+    url: mailto:dev@paraseva.ai
+    about: |
+      If you can describe the bug fully in a public issue, use
+      the Bug report template. If diagnosis needs unscrubbed logs
+      (chat history, library titles), email dev@paraseva.ai
+      privately instead. Best-effort, no SLA. See CONTRIBUTING.md.

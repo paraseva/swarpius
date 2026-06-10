@@ -1,0 +1,511 @@
+name: Installer
+
+# Manually dispatched (workflow_dispatch), by design: releases are cut
+# deliberately and the per-platform toggles below allow partial rebuilds.
+# No tag-push trigger — the publish job mints the tag from agent/VERSION.
+#
+# Windows builds AND signs in a single `build-windows` job: it signs the
+# bundled swarpius.exe *before* Inno packaging, then signs the resulting
+# Swarpius-Setup.exe — both via Azure Artifact Signing over GitHub OIDC
+# (no stored signing secret). Signing has to happen in the build job
+# because the inner exe is only loose on disk between PyInstaller and Inno.
+# macOS builds, signs (Developer ID) AND notarises in a single
+# `build-macos` job — the .app is codesigned before the DMG wrap, the DMG
+# is codesigned + notarised + stapled after. Apple has no keyless service,
+# so it uses stored secrets (a base64 .p12 + an App Store Connect API key),
+# not OIDC. Linux builds unsigned in the `build` matrix and gets a
+# GPG-signed SHA256SUMS in `checksums`. The optional `publish` job (off
+# unless `publish_release` is ticked) publishes the assets to a GitHub
+# Release.
+on:
+  workflow_dispatch:
+    # Per-platform toggles — untick to skip a platform (e.g. a Windows-only
+    # rebuild without spending macOS runner minutes). checksums and publish
+    # only run on a full build of all three.
+    inputs:
+      build_linux:
+        description: Build the Linux AppImage
+        type: boolean
+        default: true
+      build_windows:
+        description: Build + sign the Windows installer
+        type: boolean
+        default: true
+      build_macos:
+        description: Build + sign + notarise the macOS DMG
+        type: boolean
+        default: true
+      publish_release:
+        description: Publish a GitHub Release with the built assets
+        type: boolean
+        default: false
+
+jobs:
+  build:
+    name: Build (${{ matrix.label }})
+    if: ${{ inputs.build_linux }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            label: linux-x86_64
+            spec: installer/swarpius-linux.spec
+            wrapper: bash installer/build-appimage.sh
+            artefact_path: agent/dist/Swarpius-x86_64.AppImage
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: agent/requirements-server.txt
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: web-client/package-lock.json
+
+      - name: Check version consistency
+        shell: python
+        run: |
+          import json, pathlib
+          version = pathlib.Path("agent/VERSION").read_text().strip()
+          pkg = json.loads(pathlib.Path("web-client/package.json").read_text())["version"]
+          assert version == pkg, f"agent/VERSION ({version}) != package.json ({pkg}) — bump both"
+          print("version:", version)
+
+      - name: Install Python build deps
+        working-directory: agent
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements-server.txt
+          python -m pip install pyinstaller
+
+      - name: Build web client
+        working-directory: web-client
+        run: |
+          npm ci
+          npm run build
+
+      - name: Install AppImage tooling (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends librsvg2-bin libfuse2 wget
+          wget -q -O /tmp/appimagetool \
+            https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage
+          chmod +x /tmp/appimagetool
+          sudo mv /tmp/appimagetool /usr/local/bin/appimagetool
+
+      - name: Run PyInstaller
+        working-directory: agent
+        run: pyinstaller ${{ matrix.spec }}
+
+      - name: Run platform wrapper
+        if: matrix.wrapper != ''
+        working-directory: agent
+        run: ${{ matrix.wrapper }}
+
+      - name: Upload artefact
+        uses: actions/upload-artifact@v7
+        with:
+          name: swarpius-${{ matrix.label }}
+          path: ${{ matrix.artefact_path }}
+          # The bundle includes .env.template (a dotfile); upload-artifact excludes
+          # hidden files by default. Safe — this path is the build output, not the repo.
+          include-hidden-files: true
+          # 14 days is enough for download + smoke-test; bump if needed.
+          retention-days: 14
+
+  # macOS: build, codesign the .app, wrap + codesign + notarise + staple the
+  # DMG, all in one job (Apple has no keyless service — uses the MACOS_*/
+  # APPLE_NOTARY_* secrets, not OIDC).
+  build-macos:
+    name: Build + sign (macos-arm64)
+    if: ${{ inputs.build_macos }}
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: agent/requirements-server.txt
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: web-client/package-lock.json
+
+      - name: Check version consistency
+        shell: python
+        run: |
+          import json, pathlib
+          version = pathlib.Path("agent/VERSION").read_text().strip()
+          pkg = json.loads(pathlib.Path("web-client/package.json").read_text())["version"]
+          assert version == pkg, f"agent/VERSION ({version}) != package.json ({pkg}) — bump both"
+          print("version:", version)
+
+      - name: Install Python build deps
+        working-directory: agent
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements-server.txt
+          python -m pip install pyinstaller
+
+      - name: Build web client
+        working-directory: web-client
+        run: |
+          npm ci
+          npm run build
+
+      - name: Install DMG tooling
+        run: brew install create-dmg
+
+      - name: Run PyInstaller
+        working-directory: agent
+        run: pyinstaller installer/swarpius-macos.spec
+
+      - name: Sign, build DMG, notarise, staple
+        working-directory: agent
+        env:
+          MACOS_CERTIFICATE_P12: ${{ secrets.MACOS_CERTIFICATE_P12 }}
+          MACOS_CERTIFICATE_P12_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_P12_PASSWORD }}
+          MACOS_SIGNING_IDENTITY: ${{ secrets.MACOS_SIGNING_IDENTITY }}
+          APPLE_NOTARY_KEY_P8: ${{ secrets.APPLE_NOTARY_KEY_P8 }}
+          APPLE_NOTARY_KEY_ID: ${{ secrets.APPLE_NOTARY_KEY_ID }}
+          APPLE_NOTARY_ISSUER_ID: ${{ secrets.APPLE_NOTARY_ISSUER_ID }}
+        run: |
+          set -euo pipefail
+
+          # Import the Developer ID cert into an ephemeral keychain.
+          KEYCHAIN="$RUNNER_TEMP/build.keychain-db"
+          KEYCHAIN_PW="$(openssl rand -base64 24)"
+          security create-keychain -p "$KEYCHAIN_PW" "$KEYCHAIN"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN"
+          security unlock-keychain -p "$KEYCHAIN_PW" "$KEYCHAIN"
+          # Keep login + system in the search list so Apple's roots resolve.
+          security list-keychains -d user -s "$KEYCHAIN" login.keychain-db
+
+          echo "$MACOS_CERTIFICATE_P12" | base64 --decode > "$RUNNER_TEMP/cert.p12"
+          security import "$RUNNER_TEMP/cert.p12" -k "$KEYCHAIN" \
+            -P "$MACOS_CERTIFICATE_P12_PASSWORD" -T /usr/bin/codesign
+          rm -f "$RUNNER_TEMP/cert.p12"
+          security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PW" "$KEYCHAIN"
+
+          # --options runtime + --timestamp are required for notarisation;
+          # --deep signs the nested PyInstaller dylibs.
+          codesign --force --options runtime --timestamp \
+            --keychain "$KEYCHAIN" \
+            --entitlements installer/entitlements.plist \
+            --sign "$MACOS_SIGNING_IDENTITY" \
+            --deep dist/Swarpius.app
+          codesign --verify --deep --strict --verbose=2 dist/Swarpius.app
+
+          bash installer/build-dmg.sh
+          codesign --force --timestamp --keychain "$KEYCHAIN" \
+            --sign "$MACOS_SIGNING_IDENTITY" dist/Swarpius-arm64.dmg
+
+          # --timeout caps the wait on the 10x-billed runner; the submission
+          # still completes server-side, so re-run if a stall trips it. (A new
+          # team's first submission can take hours — see runbook.)
+          echo "$APPLE_NOTARY_KEY_P8" | base64 --decode > "$RUNNER_TEMP/notary.p8"
+          NOTARY_AUTH=(--key "$RUNNER_TEMP/notary.p8" \
+            --key-id "$APPLE_NOTARY_KEY_ID" --issuer "$APPLE_NOTARY_ISSUER_ID")
+
+          set +e
+          xcrun notarytool submit dist/Swarpius-arm64.dmg "${NOTARY_AUTH[@]}" \
+            --wait --timeout 15m 2>&1 | tee "$RUNNER_TEMP/notary-submit.txt"
+          notary_status=${PIPESTATUS[0]}
+          set -e
+
+          # On a non-Accepted verdict, dump the per-binary reasons (the submit
+          # output only gives the status) before failing the step.
+          if [ "$notary_status" -ne 0 ]; then
+            submission_id=$(awk '/^[[:space:]]*id:/{print $2; exit}' "$RUNNER_TEMP/notary-submit.txt")
+            echo "::error::Notarisation did not succeed (exit $notary_status). Log for ${submission_id:-<no id>}:"
+            [ -n "$submission_id" ] && xcrun notarytool log "$submission_id" "${NOTARY_AUTH[@]}" || true
+            rm -f "$RUNNER_TEMP/notary.p8"
+            exit 1
+          fi
+          rm -f "$RUNNER_TEMP/notary.p8"
+          xcrun stapler staple dist/Swarpius-arm64.dmg
+
+          # Verify as Gatekeeper would (fails the job if rejected).
+          xcrun stapler validate dist/Swarpius-arm64.dmg
+          spctl -a -t open --context context:primary-signature -vv dist/Swarpius-arm64.dmg
+
+      - name: Upload artefact
+        uses: actions/upload-artifact@v7
+        with:
+          name: swarpius-macos-arm64
+          path: agent/dist/Swarpius-arm64.dmg
+          retention-days: 14
+
+  # Windows: build, sign the bundled swarpius.exe, package with Inno, sign
+  # the installer — all in one job, because the inner exe is only loose on
+  # disk between PyInstaller and Inno. Signing is Azure Artifact Signing
+  # (formerly Trusted Signing) via GitHub OIDC — no stored signing secret.
+  #
+  # Requires, on this repo:
+  #   - Secrets: AZURE_CLIENT_ID, AZURE_TENANT_ID, AZURE_SUBSCRIPTION_ID
+  #     (the swarpius-ci-signing app registration's IDs).
+  #   - An Environment named `release` (the federated credential's subject
+  #     is repo:<owner>/<repo>:environment:release).
+  # The app registration holds the "Trusted Signing Certificate Profile
+  # Signer" role on the Paraseva-Signing account, so OIDC login + that role
+  # is the full auth chain.
+  build-windows:
+    name: Build + sign (windows-x86_64)
+    if: ${{ inputs.build_windows }}
+    runs-on: windows-latest
+    environment: release
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: agent/requirements-server.txt
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: web-client/package-lock.json
+
+      - name: Check version consistency
+        shell: python
+        run: |
+          import json, pathlib
+          version = pathlib.Path("agent/VERSION").read_text().strip()
+          pkg = json.loads(pathlib.Path("web-client/package.json").read_text())["version"]
+          assert version == pkg, f"agent/VERSION ({version}) != package.json ({pkg}) — bump both"
+          print("version:", version)
+
+      - name: Install Python build deps
+        working-directory: agent
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements-server.txt
+          python -m pip install pyinstaller
+
+      - name: Build web client
+        working-directory: web-client
+        run: |
+          npm ci
+          npm run build
+
+      - name: Run PyInstaller
+        working-directory: agent
+        run: pyinstaller installer/swarpius-windows.spec
+
+      - name: Azure login (OIDC)
+        uses: azure/login@v3
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      # Sign the bundled swarpius.exe BEFORE Inno wraps it, so the installed
+      # app's executable is signed too — not just the installer.
+      - name: Sign bundled swarpius.exe
+        uses: azure/artifact-signing-action@v2
+        with:
+          endpoint: https://weu.codesigning.azure.net/
+          signing-account-name: Paraseva-Signing
+          certificate-profile-name: Paraseva-Certificate-Profile
+          files-folder: ${{ github.workspace }}\agent\dist\Swarpius
+          files-folder-filter: exe
+          file-digest: SHA256
+          timestamp-rfc3161: http://timestamp.acs.microsoft.com
+          timestamp-digest: SHA256
+          # azure/login established the Azure CLI credential above; steer
+          # DefaultAzureCredential to it and disable the other chains.
+          exclude-azure-cli-credential: false
+          exclude-environment-credential: true
+          exclude-workload-identity-credential: true
+          exclude-managed-identity-credential: true
+          exclude-shared-token-cache-credential: true
+          exclude-visual-studio-credential: true
+          exclude-visual-studio-code-credential: true
+          exclude-azure-powershell-credential: true
+          exclude-azure-developer-cli-credential: true
+          exclude-interactive-browser-credential: true
+
+      - name: Build Windows installer (Inno Setup)
+        working-directory: agent
+        shell: pwsh
+        run: |
+          # Inno Setup ships on GitHub's Windows runners; install via choco
+          # as a fallback if the image ever drops it.
+          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $iscc)) {
+            choco install innosetup -y --no-progress
+          }
+          $ver = (Get-Content VERSION -Raw).Trim()
+          & $iscc /DMyAppVersion=$ver installer\swarpius.iss
+
+      - name: Sign installer
+        uses: azure/artifact-signing-action@v2
+        with:
+          endpoint: https://weu.codesigning.azure.net/
+          signing-account-name: Paraseva-Signing
+          certificate-profile-name: Paraseva-Certificate-Profile
+          # dist/ (non-recursive) holds only Swarpius-Setup.exe; the already-
+          # signed swarpius.exe sits in the dist/Swarpius/ subfolder.
+          files-folder: ${{ github.workspace }}\agent\dist
+          files-folder-filter: exe
+          file-digest: SHA256
+          timestamp-rfc3161: http://timestamp.acs.microsoft.com
+          timestamp-digest: SHA256
+          exclude-azure-cli-credential: false
+          exclude-environment-credential: true
+          exclude-workload-identity-credential: true
+          exclude-managed-identity-credential: true
+          exclude-shared-token-cache-credential: true
+          exclude-visual-studio-credential: true
+          exclude-visual-studio-code-credential: true
+          exclude-azure-powershell-credential: true
+          exclude-azure-developer-cli-credential: true
+          exclude-interactive-browser-credential: true
+
+      - name: Verify both signatures
+        shell: pwsh
+        run: |
+          $targets = @(
+            "agent\dist\Swarpius\swarpius.exe",
+            "agent\dist\Swarpius-Setup.exe"
+          )
+          foreach ($f in $targets) {
+            $sig = Get-AuthenticodeSignature $f
+            Write-Host "=== $f ==="
+            $sig | Format-List
+            if ($sig.Status -ne 'Valid') {
+              throw "Authenticode signature not Valid for ${f}: $($sig.Status)"
+            }
+          }
+
+      - name: Upload signed installer
+        uses: actions/upload-artifact@v7
+        with:
+          name: swarpius-windows-x86_64
+          path: agent/dist/Swarpius-Setup.exe
+          retention-days: 14
+
+  # SHA256SUMS over the release artefacts (the signed Windows installer +
+  # the AppImage + the DMG), GPG-signed. Linux has no OS-level binary
+  # signing, so a detached signature on SHA256SUMS is how users verify
+  # authenticity + integrity across all platforms.
+  #
+  # Requires repo secrets GPG_PRIVATE_KEY (armoured private key) and
+  # GPG_PASSPHRASE. Publish the matching public key (e.g. a committed
+  # RELEASE-GPG-KEY.asc + on paraseva.ai) so users can verify with
+  # `gpg --verify SHA256SUMS.asc SHA256SUMS`.
+  checksums:
+    name: Checksums + GPG signature
+    # Only on a full build — a partial (single-platform) run skips checksums
+    # rather than publish a SHA256SUMS over an incomplete artefact set.
+    if: ${{ inputs.build_linux && inputs.build_windows && inputs.build_macos }}
+    needs: [build, build-windows, build-macos]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download Linux artefact
+        uses: actions/download-artifact@v8
+        with:
+          name: swarpius-linux-x86_64
+          path: dist
+      - name: Download macOS artefact
+        uses: actions/download-artifact@v8
+        with:
+          name: swarpius-macos-arm64
+          path: dist
+      - name: Download signed Windows installer
+        uses: actions/download-artifact@v8
+        with:
+          name: swarpius-windows-x86_64
+          path: dist
+
+      - name: Generate SHA256SUMS
+        working-directory: dist
+        run: |
+          sha256sum * > SHA256SUMS
+          echo "----- SHA256SUMS -----"
+          cat SHA256SUMS
+
+      - name: Import GPG signing key
+        run: echo "$GPG_PRIVATE_KEY" | gpg --batch --import
+        env:
+          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+
+      - name: GPG-sign SHA256SUMS
+        working-directory: dist
+        run: |
+          gpg --batch --yes --pinentry-mode loopback \
+              --passphrase "$GPG_PASSPHRASE" \
+              --detach-sign --armor SHA256SUMS
+          gpg --verify SHA256SUMS.asc SHA256SUMS
+        env:
+          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+
+      - name: Upload checksums + signature
+        uses: actions/upload-artifact@v7
+        with:
+          name: SHA256SUMS
+          path: |
+            dist/SHA256SUMS
+            dist/SHA256SUMS.asc
+          retention-days: 14
+
+  # Assets attach as raw, un-zipped files — Actions artifacts are always
+  # zipped, Release assets are not, and installed-app.md tells users to
+  # download the individual installers. Idempotent: any existing release +
+  # tag for the version is deleted and recreated, so the tag moves to the
+  # build commit and same-named assets don't collide on a re-run.
+  publish:
+    name: Publish GitHub Release
+    if: ${{ inputs.publish_release && inputs.build_linux && inputs.build_windows && inputs.build_macos }}
+    needs: [build, build-windows, build-macos, checksums]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Download all artefacts
+        uses: actions/download-artifact@v8
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Create / replace the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          version="$(tr -d '[:space:]' < agent/VERSION)"
+          tag="v${version}"
+
+          # Ship the public key as a release asset (verification — installed-app.md).
+          cp RELEASE-GPG-KEY.asc dist/
+
+          echo "Release assets:"
+          ls -1 dist
+
+          if gh release view "$tag" >/dev/null 2>&1; then
+            gh release delete "$tag" --yes --cleanup-tag
+          fi
+
+          gh release create "$tag" dist/* \
+            --title "Swarpius ${version}" \
+            --notes "Install and verification steps: docs/installed-app.md"

@@ -1,0 +1,16 @@
+# Force LF for files that fail or break under CRLF when run inside a Linux
+# container or invoked as executables. Editors on Windows hosts will save
+# these as LF on checkout, and git will store LF on checkin regardless of
+# the working-tree line endings.
+#
+# Symptoms this prevents:
+#   * Shell scripts with CRLF shebangs fail with "cannot execute: required
+#     file not found" (kernel hunts for `/bin/bash\r`).
+#   * Dockerfile RUN heredocs and multi-line shell commands can fail with
+#     CRLF inside container layers.
+#   * TTS-server Python entrypoints baked into a Linux container.
+
+*.sh             text eol=lf
+Dockerfile       text eol=lf
+/agent/dev       text eol=lf
+tts-server/*.py  text eol=lf

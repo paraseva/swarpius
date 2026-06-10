@@ -1,0 +1,1136 @@
+/* ── Design tokens ─────────────────────────────────────────────── */
+
+:root {
+  color-scheme: dark;
+  font-family: var(--font-body);
+
+  /* Typography scale */
+  --text-2xs: 0.65rem;
+  --text-xs: 0.72rem;
+  --text-sm: 0.82rem;
+  --text-base: 0.95rem;
+  --text-lg: 1.1rem;
+  --font-body: 'Inter Variable', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono Variable', ui-monospace, 'Cascadia Code', 'Source Code Pro', Menlo, Consolas, monospace;
+
+  /* Baseline alignment for the inline mono ID chip against surrounding text. */
+  --id-chip-nudge: 0px;
+
+  /* Down-shift to centre text in line-height:1 pills (Inter sits high). */
+  --pill-baseline-shift: 0.5px;
+
+  /* Down-nudge for Inter text columns aligned against centred icons/dots. */
+  --row-text-shift: 1px;
+
+  /* Brand primaries — brass on near-black */
+  --color-brand-primary: #c9a85a;
+  --color-brand-primary-hover: #d4b56a;
+  --color-brand-primary-active: #b89544;
+  --color-brand-secondary: #8a6f3f;
+  --color-text-on-accent: #121214;
+
+  /* Logo carve-out accent (matches surface tone behind the wordmark) */
+  --logo-accent: #18181a;
+
+  /* Surface colours — neutral charcoal */
+  --color-bg-root: #08080a;
+  --color-bg-body: radial-gradient(circle at top, #18181a 0, #08080a 45%);
+  --color-bg-surface: rgba(22, 22, 24, 0.96);
+  --color-bg-elevated: rgba(30, 30, 32, 0.92);
+  --color-bg-overlay: rgba(8, 8, 10, 0.75);
+  --color-bg-backdrop: rgba(0, 0, 0, 0.6);
+  --color-bg-panel: rgba(22, 22, 24, 0.96);
+  --color-bg-input: rgba(14, 14, 16, 0.9);
+  --color-bg-header: linear-gradient(to right, rgba(22, 22, 24, 0.92), rgba(22, 22, 24, 0.6));
+
+  /* Border colours — neutral greys */
+  --color-border: rgba(60, 60, 64, 0.7);
+  --color-border-subtle: rgba(74, 74, 78, 0.5);
+  --color-border-strong: rgba(98, 98, 102, 0.85);
+
+  /* Text colours — neutral with cool whisper */
+  --color-text-primary: #f0f0f2;
+  --color-text-default: #d8d8da;
+  --color-text-muted: #b8b8bc;
+  --color-text-secondary: #8d8d92;
+  --color-text-faint: #8d8d92;
+  --color-text-dim: #65656a;
+  --color-text-accent: #c9a85a;
+  --color-text-accent-light: #d4b56a;
+  --color-text-accent-group: #7ab8d4;
+
+  /* Interaction / state backgrounds — warm-toned subtles */
+  --color-bg-hover: rgba(125, 95, 65, 0.18);
+  --color-bg-alt-row: rgba(125, 95, 65, 0.10);
+  --color-bg-active: rgba(201, 168, 90, 0.15);
+  --color-bg-success-subtle: rgba(132, 175, 105, 0.15);
+  --color-bg-warning-subtle: rgba(218, 165, 78, 0.18);
+  --color-bg-error-subtle: rgba(248, 113, 113, 0.12);
+  --color-bg-info-subtle: rgba(155, 130, 95, 0.15);
+  --color-border-success: #16a34a;
+  --color-border-warning: rgba(218, 165, 78, 0.6);
+  --color-border-error: rgba(248, 113, 113, 0.5);
+
+  /* Semantic colours — warm-aligned */
+  --color-success: #15803d;
+  --color-success-text: #4ade80;
+  --color-warning: #daa54e;
+  --color-warning-text: #e6b85f;
+  --color-error: #ef4444;
+  --color-error-text: #f87171;
+  --color-info: #8a6f3f;
+  --color-info-text: #b08d5a;
+
+  /* Outbound message bubble — defaults to brand; swap to blue here for live A/B */
+  --color-message-outbound-bg: linear-gradient(135deg, #b89544, #c9a85a);
+  --color-message-outbound-border: #b89544;
+  --color-message-outbound-text: #1c1612;
+  --color-message-outbound-meta: rgba(28, 22, 18, 0.7);
+
+  /* Data-viz palette — distinct hues for charts/categories, warm-aligned */
+  --color-viz-1: #c9a85a;
+  --color-viz-2: #84af69;
+  --color-viz-3: #c06050;
+  --color-viz-4: #a07db5;
+  --color-viz-5: #5a9ab5;
+  --color-viz-6: #daa54e;
+  --color-viz-7: #d68872;
+  --color-viz-8: #75614f;
+
+  /* Spacing */
+  --radius-sm: 0.35rem;
+  --radius-md: 0.55rem;
+  --radius-lg: 0.85rem;
+  --radius-full: 999px;
+
+  /* Transitions */
+  --transition-fast: 120ms ease;
+  --transition-normal: 180ms ease;
+  --transition-slow: 300ms ease;
+
+  background-color: var(--color-bg-root);
+  color: var(--color-text-default);
+}
+
+/* Form controls don't inherit font-family by default — pin them to the app font. */
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+}
+
+/* ── Light theme ───────────────────────────────────────────────── */
+
+[data-theme='light'] {
+  color-scheme: light;
+
+  /* Brand primaries — burgundy on neutral off-white */
+  --color-brand-primary: #6b2c3e;
+  --color-brand-primary-hover: #7d3548;
+  --color-brand-primary-active: #592434;
+  --color-brand-secondary: #a05a2c;
+  --color-text-on-accent: #fdfdfe;
+
+  /* Logo carve-out accent (matches header tone) */
+  --logo-accent: #e2e2e4;
+
+  /* Surfaces — neutral off-white with whisper-cool undertone */
+  --color-bg-root: #ededee;
+  --color-bg-body: radial-gradient(circle at top, #f7f7f8 0, #e8e8ea 55%);
+  --color-bg-surface: #fdfdfe;
+  --color-bg-elevated: #e3e3e5;
+  --color-bg-overlay: rgba(253, 253, 254, 0.97);
+  --color-bg-backdrop: rgba(20, 20, 24, 0.45);
+  --color-bg-panel: #fdfdfe;
+  --color-bg-input: #fdfdfe;
+  --color-bg-header: #e2e2e4;
+
+  /* Borders — neutral greys */
+  --color-border: #c0c0c4;
+  --color-border-subtle: #d4d4d8;
+  --color-border-strong: #a0a0a4;
+
+  /* Text — neutral darks */
+  --color-text-primary: #18181a;
+  --color-text-default: #2a2a2d;
+  --color-text-muted: #2a2a2d;
+  --color-text-secondary: #525258;
+  --color-text-faint: #525258;
+  --color-text-dim: #6a6a70;
+  --color-text-accent: #6b2c3e;
+  --color-text-accent-light: #7d3548;
+  --color-text-accent-group: #1f4a6b;
+
+  /* Interaction / state backgrounds — restrained on neutral */
+  --color-bg-hover: #e0e0e2;
+  --color-bg-alt-row: #ededef;
+  --color-bg-active: #f0d8e0;
+  --color-bg-success-subtle: #dde6d4;
+  --color-bg-warning-subtle: #ead8b8;
+  --color-bg-error-subtle: #fecaca;
+  --color-bg-info-subtle: #d8d8dc;
+  --color-border-success: #16a34a;
+  --color-border-warning: #b08846;
+  --color-border-error: #dc2626;
+
+  /* Semantic — strong on neutral, readable at icon size */
+  --color-success: #15803d;
+  --color-success-text: #14532d;
+  --color-warning: #8c5a1c;
+  --color-warning-text: #5a3a10;
+  --color-error: #b91c1c;
+  --color-error-text: #b91c1c;
+  --color-info: #a05a2c;
+  --color-info-text: #6e3a18;
+
+  /* Outbound message bubble — burgundy in light mode */
+  --color-message-outbound-bg: linear-gradient(135deg, #592434, #6b2c3e);
+  --color-message-outbound-border: #592434;
+  --color-message-outbound-text: #fdfdfe;
+  --color-message-outbound-meta: rgba(253, 253, 254, 0.88);
+
+  /* Data-viz palette — distinct hues against cream, warm-aligned */
+  --color-viz-1: #6b2c3e;
+  --color-viz-2: #4d6f33;
+  --color-viz-3: #a05a2c;
+  --color-viz-4: #5d4377;
+  --color-viz-5: #2c5a78;
+  --color-viz-6: #8c5a1c;
+  --color-viz-7: #8a3825;
+  --color-viz-8: #7d6452;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-text-accent);
+  outline-offset: 2px;
+}
+
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+}
+
+body {
+  background: var(--color-bg-body);
+}
+
+#root {
+  display: flex;
+}
+
+.app {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  min-height: 100vh;
+  max-width: 100vw;
+  overflow: hidden;
+}
+
+.app-header {
+  position: relative;
+  z-index: 30;
+  padding: 0.9rem 1.5rem;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-bg-header);
+  backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.app-header-left {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.app-header-centre {
+  flex: 1;
+  min-width: 0;
+}
+
+.app-header-right {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  flex-shrink: 0;
+  min-width: 0;
+}
+
+.app-header h1 {
+  margin: 0;
+  font-size: 1.1rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-text-default);
+}
+
+
+.app-main {
+  flex: 1;
+  display: flex;
+  gap: 1rem;
+  padding: 1rem 1.5rem 1.25rem;
+  min-height: 0;
+}
+
+.app-content {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.chat-column {
+  flex: 2;
+  min-width: 0;
+  display: flex;
+}
+
+.status-column {
+  flex: 1.25;
+  min-width: 0;
+  display: flex;
+  transition: flex var(--transition-slow), min-width var(--transition-slow), opacity var(--transition-slow);
+  overflow: hidden;
+}
+
+
+.panel {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-panel);
+  box-shadow:
+    0 18px 45px rgba(0, 0, 0, 0.7),
+    inset 0 0 0 1px rgba(30, 30, 32, 0.9);
+}
+
+[data-theme='light'] .panel {
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.1),
+    0 4px 12px rgba(0, 0, 0, 0.06);
+}
+
+.panel-header {
+  padding: 0.7rem 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.panel-header h2,
+.panel-header h3 {
+  margin: 0;
+  font-size: var(--text-base);
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.panel-heading-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.panel-heading-group > button {
+  position: relative;
+  top: 1px;
+}
+
+
+.panel-body {
+  padding: 0.75rem 1rem;
+}
+
+.panel-body.scrollable {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  /* Let useStickyBottomScroll own the scroll position; browser anchoring
+     fights the bottom-pin on large async-growing replays. */
+  overflow-anchor: none;
+}
+
+.panel-body.scrollable::-webkit-scrollbar {
+  width: 6px;
+}
+
+.panel-body.scrollable::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.panel-body.scrollable::-webkit-scrollbar-thumb {
+  background: var(--color-border-strong);
+  border-radius: 999px;
+}
+
+.panel-footer {
+  padding: 0.65rem 1rem 0.75rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.input-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-end;
+}
+
+.input-row input,
+.input-row textarea {
+  flex: 1;
+  min-width: 0;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border-strong);
+  padding: 0.5rem 0.9rem;
+  font-size: var(--text-sm);
+  background-color: var(--color-bg-input);
+  color: var(--color-text-primary);
+  outline: none;
+  font-family: inherit;
+}
+
+.input-row textarea {
+  resize: none;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.input-row input::placeholder,
+.input-row textarea::placeholder {
+  color: var(--color-text-dim);
+}
+
+.input-row input:focus,
+.input-row textarea:focus {
+  border-color: var(--color-brand-primary);
+  box-shadow: 0 0 0 1px rgba(201, 168, 90, 0.4);
+}
+
+[data-theme='light'] .input-row input:focus,
+[data-theme='light'] .input-row textarea:focus {
+  box-shadow: 0 0 0 1px rgba(107, 44, 62, 0.4);
+}
+
+.input-row button[type="submit"] {
+  border-radius: 999px;
+  border: none;
+  padding: 0.5rem 0.95rem;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--color-text-on-accent);
+  background: var(--color-brand-primary);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+}
+
+.input-row button[type="submit"]:hover {
+  background: var(--color-brand-primary-hover);
+}
+
+.input-row button[type="submit"]:active {
+  background: var(--color-brand-primary-active);
+}
+
+.input-row button[type="submit"]:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.input-spinner {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.9rem;
+  height: 1.9rem;
+  border-radius: 999px;
+  border: 1px solid rgba(201, 168, 90, 0.45);
+  background-color: var(--color-bg-elevated);
+  flex-shrink: 0;
+}
+
+[data-theme='light'] .input-spinner {
+  border-color: rgba(107, 44, 62, 0.45);
+}
+
+.input-spinner-dot {
+  width: 0.82rem;
+  height: 0.82rem;
+  border-radius: 999px;
+  border: 2px solid rgba(201, 168, 90, 0.25);
+  border-top-color: var(--color-text-accent);
+  animation: input-spinner-spin 0.9s linear infinite;
+}
+
+[data-theme='light'] .input-spinner-dot {
+  border-color: rgba(107, 44, 62, 0.25);
+}
+
+@keyframes input-spinner-spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.message-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.message {
+  max-width: 100%;
+  min-width: 0;
+  padding: 0.45rem 0.6rem;
+  border-radius: var(--radius-md);
+  background-color: var(--color-bg-input);
+  border: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.message-outbound {
+  align-self: flex-end;
+  background: var(--color-message-outbound-bg);
+  border-color: var(--color-message-outbound-border);
+  color: var(--color-message-outbound-text);
+}
+
+.message-inbound {
+  align-self: flex-start;
+}
+
+[data-theme='light'] .message-inbound {
+  background-color: var(--color-bg-alt-row);
+  border-color: var(--color-border-subtle);
+}
+
+.message-previous-session {
+  opacity: 0.45;
+}
+
+/* Boundary between a replayed previous session (above) and the live
+   session (below): everything above is not in the assistant's memory. */
+.message-session-divider {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0.5rem 0;
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+.message-session-divider::before,
+.message-session-divider::after {
+  content: '';
+  flex: 1;
+  border-top: 1px solid var(--color-border);
+}
+
+[data-theme='light'] .message-previous-session {
+  opacity: 0.6;
+}
+
+.message-directive {
+  align-self: flex-end;
+  max-width: 60%;
+  padding: 0.3rem 0.75rem;
+  background: var(--color-bg-warning-subtle);
+  border: 1px solid var(--color-border-warning);
+  border-radius: 999px;
+  color: var(--color-text-accent);
+  font-size: 0.85em;
+}
+
+.message-directive .message-meta-sender {
+  color: var(--color-text-accent);
+  font-style: italic;
+}
+
+.message-directive .message-meta-time {
+  color: var(--color-text-secondary);
+}
+
+.message-failed {
+  border-color: var(--color-error);
+  box-shadow: 0 0 0 1px var(--color-error) inset;
+}
+
+.message-failed-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-top: 0.4rem;
+  padding: 0.15rem 0.6rem;
+  background: var(--color-error);
+  border: 1px solid var(--color-error);
+  border-radius: 999px;
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  cursor: help;
+}
+
+.message-processing {
+  border-style: dashed;
+  border-color: var(--color-brand-primary);
+  background: var(--color-bg-elevated);
+}
+
+.message-typing-dots {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  min-width: 1.1rem;
+}
+
+.message-typing-dots span {
+  width: 0.3rem;
+  height: 0.3rem;
+  border-radius: 999px;
+  background: var(--color-text-accent);
+  opacity: 0.35;
+  animation: message-typing-dot 1s ease-in-out infinite;
+}
+
+.message-typing-dots span:nth-child(2) {
+  animation-delay: 0.18s;
+}
+
+.message-typing-dots span:nth-child(3) {
+  animation-delay: 0.36s;
+}
+
+.message-processing-text {
+  font-size: 0.8rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  margin-top: 0.25rem;
+  line-height: 1.4;
+}
+
+.message-processing-step-row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.message-processing-step-arrow {
+  color: var(--color-text-secondary);
+  opacity: 0.55;
+  min-width: 1.1rem;
+  text-align: left;
+}
+
+.message-processing-step-row.is-done .message-processing-step-label {
+  color: var(--color-text-secondary);
+  opacity: 0.75;
+}
+
+.message-processing-step-row.is-active .message-processing-step-label {
+  color: var(--color-text-accent-light);
+  font-weight: 500;
+}
+
+.message-processing-step-elapsed {
+  color: var(--color-text-secondary);
+  font-size: 0.7rem;
+  opacity: 0.7;
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+}
+
+@keyframes message-typing-dot {
+  0%,
+  80%,
+  100% {
+    opacity: 0.35;
+    transform: translateY(0);
+  }
+
+  40% {
+    opacity: 1;
+    transform: translateY(-1px);
+  }
+}
+
+.message-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  /* Lift the request-ID badge to sit level with the sender name (chat only). */
+  --id-chip-nudge: -1px;
+}
+
+[data-theme='light'] .message-meta {
+  color: var(--color-text-faint);
+}
+
+.message-outbound .message-meta,
+[data-theme='light'] .message-outbound .message-meta {
+  color: var(--color-message-outbound-meta);
+}
+
+.message-outbound .message-body,
+.message-outbound .message-pre,
+.message-outbound .message-source,
+[data-theme='light'] .message-outbound .message-body,
+[data-theme='light'] .message-outbound .message-pre,
+[data-theme='light'] .message-outbound .message-source {
+  color: var(--color-message-outbound-text);
+}
+
+/* Directive pill text — must follow the .message-outbound rules
+ * above so source-order wins the cascade (specificities tie). */
+.message-directive .message-body,
+.message-directive .message-pre,
+.message-directive .message-source,
+[data-theme='light'] .message-directive .message-body,
+[data-theme='light'] .message-directive .message-pre,
+[data-theme='light'] .message-directive .message-source {
+  color: var(--color-text-default);
+}
+
+.message-meta-date {
+  display: block;
+  opacity: 0.65;
+  font-size: 0.85em;
+  line-height: 1;
+}
+
+.message-body {
+  font-size: var(--text-sm);
+  color: var(--color-text-default);
+  word-wrap: break-word;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.message-body.formatted {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.message-source {
+  font-weight: 700;
+  color: var(--color-text-accent);
+  font-size: var(--text-sm);
+  margin: 0 0 0.15rem;
+}
+
+.message-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.message-block-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--color-text-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.message-pre {
+  margin: 0;
+  font-size: var(--text-xs);
+  line-height: 1.4;
+  color: var(--color-text-default);
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  font-family: var(--font-mono);
+}
+
+/* Match the assistant replies' font; the pre still preserves input verbatim
+   (diagnostics .message-pre stays mono). */
+.message-outbound .message-pre {
+  font-family: var(--font-body);
+}
+
+.message-tool-pair-start {
+  margin-top: 0.55rem;
+  position: relative;
+}
+
+.message-tool-pair-start::before {
+  content: '';
+  position: absolute;
+  top: -0.36rem;
+  left: 0.2rem;
+  right: 0.2rem;
+  border-top: 1px dashed var(--color-border-subtle);
+}
+
+.empty-placeholder {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--color-text-dim);
+}
+
+.status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: calc(0.25rem + var(--pill-baseline-shift)) 0.55rem calc(0.25rem - var(--pill-baseline-shift));
+  /* Trim right padding by the trailing letter-spacing so the text optically centres. */
+  padding-right: calc(0.55rem - 0.08em);
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  border: 1px solid transparent;
+}
+
+.status-connecting {
+  background-color: var(--color-bg-warning-subtle);
+  color: var(--color-warning-text);
+  border-color: var(--color-warning);
+}
+
+.status-open {
+  background-color: var(--color-bg-success-subtle);
+  color: var(--color-success-text);
+  border-color: var(--color-border-success);
+}
+
+.status-closed,
+.status-error {
+  background-color: var(--color-bg-error-subtle);
+  color: var(--color-error-text);
+  border-color: var(--color-border-error);
+}
+
+.close-button {
+  width: 1.2rem;
+  height: 1.2rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border-subtle);
+  background: var(--color-bg-overlay);
+  color: var(--color-text-accent);
+  cursor: pointer;
+  padding: 0;
+  transition: background var(--transition-fast), border-color var(--transition-fast);
+}
+
+.close-button:hover {
+  background: var(--color-bg-elevated);
+  border-color: var(--color-border-strong);
+}
+
+/* Fill the button and let the viewBox centre the X. Block-display drops the
+   inline baseline gap (vertical), and filling removes the centring gap that
+   otherwise rounds unevenly at sub-pixel widths (horizontal). */
+.close-button svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.panel-size-toggle {
+  width: 1.4rem;
+  height: 1.4rem;
+  padding: 0;
+  border-radius: 0.35rem;
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-bg-overlay);
+  color: var(--color-text-muted);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.panel-size-toggle:hover {
+  background: var(--color-bg-elevated);
+  border-color: var(--color-border-strong);
+}
+
+.panel-size-toggle svg {
+  width: 0.9rem;
+  height: 0.9rem;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.panel-header-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-shrink: 0;
+}
+
+.panel-header-with-centred-actions {
+  position: relative;
+}
+
+.panel-header-with-centred-actions .panel-header-actions {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.panel-size-toggle-corner {
+  position: absolute;
+  right: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.panel-view-toggle {
+  border-radius: 999px;
+  border: 1px solid var(--color-border-subtle);
+  background: var(--color-bg-overlay);
+  color: var(--color-text-accent-light);
+  padding: 0.2rem 0.65rem;
+  min-height: 1.4rem;
+  min-width: 5.8rem;
+  font-size: 0.7rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+}
+
+.panel-view-toggle:hover {
+  background: var(--color-bg-elevated);
+  border-color: var(--color-border-strong);
+}
+
+.panel-view-toggle[aria-pressed='true'] {
+  background: var(--color-bg-elevated);
+  border-color: var(--color-border-strong);
+}
+
+
+
+/* ── Tabbed/tablet breakpoint (960px) ─────────────────────────── */
+
+@media (max-width: 959px) {
+  .app-header {
+    padding: 0.5rem 0.75rem;
+  }
+
+  .app-main {
+    padding: 0 0.5rem;
+    gap: 0;
+  }
+
+  /* Each tab fills the viewport — no stacking, no scroll */
+  .chat-column,
+  .status-column {
+    flex: 1;
+    min-height: 0;
+  }
+
+  .status-column {
+    max-height: unset;
+  }
+
+  /* Safe area padding for notch phones */
+  .app {
+    padding-left: env(safe-area-inset-left, 0px);
+    padding-right: env(safe-area-inset-right, 0px);
+  }
+
+  .panel-header {
+    padding: 0.5rem 0.75rem;
+  }
+
+  .panel-body {
+    padding: 0.5rem 0.75rem;
+  }
+
+  .panel-footer {
+    padding: 0.5rem 0.75rem;
+  }
+
+  /* Prevent iOS auto-zoom on textarea focus (must be >= 16px) */
+  .input-row textarea {
+    font-size: 1rem;
+  }
+
+  /* Touch-friendly send button */
+  .input-row button[type="submit"] {
+    padding: 0.6rem 1rem;
+    font-size: 0.9rem;
+  }
+}
+
+/* Request ID badge */
+
+
+
+/* Session summary bar */
+
+
+.token-cached {
+  opacity: 0.75;
+}
+
+/* ── Detailed information section ───────────────────────────────── */
+
+.detailed-info-section {
+  margin-top: 0.4rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border-subtle);
+  background: var(--color-bg-elevated);
+  overflow: hidden;
+}
+
+.detailed-info-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  width: 100%;
+  padding: 0.3rem 0.5rem;
+  border: none;
+  background: transparent;
+  color: var(--color-text-accent);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+}
+
+.detailed-info-toggle:hover {
+  color: var(--color-text-accent-light);
+}
+
+.detailed-info-chevron {
+  width: 0.75rem;
+  height: 0.75rem;
+  flex-shrink: 0;
+  transition: transform var(--transition-fast);
+}
+
+.detailed-info-toggle[aria-expanded='true'] .detailed-info-chevron {
+  transform: rotate(90deg);
+}
+
+.detailed-info-content {
+  padding: 0.25rem 0.5rem 0.4rem;
+  border-top: 1px solid var(--color-border-subtle);
+}
+
+/* List sections — collapsible result lists, supports nesting for multi-disc */
+
+
+/* 4e: Error severity coloring */
+
+.message-error-severity-critical {
+  border-color: var(--color-border-error);
+  background: var(--color-bg-error-subtle);
+}
+
+.message-error-severity-warning {
+  border-color: var(--color-border-warning);
+  background: var(--color-bg-warning-subtle);
+}
+
+.message-error-severity-info {
+  border-color: var(--color-info);
+  background: var(--color-bg-info-subtle);
+}
+
+/* 4i: Collapsible JSON blocks */
+
+.message-json-collapsible {
+  position: relative;
+}
+
+.message-json-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  border: none;
+  background: var(--color-bg-elevated);
+  color: var(--color-text-faint);
+  padding: 0.15rem 0.5rem;
+  border-radius: 0.3rem;
+  font-size: 0.68rem;
+  cursor: pointer;
+  margin-bottom: 0.2rem;
+}
+
+.message-json-toggle:hover {
+  background: var(--color-bg-overlay);
+  color: var(--color-text-muted);
+}
+
+.message-pre.collapsed {
+  max-height: 3.5rem;
+  overflow: hidden;
+  mask-image: linear-gradient(to bottom, black 60%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, black 60%, transparent 100%);
+}
+
+/* Full-view analysis layout (when rendered in main content area) */
+.app-main-analysis {
+  padding: 0;
+}

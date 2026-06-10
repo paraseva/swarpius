@@ -1,0 +1,11 @@
+target-version = "py313"
+line-length = 100
+
+[lint]
+select = ["E", "F", "I"]
+ignore = [
+  "E501",  # Let formatter/PR review handle long lines for now.
+]
+
+[lint.per-file-ignores]
+"tests/*.py" = ["E402"]

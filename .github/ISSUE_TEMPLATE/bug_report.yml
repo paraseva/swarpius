@@ -1,0 +1,109 @@
+name: Bug report
+description: Report a problem with Swarpius
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to file a bug report. The more
+        detail you can give, the faster we can confirm and fix.
+
+  - type: checkboxes
+    id: prereqs
+    attributes:
+      label: Pre-flight checks
+      options:
+        - label: I have searched existing issues and this isn't a duplicate.
+          required: true
+        - label: This isn't a security vulnerability (those go to `security@paraseva.ai` or via the repo's Security tab — see `SECURITY.md`).
+          required: true
+
+  - type: dropdown
+    id: subsystem
+    attributes:
+      label: Subsystem
+      description: Which part of Swarpius is the bug in?
+      options:
+        - agent (Python backend / LLM orchestration / Roon tools)
+        - web-client (React frontend)
+        - tts-server (text-to-speech service)
+        - searxng (bundled search service)
+        - passive-analyser
+        - docs / build / install
+        - other / not sure
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: What went wrong?
+      placeholder: A clear, concise description of the bug.
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: Reproduction steps
+      description: How can we trigger the bug?
+      placeholder: |
+        1. Start the agent with `python3 swarpius.py --ws`
+        2. From the web client, ask "play OK Computer in the kitchen"
+        3. Observe …
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behaviour
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behaviour
+      description: What actually happened. Include error messages verbatim.
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: |
+        Tell us about your setup so we can rule out environment-specific issues.
+      value: |
+        - OS:                  (e.g. Ubuntu 24.04 on WSL2, macOS 14.5, Windows 11)
+        - Python version:      (output of `python3 --version`)
+        - Node version:        (output of `node --version`)
+        - Swarpius version:    (git SHA or release tag)
+        - Deployment mode:     (CLI / WebSocket / Docker Compose)
+        - LLM provider+model:  (e.g. anthropic/claude-sonnet-4-6)
+        - Web search backend:  (Brave / Tavily / SearXNG / none)
+        - Roon Core version:   (e.g. 2.0 build 1648)
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs
+      description: |
+        Paste any relevant log output. For agent issues, the
+        `agent/data/logs/conversation/<date>/<cNN>/<request-id>/`
+        directory has detailed per-request traces. **Redact any
+        sensitive content** (chat text, library titles, API keys)
+        before pasting. If diagnosis needs an unscrubbed bundle,
+        email it privately to `dev@paraseva.ai` and link this
+        issue from the email.
+      render: shell
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else?
+      description: Screenshots, theories, things you've already tried.

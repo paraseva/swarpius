@@ -1,0 +1,133 @@
+.backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.card {
+  background: var(--color-bg-surface);
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 8px;
+  max-width: 51rem;
+  width: 100%;
+  max-height: min(80vh, 46rem);
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 1.25rem 1.5rem 0.75rem;
+  /* Divider under the title, matching the guidance popover's header. */
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.close {
+  background: none;
+  border: none;
+  color: var(--color-text-muted);
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 0.25rem;
+}
+
+.close:hover {
+  color: var(--color-text-primary);
+}
+
+.body {
+  padding: 1rem 1.5rem 0;
+  overflow-y: auto;
+  line-height: 1.55;
+  font-size: var(--text-sm, 0.9rem);
+  /* Persistent (non-overlay) scrollbar so the content doesn't look
+     truncated at rest on macOS; shown only when there's overflow. */
+  scrollbar-width: thin;
+}
+
+.body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.body::-webkit-scrollbar-thumb {
+  background: var(--color-border-strong, #444);
+  border-radius: 999px;
+}
+
+/* Match the guidance popover's body spacing (preview — scoped to this overlay
+   via .card .body so it overrides the shared MarkdownText defaults without
+   touching chat). */
+.card .body p {
+  margin: 0 0 0.5rem;
+  font-size: var(--text-xs);
+}
+
+.card .body p:last-child {
+  margin-bottom: 0;
+}
+
+.card .body ul,
+.card .body ol {
+  margin: 0.3rem 0 0.5rem;
+  padding-left: 1.2rem;
+}
+
+.card .body li {
+  margin-bottom: 0.2rem;
+  font-size: var(--text-xs);
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  padding: 0.75rem 1.5rem 1.25rem;
+}
+
+.primary {
+  background: var(--color-text-accent);
+  color: var(--color-text-on-accent);
+  border: none;
+  border-radius: 6px;
+  padding: 0.5rem 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.primary:hover {
+  filter: brightness(1.08);
+}
+
+.secondary {
+  background: none;
+  color: var(--color-text-accent);
+  border: 1px solid color-mix(in srgb, var(--color-text-accent) 50%, transparent);
+  border-radius: 6px;
+  padding: 0.45rem 1rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.secondary:hover {
+  border-color: var(--color-text-accent);
+}

@@ -1,0 +1,190 @@
+# All published ports default to 127.0.0.1 (loopback only). For
+# LAN access from other devices on the home network, set the
+# corresponding *_BIND_IP variable to 0.0.0.0 in your shell env
+# before `docker compose up`. The agent and web-client have no
+# auth, so exposing them beyond your trusted LAN means anyone who
+# can reach the host can drive the agent — see SECURITY.md.
+
+services:
+  # --profile search (or --profile all)
+  # SearXNG is AGPL-3.0; opt in by passing the profile and uncommenting
+  # SEARXNG_URL in agent/.env. Without it, the agent's web_search skill
+  # is not registered. Swarpius still runs, just without web search.
+  searxng:
+    profiles: [search, all]
+    image: docker.io/searxng/searxng:latest
+    container_name: searxng
+    entrypoint: ["sh", "/swarpius-entrypoint.sh"]
+    configs:
+      - source: searxng-entrypoint
+        target: /swarpius-entrypoint.sh
+    volumes:
+      - type: volume
+        source: searxng-config
+        target: /etc/searxng/
+      - type: volume
+        source: searxng-cache
+        target: /var/cache/searxng/
+    networks:
+      - swarpius_net
+    expose:
+      - "8080"
+    ports:
+      - "${SEARXNG_BIND_IP:-127.0.0.1}:${SEARXNG_PORT:-8888}:8080"
+
+  swarpius-agent:
+    build:
+      context: ./agent
+      args:
+        # Match the container's non-root user UID to your host user
+        # so the bind-mounted ./agent/data is writable from both
+        # sides. Default 1000 covers Linux + Windows/WSL2 first
+        # users; macOS users (501) and non-first users on any OS
+        # should set HOST_UID in a top-level .env file — see the
+        # README's Docker Quickstart section.
+        SWARPIUS_UID: ${HOST_UID:-1000}
+    image: swarpius/agent:latest
+    container_name: swarpius-agent
+    restart: unless-stopped
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp
+    command: ["python3", "agent.py", "--ws", "--keep-history"]
+    volumes:
+      - type: bind
+        source: ./agent/data
+        target: /app/data
+      - type: bind
+        source: ./agent/.env
+        target: /app/.env
+        read_only: true
+    environment:
+      # To disable web search and/or TTS completely,
+      # add ``WEB_SEARCH_PROVIDER=`` and/or ``TTS_URL=``
+      # to the repo-root ``.env`` file. Otherwise, if
+      # not configured, these will show up as connection
+      # errors in the Settings page.
+      #
+      # Changes to root ``.env`` values used below require
+      # ``docker compose up -d`` to take effect — the UI
+      # Restart button and ``docker compose restart`` both
+      # reuse the container's create-time env.
+      SEARXNG_URL: ${SEARXNG_URL:-http://searxng:8080}
+      TTS_URL: ${TTS_URL-tts-server:9998}
+      WEB_SEARCH_PROVIDER: ${WEB_SEARCH_PROVIDER-}
+      BRAVE_API_KEY: ${BRAVE_API_KEY-}
+      TAVILY_API_KEY: ${TAVILY_API_KEY-}
+      PYTHONDONTWRITEBYTECODE: "1"
+      # The container must bind 0.0.0.0 for Docker's port-publish to reach it;
+      # host exposure depends on SWARPIUS_BIND_IP in the ports map below
+      # (defaults to 127.0.0.1). The agent's own default is loopback, so Docker
+      # opts into broad binding explicitly here. See SECURITY.md.
+      SWARPIUS_WS_HOST: "0.0.0.0"
+    networks:
+      - swarpius_net
+    expose:
+      - "8080"
+    ports:
+      - "${SWARPIUS_BIND_IP:-127.0.0.1}:${SWARPIUS_PORT:-8080}:8080"
+    stdin_open: true
+    tty: true
+
+  swarpius-web-client:
+    build: ./web-client
+    image: swarpius/web-client:latest
+    container_name: swarpius-web-client
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp
+    environment:
+      # Override the agent WebSocket URL baked into the JS bundle at
+      # build time (see web-client/docker-entrypoint.sh). Only needed
+      # when the browser and the agent reach each other under
+      # different hostnames — most single-host deployments leave this
+      # empty and let the browser derive the URL from window.location.
+      SWARPIUS_WS_URL: ${SWARPIUS_WS_URL-}
+    depends_on:
+      - swarpius-agent
+    ports:
+      - "${CLIENT_BIND_IP:-127.0.0.1}:${CLIENT_PORT:-5173}:8080"
+    networks:
+      - swarpius_net
+
+  # --profile tts (or --profile all)
+  # This will build an image for the F5-TTS server, pulling in
+  # the code from the repo (https://github.com/swivid/f5-tts).
+  # This requires an NVIDIA GPU enabled Docker setup, with
+  # CUDA 12.8 installed on the host.
+  tts-server:
+    profiles: [tts, all]
+    build: ./tts-server
+    image: swarpius/tts-server:latest
+    container_name: tts-server
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp
+    env_file:
+      - ./tts-server/.env
+    # Bind 0.0.0.0 so the agent can reach it over the Docker network (the
+    # script defaults to loopback); host exposure stays gated by TTS_BIND_IP
+    # in the ports map. See SECURITY.md.
+    command:
+      - /bin/bash
+      - -c
+      - 'python /workspace/F5-TTS/src/f5_tts/run_socket_server.py --host 0.0.0.0 $${TTS_VOICE:+--voice "$$TTS_VOICE"}'
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    volumes:
+      - type: tmpfs
+        target: /home/swarpius/.cache
+        tmpfs:
+          mode: 01777
+      - type: tmpfs
+        target: /home/swarpius/.cache/huggingface
+        tmpfs:
+          mode: 01777
+      - type: tmpfs
+        target: /home/swarpius/.config
+        tmpfs:
+          mode: 01777
+      - type: bind
+        source: ./tts-server/voices
+        target: /tts/ref
+      - type: volume
+        source: f5-tts
+        target: /home/swarpius/.cache/huggingface/hub/
+    networks:
+      - swarpius_net
+    expose:
+      - "9998"
+    ports:
+      - "${TTS_BIND_IP:-127.0.0.1}:${TTS_API_PORT:-9998}:9998"
+
+networks:
+  swarpius_net:
+    driver: bridge
+
+volumes:
+  f5-tts:
+  searxng-cache:
+  searxng-config:
+
+configs:
+  searxng-entrypoint:
+    file: ./searxng/entrypoint.sh
+  agent-model-profiles:
+    file: ./agent/model_profiles.yaml

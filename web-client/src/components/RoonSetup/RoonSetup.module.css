@@ -1,0 +1,165 @@
+.container {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1.5rem;
+}
+
+.card {
+  width: 100%;
+  max-width: 36rem;
+  background: var(--color-bg-panel);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 2rem 2rem 1.6rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.3),
+    inset 0 0 0 1px rgba(30, 30, 32, 0.5);
+}
+
+[data-theme='light'] .card {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1),
+    0 4px 12px rgba(0, 0, 0, 0.06);
+}
+
+.headerRow {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.title {
+  margin: 0;
+  font-size: var(--text-lg);
+  font-weight: 700;
+  color: var(--color-text-primary);
+  letter-spacing: 0.01em;
+}
+
+.titleSuccess {
+  color: var(--color-success-text);
+}
+
+.titleFailure {
+  color: var(--color-error-text);
+}
+
+.spinner {
+  display: inline-block;
+  width: 1.1rem;
+  height: 1.1rem;
+  flex-shrink: 0;
+  border: 2px solid rgba(201, 168, 90, 0.25);
+  border-top-color: var(--color-text-accent);
+  border-radius: 50%;
+  animation: roon-spin 0.9s linear infinite;
+}
+
+[data-theme='light'] .spinner {
+  border-color: rgba(107, 44, 62, 0.25);
+}
+
+@keyframes roon-spin {
+  to { transform: rotate(360deg); }
+}
+
+.statusLine {
+  margin: 0;
+  font-size: var(--text-base);
+  color: var(--color-text-default);
+  font-family: var(--font-mono);
+  padding: 0.5rem 0.75rem;
+  background: var(--color-bg-input);
+  border-radius: var(--radius-md);
+  border-left: 3px solid var(--color-text-accent);
+  word-break: break-word;
+}
+
+.statusLineSuccess {
+  border-left-color: var(--color-success);
+}
+
+.statusLineFailure {
+  border-left-color: var(--color-error);
+}
+
+.instructions {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--color-text-default);
+  line-height: 1.55;
+}
+
+.instructions strong {
+  color: var(--color-text-primary);
+}
+
+.steps {
+  margin: 0;
+  padding-left: 1.4rem;
+  color: var(--color-text-default);
+  font-size: var(--text-sm);
+  line-height: 1.6;
+}
+
+.steps li {
+  margin-bottom: 0.3rem;
+}
+
+.steps li:last-child {
+  margin-bottom: 0;
+}
+
+.helpFooter {
+  margin: 0;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--color-border-subtle);
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  line-height: 1.5;
+}
+
+.helpFooter a {
+  color: var(--color-text-accent);
+}
+
+.actionRow {
+  display: flex;
+  gap: 0.6rem;
+  justify-content: flex-end;
+  padding-top: 0.4rem;
+}
+
+.actionButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 1rem;
+  font-size: var(--text-sm);
+  font-weight: 500;
+  background: var(--color-bg-overlay);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  color: var(--color-text-primary);
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.actionButton:hover {
+  background: var(--color-bg-elevated);
+}
+
+.failureDetail {
+  margin: 0;
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+  padding: 0.5rem 0.75rem;
+  background: var(--color-bg-error-subtle);
+  border-radius: var(--radius-md);
+  border-left: 3px solid var(--color-error);
+}

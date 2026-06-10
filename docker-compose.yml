@@ -133,7 +133,8 @@ services:
     tmpfs:
       - /tmp
     env_file:
-      - ./tts-server/.env
+      - path: ./tts-server/.env
+        required: false
     # Bind 0.0.0.0 so the agent can reach it over the Docker network (the
     # script defaults to loopback); host exposure stays gated by TTS_BIND_IP
     # in the ports map. See SECURITY.md.

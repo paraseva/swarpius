@@ -1,0 +1,104 @@
+# Model Profiles — per-model/provider tuning for Swarpius
+#
+# Profiles are matched against the full LLM_MODEL string (e.g.
+# "openai/gpt-5.4", "anthropic/claude-sonnet-4-6").
+# Patterns are regex, matched in order — first match wins.
+# Put specific (provider+model) profiles before general ones.
+#
+# See docs/model-profiles.md for details.
+
+# Defaults applied when no profile pattern matches.
+#
+# Two mechanisms keep us safe when a provider or model rejects a param:
+#
+# 1. `drop_params=True` is passed to LiteLLM on every call. It drops params
+#    the *provider* as a whole doesn't support — so setting an Ollama-only
+#    `think: false` under a non-Ollama model won't error, it just vanishes.
+#
+# 2. For params that a *specific model* deprecates while the provider still
+#    supports them generally — `drop_params` can't see that, because the
+#    provider's supported-params list is not per-model — set the value to
+#    `null` in a profile. A null explicitly omits the param from the
+#    request. Example: claude-opus-4-7 deprecated `temperature`, so its
+#    profile sets `temperature: null` (not 0.0, which would error).
+defaults:
+  temperature: 0.0
+
+profiles:
+  # ── Anthropic Claude ──────────────────────────────────────────────
+  # Sonnet: concise agent-trained behaviour. More specific search
+  # strings land direct hits, so typical multi-source requests complete
+  # in 2-4 steps. Step budget made explicit (matches dataclass defaults)
+  # so the profile layer is the single source of truth.
+  #
+  # NOTE: do NOT add `thinking: {type: enabled, ...}` here. Swarpius's
+  # response handling reads only `message.content` and ignores
+  # `thinking_blocks`, so extended thinking would break across tool-loop
+  # turns with an opaque API error. See thinking_modes.md.
+  - pattern: "claude.*sonnet"
+    temperature: 0.0
+    max_coordinator_steps: 12
+    soft_nudge_step: 8
+
+  # Claude Opus 4.7+: `temperature` was deprecated, so it must be omitted
+  # from the request (see comment on `defaults` above). The pattern covers
+  # 4-7/4-8/4-9 and any later two-digit minor (4-10+); 4-6 and earlier
+  # still accept temperature and deliberately fall through to defaults.
+  - pattern: "claude.*opus-4-([7-9]|[0-9][0-9])"
+    temperature: null
+
+  # ── Google Gemini ────────────────────────────────────────────────
+  # Gemini 2.5 Pro: capable coordinator but uses minimal search strings
+  # (e.g. "Rush Hour" rather than "Rush Hour Jane Wiedlin"), so drill-
+  # downs are more frequent — deeper library paths can exceed the Sonnet
+  # step budget. Headroom raised for safety.
+  #
+  # NOTE: do NOT add `thinking_config: {...}` — same reason as Claude
+  # above (we drop the thinking half of the response).
+  - pattern: "gemini-2.5-pro"
+    temperature: 0.7
+    max_coordinator_steps: 20
+    soft_nudge_step: 15
+
+  - pattern: "gemini-3.*-pro*"
+    temperature: 0.7
+    max_coordinator_steps: 20
+    soft_nudge_step: 15
+
+  # ── OpenAI GPT-5 ─────────────────────────────────────────────────
+  # GPT-5 family requires temperature=1.0 (gpt-5 / gpt-5-codex reject
+  # any other value; gpt-5.1+ relaxes this only at default
+  # reasoning_effort, so 1.0 is universally safe).
+  #
+  # We deliberately leave `reasoning_effort` unset. The OpenAI default
+  # for the gpt-5 family is `medium`, which adds latency without a
+  # measurable accuracy benefit on Swarpius's tool-calling traffic.
+  # If you want to experiment, `reasoning_effort: minimal` is the
+  # right value for tool-calling and is the only thinking-mode setting
+  # that's safe to enable in Swarpius today (OpenAI handles reasoning
+  # server-side, so we never receive thinking blocks to mishandle).
+  #
+  # Like Gemini, GPT-5 tends toward minimal searches + more drill-downs,
+  # so the step budget mirrors the Gemini profile.
+  - pattern: "gpt-5"
+    temperature: 1.0
+    # GPT-5 rejects any value other than 1.0 (drop_params can't help
+    # — the param is recognised, just the value is). Marking locked
+    # tells the analyser/arbiter/diagnostic classifier paths to skip
+    # their override-to-0.
+    temperature_lock: true
+    max_coordinator_steps: 20
+    soft_nudge_step: 15
+    # generation_params:
+    #   reasoning_effort: minimal   # opt-in; uncomment to use
+
+  # ── Ollama (catch-all) ───────────────────────────────────────────
+  # Disable thinking mode for all Ollama models. Many Ollama tool-
+  # calling models (gemma, qwen, etc.) emit `<think>...</think>` blocks
+  # inline in the response content when thinking is on — Swarpius would
+  # render that as the assistant's chat reply. Keep `think: false`
+  # unless you've added explicit handling in llm_client.py to strip
+  # the tags. See thinking_modes.md.
+  - pattern: "ollama"
+    generation_params:
+      think: false

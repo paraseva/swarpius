@@ -1,0 +1,903 @@
+.panelZoneStatus {
+  flex: 1;
+}
+
+.zoneCount {
+  font-size: 0.72rem;
+  color: var(--color-text-accent);
+}
+
+.zoneListScroll {
+  padding-right: 0.4rem;
+}
+
+.zoneCardList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.zoneCard {
+  border-radius: 0.65rem;
+  border: 1px solid var(--color-border-subtle);
+  background: var(--color-bg-input);
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.zoneCardTop {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.zoneName {
+  font-size: 0.96rem;
+  color: var(--color-text-primary);
+}
+.zoneNameGrouped {
+  color: var(--color-text-accent-group);
+  font-style: italic;
+}
+
+.zoneGroupInfo {
+  font-size: 0.72rem;
+  color: var(--color-text-faint);
+  margin-top: -0.3rem;
+}
+
+.zoneState {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: calc(0.2rem + var(--pill-baseline-shift)) 0.5rem calc(0.2rem - var(--pill-baseline-shift));
+  /* Trim right padding by the trailing letter-spacing so the text optically centres. */
+  padding-right: calc(0.5rem - 0.06em);
+  border-radius: 999px;
+  border: 1px solid transparent;
+  letter-spacing: 0.06em;
+  line-height: 1;
+}
+
+.zoneStatePlaying {
+  color: var(--color-success-text);
+  border-color: var(--color-border-success);
+  background-color: var(--color-bg-success-subtle);
+}
+
+.zoneStatePaused {
+  color: var(--color-warning-text);
+  border-color: var(--color-border-warning);
+  background-color: var(--color-bg-warning-subtle);
+}
+
+.zoneStateStopped {
+  color: var(--color-error-text);
+  border-color: var(--color-border-error);
+  background-color: var(--color-bg-error-subtle);
+}
+
+.zoneCardContent {
+  display: grid;
+  grid-template-columns: minmax(160px, 50%) 1fr;
+  gap: 0.7rem;
+  align-items: stretch;
+}
+
+.zoneDetails {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 0;
+  gap: 0.5rem;
+}
+
+.zoneCardActions {
+  display: flex;
+  justify-content: center;
+  gap: 0.55rem;
+}
+
+.zoneActionButton {
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 0.45rem;
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: 0.95rem;
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  padding: 0.35rem 0.55rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  transition: background var(--transition-fast), border-color var(--transition-fast);
+}
+
+.zoneActionButton:hover:not(:disabled) {
+  background: var(--color-bg-elevated);
+  border-color: var(--color-border-strong);
+}
+
+.zoneActionButtonPlaying {
+  color: var(--color-success-text);
+  border-color: var(--color-border-success);
+  background-color: var(--color-bg-success-subtle);
+}
+
+.zoneActionButtonPaused {
+  color: var(--color-warning-text);
+  border-color: var(--color-border-warning);
+  background-color: var(--color-bg-warning-subtle);
+}
+
+.zoneActionButtonStopped {
+  color: var(--color-error-text);
+  border-color: var(--color-border-error);
+  background-color: var(--color-bg-error-subtle);
+}
+
+.zoneActionButton:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* Stopped state stays vibrant when disabled — the colour communicates
+   "you stopped this", not "controls unavailable". */
+.zoneActionButtonStopped:disabled {
+  opacity: 1;
+  cursor: default;
+}
+
+/* Stop button waiting state: marker not currently detected. Muted
+ * tone + warning glyph cue the user that the button isn't operating
+ * normally; click is still allowed (it triggers a re-detection,
+ * never a stop). */
+.zoneActionButtonWaiting {
+  color: var(--color-warning-text, #b08800);
+  border-color: var(--color-warning-border, #b08800);
+  opacity: 0.75;
+  position: relative;
+}
+.zoneActionButtonWaiting::after {
+  content: '!';
+  position: absolute;
+  top: 0.05rem;
+  right: 0.2rem;
+  font-size: 0.6rem;
+  font-weight: 700;
+  line-height: 1;
+}
+.zoneActionButtonWaiting:hover:not(:disabled) {
+  opacity: 1;
+}
+
+/* Verifying state: between the click and the agent's
+ * feature-availability broadcast. Replaces the warning '!' glyph
+ * with a pulsing ellipsis so the click registers visually even
+ * when the marker is still missing and no state flip occurs. */
+.zoneActionButtonVerifying::after {
+  content: '\2026'; /* horizontal ellipsis '…' */
+  font-size: 0.75rem;
+  animation: zoneStopVerifyPulse 1s ease-in-out infinite;
+}
+@keyframes zoneStopVerifyPulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
+}
+
+:global([data-theme='light']) .zoneActionButton {
+  background: var(--color-bg-elevated);
+  color: var(--color-text-default);
+}
+:global([data-theme='light']) .zoneActionButton:hover:not(:disabled) {
+  background: var(--color-bg-hover);
+}
+:global([data-theme='light']) .zoneActionButtonPlaying {
+  background-color: #bbf7d0;
+  border-color: #16a34a;
+  color: var(--color-text-default);
+}
+:global([data-theme='light']) .zoneActionButtonPaused {
+  background-color: #fde68a;
+  border-color: #d97706;
+  color: var(--color-text-default);
+}
+:global([data-theme='light']) .zoneActionButtonStopped {
+  background-color: #fecaca;
+  border-color: #dc2626;
+  color: var(--color-text-default);
+}
+
+.zoneProgressRow {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+.zoneProgressTimes {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 2px;
+}
+
+.zoneProgressTime {
+  font-size: 0.68rem;
+  color: var(--color-text-dim);
+  min-width: 2.8rem;
+}
+
+.zoneProgressTime:first-child {
+  text-align: left;
+}
+
+.zoneProgressTime:last-child {
+  text-align: right;
+}
+
+.zoneProgressSlider {
+  width: 100%;
+  margin: 0;
+  display: block;
+  touch-action: manipulation;
+}
+
+.zoneProgressSlider::-webkit-slider-thumb {
+  width: 16px;
+  height: 16px;
+}
+
+@media (max-width: 959px) {
+  .zoneProgressSlider::-webkit-slider-thumb {
+    width: 24px;
+    height: 24px;
+  }
+}
+
+.zoneTrackLines {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.zoneTrackLines strong {
+  font-size: 1.05rem;
+  line-height: 1.3;
+  color: var(--color-text-primary);
+}
+
+.zoneTrackLines span {
+  font-size: 0.88rem;
+  color: var(--color-text-muted);
+}
+
+.playingIndicator {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 0.85em;
+  width: 0.9em;
+  margin-right: 0.4rem;
+  vertical-align: -0.05em;
+}
+
+.playingIndicator i {
+  flex: 1;
+  height: 100%;
+  background: var(--color-text-accent);
+  border-radius: 1px;
+  transform-origin: bottom;
+  opacity: 0.3;
+  transform: scaleY(0.35);
+  transition: opacity 200ms ease, transform 200ms ease;
+}
+
+.playingIndicatorActive i {
+  opacity: 1;
+  animation: zonePlayingEqualiser 0.9s ease-in-out infinite;
+}
+
+.playingIndicatorActive i:nth-child(1) {
+  animation-delay: -0.3s;
+}
+
+.playingIndicatorActive i:nth-child(2) {
+  animation-delay: -0.15s;
+}
+
+.playingIndicatorActive i:nth-child(3) {
+  animation-delay: -0.6s;
+}
+
+@keyframes zonePlayingEqualiser {
+  0%, 100% {
+    transform: scaleY(0.35);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .playingIndicatorActive i {
+    animation: none;
+    transform: scaleY(0.65);
+  }
+}
+
+.zoneArtworkFrame {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  border-radius: 0.7rem;
+  border: 1px solid var(--color-border-subtle);
+  overflow: hidden;
+  background-color: var(--color-bg-input);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: auto;
+}
+
+.zoneArtworkFrameClickable {
+  cursor: zoom-in;
+}
+
+.zoneArtworkImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.zoneArtworkPlaceholder {
+  font-size: 0.78rem;
+  color: var(--color-text-faint);
+  text-align: center;
+  padding: 0.9rem;
+}
+
+.zoneArtworkPlaceholderError {
+  color: var(--color-error-text);
+  font-weight: 500;
+}
+
+.zoneArtworkOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 45;
+  background: var(--color-bg-backdrop);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  cursor: zoom-out;
+  opacity: 0;
+  transition: opacity 220ms ease;
+}
+
+.zoneArtworkOverlayOpen {
+  opacity: 1;
+}
+
+.zoneArtworkOverlayClosed {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.zoneArtworkOverlayImage {
+  width: auto;
+  height: auto;
+  max-width: 80vw;
+  max-height: 80vh;
+  border-radius: 0;
+  border: none;
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.55);
+  object-fit: contain;
+  transform: scale(0.92);
+  transition: transform 220ms ease;
+}
+
+.zoneArtworkOverlayOpen .zoneArtworkOverlayImage {
+  transform: scale(1);
+}
+
+.zoneArtworkOverlayLoading {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.7rem;
+  color: var(--color-text-muted);
+  font-size: 0.86rem;
+}
+
+.zoneArtworkOverlaySpinner {
+  width: 2.3rem;
+  height: 2.3rem;
+  border-radius: 999px;
+  border: 3px solid rgba(147, 197, 253, 0.3);
+  border-top-color: var(--color-text-accent);
+  animation: zoneArtworkSpinnerSpin 0.9s linear infinite;
+}
+
+@keyframes zoneArtworkSpinnerSpin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ── Volume controls ────────────────────────────────────────── */
+
+.zoneControlsLine {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+/* The volume row grows; the settings cluster holds a fixed width on the
+   right, so the volume slider shortens to make room (rather than the
+   icons pushing into the transport row). */
+.zoneControlsLine .zoneVolumeRow {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.zoneSettingsIndicators {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  flex: 0 0 auto;
+}
+
+/* Fixed slot so icons never shift position as they toggle on/off. */
+.zoneSettingsSlot {
+  width: 16px;
+  height: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.zoneSettingsIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-secondary);
+  line-height: 1;
+}
+
+.zoneVolumeRow {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0 2px;
+}
+
+.zoneVolumeIcon {
+  font-size: 0.85rem;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.zoneVolumeSlider {
+  flex: 1;
+  margin: 0;
+  display: block;
+  min-width: 0;
+  touch-action: manipulation;
+}
+
+.zoneVolumeSlider::-webkit-slider-thumb {
+  width: 16px;
+  height: 16px;
+}
+
+@media (max-width: 959px) {
+  .zoneVolumeSlider::-webkit-slider-thumb {
+    width: 24px;
+    height: 24px;
+  }
+}
+
+.zoneVolumeLabel {
+  font-size: 0.68rem;
+  color: var(--color-text-faint);
+  min-width: 2.2rem;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.zoneVolumeToggle {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font-size: 0.68rem;
+  color: var(--color-text-faint);
+  min-width: 2.2rem;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.zoneVolumeToggle:hover {
+  color: var(--color-text-muted);
+}
+
+.zoneVolumeFixed {
+  font-size: 0.72rem;
+  color: var(--color-text-dim);
+}
+
+.zoneVolumeMute {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font-size: 0.85rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.zoneVolumeMute:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.zoneVolumeGroupButton {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: none;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 0.2rem 0.5rem;
+  cursor: pointer;
+  font-size: 0.72rem;
+  color: var(--color-text-muted);
+  transition: background var(--transition-fast), border-color var(--transition-fast);
+}
+
+.zoneVolumeGroupButton:hover {
+  background: var(--color-bg-elevated);
+  border-color: var(--color-border-strong);
+}
+
+/* ── Volume modal (for grouped zones) ───────────────────────── */
+
+.zoneVolumeModal {
+  position: fixed;
+  inset: 0;
+  z-index: 45;
+  background: var(--color-bg-backdrop);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.zoneVolumeModalContent {
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.4);
+  min-width: 280px;
+  max-width: 420px;
+  width: 100%;
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.zoneVolumeModalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.zoneVolumeModalClose {
+  background: none;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-sm);
+  width: 1.4rem;
+  height: 1.4rem;
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.zoneVolumeModalClose:hover {
+  background: var(--color-bg-elevated);
+}
+
+.zoneVolumeModalRow {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.35rem 0;
+  border-top: 1px solid var(--color-border-subtle);
+}
+
+.zoneVolumeModalName {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--color-text-muted);
+}
+
+.zoneVolumeModalControls {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.zoneEmptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 2rem 1rem;
+  text-align: center;
+  height: 100%;
+}
+
+.zoneEmptyArtwork {
+  width: 60%;
+  max-width: 200px;
+  aspect-ratio: 1 / 1;
+  border-radius: 0.7rem;
+  border: 1px solid var(--color-border-subtle);
+  background: var(--color-bg-input);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.zoneEmptyZoneName {
+  font-size: 0.92rem;
+  color: var(--color-text-accent);
+  font-weight: 500;
+  margin: 0;
+}
+.zoneEmptyZoneNameGrouped {
+  color: var(--color-text-accent-group);
+  font-style: italic;
+}
+
+.zoneEmptyHint {
+  font-size: 0.78rem;
+  color: var(--color-text-dim);
+  margin: 0;
+}
+
+/* ── Queue button ────────────────────────────────────────── */
+
+.zoneQueueButton {
+  position: relative;
+  font-size: 0.85rem;
+}
+
+.zoneQueueBadge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.55rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  background: var(--color-text-accent);
+  color: var(--color-bg-surface);
+  border-radius: 999px;
+  min-width: 1.1em;
+  min-height: 1.1em;
+  padding: 0 0.25em;
+  line-height: 1;
+  box-sizing: border-box;
+}
+
+/* ── Queue modal ─────────────────────────────────────────── */
+
+.zoneQueueModal {
+  position: fixed;
+  inset: 0;
+  z-index: 45;
+  background: var(--color-bg-backdrop);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.zoneQueueModalContent {
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.4);
+  min-width: 320px;
+  max-width: 520px;
+  width: 90vw;
+  max-height: 70vh;
+  display: flex;
+  flex-direction: column;
+  padding: 0.75rem;
+}
+
+.zoneQueueModalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.82rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.zoneQueueModalList {
+  overflow-y: auto;
+  flex: 1;
+}
+
+.zoneQueueModalRow {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.4rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.78rem;
+}
+
+.zoneQueuePlayButton {
+  background: none;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-muted);
+  font-size: 0.6rem;
+  width: 1.5rem;
+  height: 1.5rem;
+  cursor: pointer;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity var(--transition-fast), background var(--transition-fast);
+}
+
+.zoneQueueModalRow:hover .zoneQueuePlayButton {
+  opacity: 1;
+}
+
+.zoneQueuePlayButton:hover {
+  background: var(--color-bg-elevated);
+  color: var(--color-text-accent);
+}
+
+.zoneQueuePlayButton:disabled {
+  opacity: 0;
+  cursor: default;
+}
+
+.zoneQueueNowPlaying {
+  background: var(--color-bg-input);
+  font-weight: 600;
+}
+
+.zoneQueuePosition {
+  min-width: 1.8em;
+  text-align: right;
+  color: var(--color-text-dim);
+  font-size: 0.72rem;
+  flex-shrink: 0;
+}
+
+.zoneQueuePlayingIcon {
+  color: var(--color-text-accent);
+  font-size: 0.65rem;
+  flex-shrink: 0;
+}
+
+.zoneQueueTrackInfo {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.zoneQueueTitle {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.zoneQueueArtist {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--color-text-muted);
+  font-size: 0.72rem;
+}
+
+.zoneQueueDuration {
+  color: var(--color-text-dim);
+  font-size: 0.72rem;
+  flex-shrink: 0;
+}
+
+/* ── Mobile overrides ──────────────────────────────────────── */
+
+@media (max-width: 959px) {
+  .zoneVolumeModalContent {
+    min-width: unset;
+    width: calc(100vw - 2rem);
+  }
+
+  .zoneQueueModalContent {
+    min-width: unset;
+    width: calc(100vw - 2rem);
+  }
+
+  .zoneVolumeModalClose {
+    width: 2.75rem;
+    height: 2.75rem;
+  }
+
+  /* Always show queue play buttons on touch devices (no hover) */
+  .zoneQueuePlayButton {
+    opacity: 1;
+  }
+
+  .zoneQueuePlayButton:disabled {
+    opacity: 0.45;
+  }
+}
+
+/* Stack the card (artwork above details+buttons) whenever the card
+   content area can't fit the 2-col layout's ~426px min-width:
+   - ≤499px: narrow phones in tabbed mode. Status panel is the full
+     viewport; at 499px the card content area is ~425px, so 2-col
+     barely doesn't fit.
+   - 960-1349px: split-mode where the status column is flex 1.25 of
+     3.25 (~38% of viewport). At 1349px the status column is ~494px,
+     which is the threshold where 2-col fits. Below that we need the
+     stacked layout (buttons become their own full-card-width row
+     below artwork + track info).
+   Both transitions pair with the tabbed breakpoint (MOBILE_BREAKPOINT
+   960 in App.tsx) so the narrow-split range 768-959px never renders
+   at all (the viewport goes to tabbed). */
+@media (max-width: 499px),
+       (min-width: 960px) and (max-width: 1349px) {
+  .zoneCardContent {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Tightens the 6-button row to match the 5-button row's 255px width
+   so the breakpoints above stay valid regardless of stop-button presence. */
+.zoneCardListWithStop .zoneCardActions {
+  gap: 0.3rem;
+}
+.zoneCardListWithStop .zoneActionButton {
+  min-width: 2.4rem;
+  min-height: 2.4rem;
+}

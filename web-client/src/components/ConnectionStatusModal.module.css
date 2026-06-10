@@ -1,0 +1,82 @@
+.backdrop {
+  position: fixed;
+  inset: 0;
+  background: color-mix(in srgb, var(--background-base, #000) 70%, transparent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.card {
+  background: var(--surface-1, #161a22);
+  color: var(--text-primary, #e8e8e8);
+  border: 1px solid var(--border-subtle, #333);
+  border-radius: 8px;
+  padding: 1.5rem 2rem;
+  max-width: 32rem;
+  text-align: left;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0 0 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.spinner {
+  display: inline-block;
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.body {
+  margin: 0;
+  line-height: 1.5;
+  color: var(--text-secondary, #b0b0b0);
+}
+
+.body p {
+  margin: 0 0 0.5rem;
+}
+
+.body p:last-child {
+  margin-bottom: 0;
+}
+
+.list {
+  margin: 0.5rem 0 0.75rem;
+  padding-left: 1.25rem;
+}
+
+.list li {
+  margin-bottom: 0.5rem;
+  line-height: 1.5;
+}
+
+.list li:last-child {
+  margin-bottom: 0;
+}
+
+.body code {
+  background: var(--surface-2, #20242c);
+  padding: 0.1em 0.35em;
+  border-radius: 3px;
+  font-size: 0.9em;
+  font-family: var(--font-mono, monospace);
+}

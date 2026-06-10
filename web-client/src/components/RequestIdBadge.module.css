@@ -1,0 +1,44 @@
+.badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.62rem;
+  font-family: var(--font-mono);
+  color: var(--color-text-faint);
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 3px;
+  padding: 0.05rem 0.35rem;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.15s, color 0.15s;
+  transform: translateY(var(--id-chip-nudge));
+}
+
+.badge:hover {
+  background: var(--color-bg-overlay);
+  color: var(--color-text-default);
+}
+
+.copied {
+  color: var(--color-success-text);
+  background: rgba(6, 78, 59, 0.4);
+  border-color: rgba(16, 185, 129, 0.4);
+}
+
+:global([data-theme='light']) .copied {
+  color: #14532d;
+  background: #bbf7d0;
+  border-color: #16a34a;
+}
+
+:global([data-theme='light']) :global(.message-outbound) .badge {
+  color: #e0f2fe;
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.35);
+}
+
+:global([data-theme='light']) :global(.message-outbound) .copied {
+  color: #ffffff;
+  background: rgba(21, 128, 61, 0.6);
+  border-color: rgba(255, 255, 255, 0.4);
+}

@@ -1,0 +1,221 @@
+.panelChat {
+  position: relative;
+}
+
+.panelChatRateLimited :global(.panel-body),
+.panelChatRateLimited :global(.panel-footer) {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+.rateLimitBannerStack {
+  position: absolute;
+  top: 3.2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  width: max-content;
+  max-width: calc(100% - 2rem);
+  animation: toastSlideIn 200ms ease;
+}
+
+@keyframes toastSlideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+.rateLimitBanner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  padding: 0.4rem 0.75rem;
+  font-size: var(--text-xs);
+  color: var(--color-warning-text);
+  background: var(--color-bg-elevated);
+  border: 1px solid rgba(251, 191, 36, 0.35);
+  border-radius: var(--radius-md);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(8px);
+}
+
+.rateLimitRetryButton {
+  border-radius: var(--radius-full);
+  border: 1px solid rgba(251, 191, 36, 0.55);
+  background: var(--color-bg-overlay);
+  color: var(--color-warning-text);
+  padding: 0.22rem 0.6rem;
+  font-size: var(--text-2xs);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.rateLimitRetryButton:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* ── Speech input ──────────────────────────────────────────────── */
+
+.composerWrapper {
+  flex: 1;
+  min-width: 0;
+  position: relative;
+}
+
+.composerWrapper textarea {
+  width: 100%;
+}
+
+.interimTranscript {
+  position: absolute;
+  bottom: 0.4rem;
+  left: 0.55rem;
+  right: 0.55rem;
+  font-size: var(--text-xs);
+  color: var(--color-text-dim);
+  font-style: italic;
+  pointer-events: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.buttonColumn {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.35rem;
+  align-self: stretch;
+}
+
+/* Holds the mic tooltip so it shows while the button is disabled
+   (disabled buttons don't fire hover events); the flex column keeps
+   the button full-width. */
+.micButtonWrap {
+  display: flex;
+  flex-direction: column;
+}
+
+.micButton {
+  border-radius: 999px;
+  border: 1px solid var(--color-border-strong);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--color-text-muted);
+  padding: 0.75rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 150ms, border-color 150ms, background 150ms;
+}
+
+.micButton:not(:disabled):hover {
+  color: var(--color-text-default);
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.micButton:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.micButtonActive {
+  color: var(--color-error);
+  border-color: var(--color-error);
+  animation: micPulse 1.5s ease-in-out infinite;
+}
+
+.micButtonActive:hover {
+  color: var(--color-error);
+  border-color: var(--color-error);
+}
+
+@keyframes micPulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.5);
+    background: rgba(239, 68, 68, 0.08);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(239, 68, 68, 0);
+    background: rgba(239, 68, 68, 0.2);
+  }
+}
+
+:global([data-theme='light']) .micButton {
+  background: #edf0f5;
+  border-color: #a3adb9;
+  color: var(--color-text-default);
+}
+:global([data-theme='light']) .micButton:not(:disabled):hover {
+  background: #dde3eb;
+  border-color: #8892a0;
+}
+
+:global([data-theme='light']) .micButtonActive {
+  color: #dc2626;
+  border-color: #dc2626;
+}
+
+/* ── Empty-state prompt chips ──────────────────────────────────── */
+
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.9rem;
+  padding: 1.75rem 1rem;
+  height: 100%;
+  text-align: center;
+}
+
+.emptyStateHint {
+  margin: 0;
+  color: var(--color-text-dim);
+  font-size: 0.88rem;
+}
+
+.emptyStateChips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.45rem;
+  max-width: 34rem;
+}
+
+.emptyStateChip {
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 999px;
+  background: var(--color-bg-elevated);
+  color: var(--color-text-muted);
+  padding: 0.45rem 0.9rem;
+  font-size: 0.82rem;
+  cursor: pointer;
+  text-align: left;
+  line-height: 1.3;
+  transition:
+    background var(--transition-fast),
+    border-color var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.emptyStateChip:hover {
+  background: var(--color-bg-hover);
+  border-color: var(--color-border-strong);
+  color: var(--color-text-default);
+}
+
+.emptyStateChip:focus-visible {
+  outline: 2px solid var(--color-text-accent);
+  outline-offset: 2px;
+}

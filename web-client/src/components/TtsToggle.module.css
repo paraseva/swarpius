@@ -1,0 +1,155 @@
+.toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  user-select: none;
+  cursor: pointer;
+}
+
+.group {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.45rem;
+}
+
+.group > button:first-child {
+  margin-right: -0.2rem;
+}
+
+.label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  /* Pin the box size so swapping between the 16px speaker SVG and the
+     em-sized TtsStatusIndicator doesn't reflow the surrounding row —
+     the GuidanceButton ? on the left would otherwise jitter by a few
+     pixels each time TTS activates. */
+  width: 16px;
+  height: 16px;
+  color: var(--color-text-muted);
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  transition: color var(--transition-fast);
+}
+
+.label:hover:not(:disabled) {
+  color: var(--color-text-accent-light);
+}
+
+.labelDisabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Applied when the server-side TTS reachability check (or a prior
+   utterance) has flagged TTS as down. Gives the icon a red tint so
+   the user can see at a glance that TTS isn't working — click the
+   button to re-test. */
+.labelFailing {
+  color: var(--color-error-text);
+}
+
+.labelFailing:hover:not(:disabled) {
+  color: var(--color-error-text);
+  opacity: 0.85;
+}
+
+.state {
+  min-width: 1.5rem;
+  color: var(--color-text-accent);
+  font-weight: 600;
+}
+
+.input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+}
+
+.disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.switch {
+  position: relative;
+  width: 2.1rem;
+  height: 1.2rem;
+  border-radius: 999px;
+  background-color: var(--color-bg-elevated);
+  border: 1px solid var(--color-border-strong);
+  transition: background-color 120ms ease, border-color 120ms ease;
+}
+
+.switch::after {
+  content: '';
+  position: absolute;
+  top: 1px;
+  left: 1px;
+  width: 0.9rem;
+  height: 0.9rem;
+  border-radius: 50%;
+  background-color: var(--color-text-primary);
+  transition: transform 120ms ease;
+}
+
+.input:checked + .switch {
+  background-color: rgba(34, 197, 94, 0.22);
+  border-color: rgba(34, 197, 94, 0.8);
+}
+
+.input:checked + .switch::after {
+  transform: translateX(0.9rem);
+}
+
+.input:focus-visible + .switch {
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.6);
+}
+
+:global([data-theme='light']) .switch {
+  background-color: #8892a0;
+  border-color: #8892a0;
+}
+
+:global([data-theme='light']) .switch::after {
+  background-color: #ffffff;
+}
+
+:global([data-theme='light']) .input:checked + .switch {
+  background-color: var(--color-border-success);
+  border-color: var(--color-border-success);
+}
+
+.note {
+  position: absolute;
+  top: calc(100% + 0.1rem);
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.62rem;
+  line-height: 1;
+  color: var(--color-error-text);
+  letter-spacing: 0.02em;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+@media (max-width: 959px) {
+  .state {
+    display: none;
+  }
+
+  .note {
+    display: none;
+  }
+}

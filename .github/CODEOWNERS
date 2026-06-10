@@ -1,0 +1,8 @@
+# Code owners — automatically requested for review on every PR.
+# Combined with branch protection's "Require review from Code Owners",
+# this ensures every contributor PR needs explicit approval from a
+# listed owner before merge.
+#
+# Relax later by adding more handles or scoping to specific paths.
+
+* @paraseva-nc

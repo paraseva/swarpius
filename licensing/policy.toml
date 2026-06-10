@@ -1,0 +1,43 @@
+# Licence policy for included third-party dependencies.
+#
+# Semantics: ALLOW-LIST. A component passes only if every licence in its
+# expression normalises to an SPDX id in `allow` (or the package is listed in
+# [exceptions]). Anything unrecognised FAILS — unknown licences are blocked by
+# default, which is what protects us against surprises like a future SSPL/BUSL
+# relicense slipping in via a transitive dep.
+#
+# `deny` is redundant belt-and-braces: these hard-fail even if someone
+# carelessly adds them to `allow`. AGPL/SSPL/BUSL stay here permanently:
+# they are incompatible with redistributing this codebase under its own
+# terms.
+
+allow = [
+  "MIT",
+  "BSD-2-Clause",
+  "BSD-3-Clause",
+  "Apache-2.0",
+  "ISC",
+  "PSF-2.0",
+  "CNRI-Python",
+  "Python-2.0",
+  "MPL-2.0",        # weak/file-level copyleft — fine for closed binaries + SaaS
+  "0BSD",
+  "Unlicense",
+  "OFL-1.1",        # SIL Open Font License — permits bundling/redistributing the font files (Inter, JetBrains Mono); no obligation on surrounding code
+]
+
+deny = [
+  "GPL-1.0", "GPL-2.0", "GPL-3.0",
+  "LGPL-2.1", "LGPL-3.0",
+  "AGPL-3.0",
+  "SSPL-1.0",
+  "BUSL-1.1",
+  "Elastic-2.0",
+  "CC-BY-NC-4.0",
+  "Commons-Clause",
+]
+
+# Packages whose published metadata carries no parseable SPDX id. Each needs a
+# human-reviewed SPDX value and a one-line reason. Keyed by package name.
+[exceptions]
+tiktoken = { spdx = "MIT", reason = "MIT per repo LICENSE; PyPI metadata embeds full text, not an SPDX id" }

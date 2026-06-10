@@ -1,0 +1,89 @@
+/* Chat-bubble markdown styling. Tables get a horizontal scroll wrapper
+   so a wide GFM table can't push the chat column out — the bubble
+   container clips at its width and the table scrolls within it. */
+
+.markdown {
+  /* Paragraph spacing — react-markdown wraps every paragraph in <p>,
+     which would otherwise inherit no margin and crash adjacent
+     paragraphs together. */
+}
+
+.markdown :global(p) {
+  margin: 0 0 0.5em 0;
+}
+
+.markdown :global(p:last-child) {
+  margin-bottom: 0;
+}
+
+.markdown :global(ul),
+.markdown :global(ol) {
+  margin: 0.25em 0 0.5em 0;
+  padding-left: 1.5em;
+}
+
+.markdown :global(li) {
+  margin: 0.1em 0;
+}
+
+.markdown :global(code) {
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+  padding: 0.1em 0.3em;
+  border-radius: 3px;
+  background: rgba(127, 127, 127, 0.15);
+}
+
+.markdown :global(pre) {
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+  padding: 0.5em 0.75em;
+  border-radius: 4px;
+  background: rgba(127, 127, 127, 0.1);
+  overflow-x: auto;
+}
+
+.markdown :global(pre code) {
+  padding: 0;
+  background: none;
+}
+
+.markdown :global(blockquote) {
+  margin: 0.25em 0;
+  padding-left: 0.75em;
+  border-left: 3px solid rgba(127, 127, 127, 0.4);
+  color: inherit;
+  opacity: 0.85;
+}
+
+.markdown :global(table) {
+  border-collapse: collapse;
+  margin: 0.5em 0;
+  font-size: 0.95em;
+  display: block;
+  overflow-x: auto;
+  max-width: 100%;
+}
+
+.markdown :global(th),
+.markdown :global(td) {
+  border: 1px solid rgba(127, 127, 127, 0.35);
+  padding: 0.25em 0.5em;
+  text-align: left;
+}
+
+.markdown :global(th) {
+  background: rgba(127, 127, 127, 0.1);
+  font-weight: 600;
+}
+
+.markdown :global(h1),
+.markdown :global(h2),
+.markdown :global(h3),
+.markdown :global(h4),
+.markdown :global(h5),
+.markdown :global(h6) {
+  margin: 0.75em 0 0.25em 0;
+  font-weight: 600;
+  line-height: 1.2;
+}

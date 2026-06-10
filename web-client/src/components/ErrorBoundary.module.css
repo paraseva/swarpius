@@ -1,0 +1,38 @@
+.errorBoundary {
+  padding: 1rem;
+  margin: 0.5rem;
+  border: 1px solid rgba(239, 68, 68, 0.5);
+  border-radius: 0.5rem;
+  background: var(--color-bg-elevated);
+  color: var(--color-error-text);
+}
+
+.errorBoundary strong {
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+.errorBoundary p {
+  font-size: 0.85rem;
+  margin: 0 0 0.75rem;
+  color: var(--color-error-text);
+}
+
+.actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.actions button {
+  padding: 0.3rem 0.75rem;
+  border-radius: 0.35rem;
+  border: 1px solid var(--color-border-subtle);
+  background: var(--color-bg-elevated);
+  color: var(--color-text-default);
+  cursor: pointer;
+  font-size: 0.8rem;
+}
+
+.actions button:hover {
+  background: var(--color-bg-overlay);
+}

@@ -1,0 +1,137 @@
+.panel {
+  width: 100%;
+  height: 100%;
+}
+
+.section {
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 0.55rem;
+  background: var(--color-bg-overlay);
+  padding: 0.55rem 0.65rem;
+  margin-bottom: 0.45rem;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-bottom: 0.35rem;
+}
+
+.statusDot {
+  width: 0.6rem;
+  height: 0.6rem;
+  border-radius: 999px;
+  background: var(--color-text-dim);
+  box-shadow: 0 0 0 1px rgba(100, 116, 139, 0.5);
+}
+
+.statusDotActive {
+  background: var(--color-success);
+  box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.6);
+}
+
+.statusDotIdle {
+  background: var(--color-text-dim);
+}
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem 0.8rem;
+  font-size: 0.72rem;
+  color: var(--color-text-muted);
+}
+
+.section strong[title] {
+  cursor: help;
+}
+
+.requestId {
+  font-size: 0.68rem;
+  font-family: var(--font-mono);
+  color: var(--color-text-faint);
+  margin-left: auto;
+}
+
+.conversation {
+  font-size: 0.68rem;
+  color: var(--color-text-faint);
+  margin-left: auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.errorText {
+  color: var(--color-error-text);
+  font-family: var(--font-mono);
+  word-break: break-word;
+}
+
+.interruptGrid {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.25rem 0.6rem;
+  margin-top: 0.4rem;
+  font-size: 0.78rem;
+}
+
+.interruptLabel {
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 0.66rem;
+  align-self: center;
+}
+
+.interruptValue {
+  color: var(--color-text-primary);
+  font-weight: 500;
+  word-break: break-word;
+}
+
+.interruptReason {
+  color: var(--color-text-secondary);
+  font-style: italic;
+  word-break: break-word;
+}
+
+.interruptBadge {
+  display: inline-block;
+  padding: 0.05rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  border: 1px solid transparent;
+}
+
+.interruptBadgeArbiter {
+  background: var(--color-bg-info-subtle);
+  color: var(--color-info-text);
+  border-color: var(--color-info);
+}
+
+.interruptBadgeArbiterFallback {
+  background: var(--color-bg-warning-subtle);
+  color: var(--color-text-accent);
+  border-color: var(--color-border-warning);
+}
+
+.interruptBadgeKeyword {
+  background: var(--color-bg-success-subtle);
+  color: var(--color-success-text);
+  border-color: var(--color-border-success);
+}
+
+.interruptActionPill {
+  display: inline-block;
+  padding: 0.02rem 0.45rem;
+  border-radius: 0.3rem;
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border-subtle);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--color-text-primary);
+}

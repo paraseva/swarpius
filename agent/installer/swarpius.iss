@@ -8,7 +8,9 @@
 ; Override the version on a release tag: ISCC.exe /DMyAppVersion=1.2.3 ...
 
 #ifndef MyAppVersion
-  #define MyAppVersion "1.0.0"
+  ; Sentinel only — real builds override via /DMyAppVersion from agent/VERSION
+  ; (see installer.yml). A 0.0.0 installer means that override was missed.
+  #define MyAppVersion "0.0.0"
 #endif
 
 #define MyAppName "Swarpius"

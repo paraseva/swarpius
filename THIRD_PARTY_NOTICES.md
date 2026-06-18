@@ -123,7 +123,7 @@ Resolved closure of `agent/requirements-server.txt`.
 - **License:** BSD-3-Clause
 - **Source:** https://github.com/encode/httpx/blob/master/CHANGELOG.md
 
-### huggingface_hub 1.19.0
+### huggingface_hub 1.20.0
 
 - **License:** Apache-2.0
 - **Source:** https://github.com/huggingface/huggingface_hub
@@ -2609,7 +2609,7 @@ OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ```
 
-### hf-xet 1.5.1 (LICENSE); huggingface_hub 1.19.0 (LICENSE); roonapi 0.1.6 (LICENSE)
+### hf-xet 1.5.1 (LICENSE); huggingface_hub 1.20.0 (LICENSE); roonapi 0.1.6 (LICENSE)
 
 ```text
                                  Apache License

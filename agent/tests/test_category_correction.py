@@ -272,6 +272,50 @@ class TestCategoryCorrectionPlaylist(unittest.TestCase):
         self.assertEqual(cm.exception.category_name, "Playlists")
 
 
+class TestCategoryCorrectionGatewaySibling(unittest.TestCase):
+    """album->track reconciliation: a container resolved where a track was
+    intended. When no sibling track matches the container's identity, the
+    corrector fails loud -- the mirror of
+    ``TestCategoryCorrectionAlbum.test_no_match_raises``."""
+
+    def _album_ref(self, title: str) -> StableReference:
+        return StableReference(
+            ref_id="d9282",
+            identity=ItemIdentity(title=title, hint="list"),
+            recipe=SearchRecipe(search_string="It's Your Thing Isley Brothers"),
+            cached_item_key="36:0",
+            roon_session_key="s-test",
+            item_key_path=[],
+        )
+
+    def test_no_sibling_match_raises(self):
+        """Album resolved, track intended, and no track inside it shares
+        the album's identity title -- fail loud rather than silently
+        falling through to the album."""
+        ref = self._album_ref("It's Your Thing: The Story Of The Isley Brothers")
+        host = _BrowseHost(browse_responses=[], drill_responses=[])
+        gateway_level = _results(
+            [
+                _item("Play Album", "36:0", hint="action_list"),
+                _item("It's Your Thing (Album Version)", "36:11", hint="action_list"),
+                _item("Twist & Shout (Album Version)", "36:4", hint="action_list"),
+            ],
+            list_hint=None,
+        )
+
+        with self.assertRaises(CategoryCorrectionFailed) as cm:
+            host.reconcile_intended_category(ref, "track", gateway_level, "s-test")
+        self.assertEqual(cm.exception.intended_category, "track")
+        self.assertEqual(cm.exception.resolved_category, "album")
+        self.assertEqual(cm.exception.failure_mode, "no_match")
+        self.assertEqual(
+            cm.exception.title,
+            "It's Your Thing: The Story Of The Isley Brothers",
+        )
+        self.assertEqual(cm.exception.ref_id, "d9282")
+        self.assertEqual(host.reset_calls, ["s-test"])
+
+
 class TestCategoryCorrectionMessage(unittest.TestCase):
     """The message rendered by ``_format_category_correction_error``
     is what the coordinator sees verbatim — pin its shape for both
@@ -348,6 +392,29 @@ class TestCategoryCorrectionMessage(unittest.TestCase):
         # Critically: the drill-into-category language must be absent.
         self.assertNotIn("pick from the Playlists category directly", msg)
         self.assertNotIn("Playlists category directly", msg)
+
+    def test_gateway_sibling_message_names_resolved_and_intended(self):
+        """album->track miss: the directive states the actual resolved
+        category (album), offers relabelling to it, and points at the
+        intended category to pick from."""
+        from roon_core.schemas import RoonCoreItemSummarySchema
+        from tools.roon_action import _format_category_correction_error
+
+        item = RoonCoreItemSummarySchema(
+            title="It's Your Thing", reference="S:d9282",
+        )
+        exc = CategoryCorrectionFailed(
+            ref_id="d9282",
+            title="It's Your Thing: The Story Of The Isley Brothers",
+            intended_category="track",
+            category_name="Tracks",
+            failure_mode="no_match",
+            resolved_category="album",
+        )
+        msg = _format_category_correction_error(item, exc)
+        self.assertIn("resolved as an album, not a track", msg)
+        self.assertIn("intended_item_category='album'", msg)
+        self.assertIn("Tracks category", msg)
 
 if __name__ == "__main__":
     unittest.main()

@@ -606,6 +606,73 @@ class TestShuffleWithMixedCategories(unittest.TestCase):
         )
 
 
+class TestAlbumResolvedUnderTrackIntent(unittest.TestCase):
+    """End-to-end dispatch when a track-intended item resolves to an album
+    and no sibling track matches (reconciliation fails). The reconciler's
+    raise must compose into the right verb-level outcome: a per-item
+    failure for Queue (the others still dispatch), a whole-call reject for
+    Shuffle (all-or-nothing on its sampled pool)."""
+
+    def _fake_with_compilation(self) -> BrowseFake:
+        fake = BrowseFake()
+        # Compilation whose title matches none of its tracks, so the
+        # gateway-sibling search finds nothing.
+        fake.register_album(
+            "d9282",
+            "It's Your Thing: The Story Of The Isley Brothers",
+            ["It's Your Thing (Album Version)", "Twist & Shout (Album Version)"],
+        )
+        fake.register_track("aaa01", "Georgia on My Mind")
+        fake.register_track("bbb01", "Street Fighting Man")
+        return fake
+
+    def _items(self) -> List[RoonCoreItemSummarySchema]:
+        return [
+            RoonCoreItemSummarySchema(
+                title="Georgia on My Mind", reference="S:aaa01",
+                intended_category="track",
+            ),
+            RoonCoreItemSummarySchema(
+                title="It's Your Thing", reference="S:d9282",
+                intended_category="track",
+            ),
+            RoonCoreItemSummarySchema(
+                title="Street Fighting Man", reference="S:bbb01",
+                intended_category="track",
+            ),
+        ]
+
+    def test_queue_fails_only_the_album_item_and_queues_the_rest(self):
+        fake = self._fake_with_compilation()
+        tool = _make_tool(fake)
+        output = asyncio.run(tool.run_async(
+            RoonActionToolInputSchema(action="Queue", items=self._items()),
+        ))
+
+        self.assertIn("PARTIAL SUCCESS", output.result)
+        self.assertIn("2/3", output.result)
+        combined = "; ".join(e.error for e in output.errors)
+        self.assertIn("S:d9282", combined)
+        self.assertIn("resolved as an album, not a track", combined)
+        # The two real tracks dispatched; the album was not expanded in.
+        self.assertEqual(len(fake.dispatched_actions), 2)
+
+    def test_shuffle_rejects_the_whole_call(self):
+        fake = self._fake_with_compilation()
+        tool = _make_tool(fake)
+        output = asyncio.run(tool.run_async(
+            RoonActionToolInputSchema(action="Shuffle", items=self._items()),
+        ))
+
+        self.assertIn("FAILED", output.result)
+        self.assertEqual(
+            fake.action_dispatches, [],
+            "One unresolvable item must reject the whole shuffle pool",
+        )
+        combined = "; ".join(e.error for e in output.errors)
+        self.assertIn("resolved as an album, not a track", combined)
+
+
 # ══════════════════════════════════════════════════════════════════════
 # reconcile_intended_category — production logic, focused stubs on the
 # correction sub-methods.

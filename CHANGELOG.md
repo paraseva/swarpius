@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-06-18
+
+### Fixed
+
+- Requests to play, queue, or shuffle a track that the library matches to an album instead — for example, a song that shares its title with a compilation — are now handled correctly. The mismatch is detected and the intended track recovered, rather than returning an unhelpful error or, when shuffling, adding the album's entire tracklist (including duplicate tracks) to the queue. Other items in the same request are unaffected.
+
 ## [1.0.0] - 2026-06-11
 
 Initial public release.

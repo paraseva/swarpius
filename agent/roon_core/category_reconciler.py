@@ -37,6 +37,7 @@ _CATEGORY_TO_GATEWAY = {
     "work": "Play Work",
 }
 _CATEGORY_NAMES = {
+    "track": "Tracks",
     "album": "Albums",
     "playlist": "Playlists",
     "artist": "Artists",
@@ -112,7 +113,7 @@ class CategoryReconciler:
             gateway_category = GATEWAY_CATEGORY_MAP.get(items[0].title)
             if gateway_category and gateway_category != intended_category:
                 return self._correct_via_gateway_siblings(
-                    current_results, ref, session_key, zone,
+                    current_results, ref, session_key, intended_category, zone,
                 )
 
         # Determine if we're looking at a track (directly or wrapped).
@@ -218,14 +219,22 @@ class CategoryReconciler:
         results: RoonCoreResultsSchema,
         ref: StableReference,
         session_key: str,
+        intended_category: str,
         zone: Optional[str] = None,
-    ) -> Optional[Tuple[RoonCoreResultsSchema, str, int]]:
+    ) -> Tuple[RoonCoreResultsSchema, str, int]:
         """Find a matching track among gateway siblings and drill into it.
 
         At a gateway level (e.g. "Play Album" as the first item, tracks
         listed below), search the sibling items for one whose normalised
         title matches the reference identity. Drills into the match and
         returns its action-list results.
+
+        Raises :class:`CategoryCorrectionFailed` when no sibling matches —
+        the symmetric "tried and failed" outcome to
+        ``_correct_via_category_search``. Falling through silently here
+        would let an album-shaped reference reach the action layer as a
+        non-action level and surface its tracks as bogus "available
+        actions".
         """
         slog = get_server_logger()
         target_title = normalise_title(ref.identity.title)
@@ -241,7 +250,15 @@ class CategoryReconciler:
                 target=ref.identity.title,
                 sibling_titles=[i.title for i in results.items[1:5]],
             )
-            return None
+            self._browse._nav_reset_to_root(session_key, zone)
+            raise CategoryCorrectionFailed(
+                ref_id=ref.ref_id,
+                title=ref.identity.title,
+                intended_category=intended_category,
+                category_name=_CATEGORY_NAMES[intended_category],
+                failure_mode="no_match",
+                resolved_category=GATEWAY_CATEGORY_MAP.get(results.items[0].title),
+            )
 
         slog.log(
             "category_correction_sibling_match",

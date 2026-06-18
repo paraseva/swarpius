@@ -53,7 +53,7 @@ Resolved closure of `agent/requirements-server.txt`.
 - **License:** MIT
 - **Source:** https://github.com/annotated-types/annotated-types
 
-### anyio 4.13.0
+### anyio 4.14.0
 
 - **License:** MIT
 - **Source:** https://anyio.readthedocs.io/en/latest/
@@ -63,7 +63,7 @@ Resolved closure of `agent/requirements-server.txt`.
 - **License:** MIT
 - **Source:** https://www.attrs.org/
 
-### certifi 2026.5.20
+### certifi 2026.6.17
 
 - **License:** MPL-2.0
 - **Source:** https://github.com/certifi/python-certifi
@@ -98,7 +98,7 @@ Resolved closure of `agent/requirements-server.txt`.
 - **License:** Apache-2.0
 - **Source:** https://github.com/aio-libs/frozenlist
 
-### fsspec 2026.4.0
+### fsspec 2026.6.0
 
 - **License:** BSD-3-Clause
 - **Source:** https://filesystem-spec.readthedocs.io/en/latest/changelog.html
@@ -188,7 +188,7 @@ Resolved closure of `agent/requirements-server.txt`.
 - **License:** Apache-2.0
 - **Source:** https://github.com/aio-libs/multidict
 
-### openai 2.41.1
+### openai 2.43.0
 
 - **License:** Apache-2.0
 - **Source:** https://github.com/openai/openai-python
@@ -293,7 +293,7 @@ Resolved closure of `agent/requirements-server.txt`.
 - **License:** Apache-2.0
 - **Source:** https://github.com/huggingface/tokenizers
 
-### tqdm 4.68.2
+### tqdm 4.68.3
 
 - **License:** MPL-2.0 AND MIT
 - **Source:** https://tqdm.github.io
@@ -1898,7 +1898,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-### anyio 4.13.0 (LICENSE)
+### anyio 4.14.0 (LICENSE)
 
 ```text
 The MIT License (MIT)
@@ -1976,7 +1976,7 @@ TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ```
 
-### certifi 2026.5.20 (LICENSE)
+### certifi 2026.6.17 (LICENSE)
 
 ```text
 This package contains a modified version of ca-bundle.crt:
@@ -2548,7 +2548,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-### fsspec 2026.4.0 (LICENSE)
+### fsspec 2026.6.0 (LICENSE)
 
 ```text
 BSD 3-Clause License
@@ -3445,7 +3445,7 @@ SOFTWARE.
    limitations under the License.
 ```
 
-### openai 2.41.1 (LICENSE)
+### openai 2.43.0 (LICENSE)
 
 ```text
                                  Apache License
@@ -5205,7 +5205,7 @@ Source: https://github.com/huggingface/tokenizers
    limitations under the License.
 ```
 
-### tqdm 4.68.2 (LICENCE)
+### tqdm 4.68.3 (LICENCE)
 
 ```text
 `tqdm` is a product of collaborative work.

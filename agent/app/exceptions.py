@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Literal
+from typing import Literal, Optional
 
 
 class SwarpiusError(Exception):
@@ -45,11 +45,20 @@ class FixedVolumeError(SwarpiusError, ValueError):
 
 class CategoryCorrectionFailed(SwarpiusError):
     """Raised when category reconciliation tried to recover the intended
-    container (album/playlist) for a track-shaped reference and couldn't.
-    Distinguishes "tried and failed" from "no correction needed" (which
-    returns ``None``).
+    item for a mis-categorised reference and couldn't. Distinguishes
+    "tried and failed" from "no correction needed" (which returns
+    ``None``).
 
-    ``failure_mode`` discriminates the two ways correction can fail:
+    Two directions reach this:
+
+    * A track-shaped reference when a container was intended (the
+      re-search path). ``resolved_category`` is left ``None``.
+    * A container/persona-shaped reference when a track was intended
+      (the gateway-sibling path). ``resolved_category`` records what the
+      reference actually resolved to (e.g. ``"album"``).
+
+    ``failure_mode`` discriminates the two ways the re-search path can
+    fail:
 
     * ``"no_category"`` — the re-search produced no ``Albums``/
       ``Playlists`` category at all. Often means the search terms don't
@@ -70,6 +79,7 @@ class CategoryCorrectionFailed(SwarpiusError):
         intended_category: str,
         category_name: str,
         failure_mode: Literal["no_category", "no_match"],
+        resolved_category: Optional[str] = None,
     ) -> None:
         super().__init__(
             f"category correction failed: ref={ref_id} title={title!r} "
@@ -81,3 +91,4 @@ class CategoryCorrectionFailed(SwarpiusError):
         self.intended_category = intended_category
         self.category_name = category_name
         self.failure_mode = failure_mode
+        self.resolved_category = resolved_category

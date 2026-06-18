@@ -64,6 +64,18 @@ def _format_category_correction_error(
             f"find the desired {exc.intended_category}, or re-search "
             f"if the {exc.intended_category} isn't in the results."
         )
+    if exc.resolved_category is not None:
+        return (
+            f"Item '{item.title}' (ref {item.reference}) resolved as "
+            f"{_indefinite_article(exc.resolved_category)} "
+            f"{exc.resolved_category}, not "
+            f"{_indefinite_article(exc.intended_category)} "
+            f"{exc.intended_category}. If you wanted the "
+            f"{exc.resolved_category}, retry with "
+            f"intended_item_category='{exc.resolved_category}'. Otherwise "
+            f"pick the {exc.intended_category} from the "
+            f"{exc.category_name} category in the same search results."
+        )
     base = (
         f"Item '{item.title}' (ref {item.reference}) resolved as a track, "
     )

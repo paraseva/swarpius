@@ -165,6 +165,9 @@ jobs:
           npm ci
           npm run build
 
+      - name: Drop unused pre-installed Homebrew taps
+        run: brew untap aws/tap azure/bicep || true
+
       - name: Install DMG tooling
         run: brew install create-dmg
 

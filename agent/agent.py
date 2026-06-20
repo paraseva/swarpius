@@ -46,6 +46,7 @@ from app.data_paths import (
 )
 from app.io import AppIO
 from app.io.message_store import SqliteMessageStore, set_message_store
+from app.io.state_db import StateDb
 from app.io.static_files import resolve_dist_dir, serve_dist
 from app.io.websocket_flow import websocket_handler as _websocket_handler_impl
 from app.runtime.request_logger import RequestIdGenerator, cleanup_old_logs, get_retention_days
@@ -173,8 +174,11 @@ runtime.configure_io_callbacks(
     get_ws_event_loop=lambda: ws_event_loop,
 )
 
-# Message persistence for WS mode — cleared by default, retained via --keep-history
-_session_store = SqliteMessageStore(messages_db_path())
+# Message persistence for WS mode — cleared by default, retained via --keep-history.
+# StateDb owns the shared connection backing both the transcript and the
+# persisted state tables.
+_state_db = StateDb(messages_db_path())
+_session_store = SqliteMessageStore(_state_db)
 set_message_store(_session_store)
 _server_start_ms = int(time.time() * 1000)
 

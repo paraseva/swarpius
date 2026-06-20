@@ -12,13 +12,11 @@ exercised today: :class:`SqliteMessageStore` for WS mode and
 from __future__ import annotations
 
 import json
-import threading
 import time
 from abc import ABC, abstractmethod
-from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from app.io.db_schema import open_versioned_db
+from app.io.state_db import StateDb
 
 
 class MessageStore(ABC):
@@ -44,40 +42,40 @@ class MessageStore(ABC):
 
 
 class SqliteMessageStore(MessageStore):
-    """SQLite-backed implementation."""
+    """SQLite-backed implementation over the shared :class:`StateDb`.
 
-    def __init__(self, db_path: Path | str) -> None:
-        self._db_path = str(db_path)
-        # Opens with WAL, runs schema migrations, and moves a corrupt /
-        # future DB aside rather than failing startup. The schema (incl.
-        # ws_messages) lives in db_schema.py, the single source of truth.
-        self._conn = open_versioned_db(self._db_path)
-        self._lock = threading.Lock()
+    Does not own the connection — ``StateDb`` does — so transcript writes
+    share a connection (and lock) with the persisted state, letting a
+    request's transcript + state snapshot commit in one transaction.
+    """
+
+    def __init__(self, state_db: StateDb) -> None:
+        self._db = state_db
 
     def clear(self) -> None:
-        with self._lock:
-            self._conn.execute("DELETE FROM ws_messages")
-            self._conn.commit()
+        with self._db.lock:
+            self._db.conn.execute("DELETE FROM ws_messages")
+            self._db.conn.commit()
 
     def append(self, channel: str, payload: Any, meta: Optional[Dict[str, Any]] = None) -> None:
         payload_json = json.dumps(payload, default=str)
         meta_json = json.dumps(meta, default=str) if meta else None
         now_ms = int(time.time() * 1000)
-        with self._lock:
-            self._conn.execute(
+        with self._db.lock:
+            self._db.conn.execute(
                 "INSERT INTO ws_messages (channel, payload, meta, created_at) VALUES (?, ?, ?, ?)",
                 (channel, payload_json, meta_json, now_ms),
             )
-            self._conn.commit()
+            self._db.conn.commit()
 
     def get_all(self, since_ms: Optional[int] = None) -> List[Dict[str, Any]]:
-        with self._lock:
+        with self._db.lock:
             if since_ms is None:
-                cursor = self._conn.execute(
+                cursor = self._db.conn.execute(
                     "SELECT channel, payload, meta, created_at FROM ws_messages ORDER BY id",
                 )
             else:
-                cursor = self._conn.execute(
+                cursor = self._db.conn.execute(
                     "SELECT channel, payload, meta, created_at FROM ws_messages "
                     "WHERE created_at >= ? ORDER BY id",
                     (since_ms,),
@@ -101,8 +99,8 @@ class SqliteMessageStore(MessageStore):
         return result
 
     def close(self) -> None:
-        with self._lock:
-            self._conn.close()
+        # The connection belongs to StateDb; its owner closes it.
+        pass
 
 
 class NullMessageStore(MessageStore):

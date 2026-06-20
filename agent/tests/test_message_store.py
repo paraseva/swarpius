@@ -1,24 +1,24 @@
 """Tests for MessageStore implementations."""
 
+import shutil
 import tempfile
 import unittest
 from pathlib import Path
 
 from app.io.message_store import NullMessageStore, SqliteMessageStore
+from app.io.state_db import StateDb
 
 
 class TestSqliteMessageStore(unittest.TestCase):
 
     def setUp(self):
-        self._tmp = tempfile.NamedTemporaryFile(suffix=".db", delete=False)
-        self._tmp.close()
-        self.store = SqliteMessageStore(self._tmp.name)
+        self._dir = Path(tempfile.mkdtemp(prefix="swarpius-test-db-"))
+        self._db = StateDb(self._dir / "messages.db")
+        self.store = SqliteMessageStore(self._db)
 
     def tearDown(self):
-        self.store.close()
-        Path(self._tmp.name).unlink(missing_ok=True)
-        for suffix in ("-wal", "-shm"):
-            Path(self._tmp.name + suffix).unlink(missing_ok=True)
+        self._db.close()
+        shutil.rmtree(self._dir, ignore_errors=True)
 
     def test_empty_store_returns_no_messages(self):
         self.assertEqual(self.store.get_all(), [])
@@ -88,8 +88,8 @@ class TestSqliteMessageStore(unittest.TestCase):
         self.store.append("chat", {"text": "old"})
         # Push the existing row's created_at back so we can assert the
         # filter without sleeping. Cutoff is set strictly above the row.
-        self.store._conn.execute("UPDATE ws_messages SET created_at = 1000")
-        self.store._conn.commit()
+        self._db.conn.execute("UPDATE ws_messages SET created_at = 1000")
+        self._db.conn.commit()
         self.store.append("chat", {"text": "new"})
 
         all_messages = self.store.get_all()

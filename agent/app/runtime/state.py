@@ -3,7 +3,7 @@ from __future__ import annotations
 import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
-from typing import Any, Callable, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional
 
 from app.coordinator.context_providers import (
     CallbackContextProvider,
@@ -59,7 +59,11 @@ from app.runtime.state_internals import (
     _locks_zone_state,
 )
 from app.runtime.state_zone_mixin import _StateZoneMixin
+from app.runtime.working_memory_persistence import WorkingMemoryState
 from app.runtime.zones import ZoneSubsystem
+
+if TYPE_CHECKING:
+    from app.runtime.persistence import PersistenceManager, PersistentState
 from roon_core.connection import RoonConnection
 from usage_metrics import UsageTracker
 
@@ -647,3 +651,19 @@ class RuntimeState(_StateInitMixin, _StateZoneMixin):
             if content:
                 sections.append({"title": p.title, "content": content})
         return sections
+
+    def _persistence_participants(self) -> List["PersistentState"]:
+        """The participants whose state this runtime persists. How many
+        there are is an internal detail — callers go through
+        ``attach_persistence``."""
+        return [WorkingMemoryState(self)]
+
+    def attach_persistence(self, manager: "PersistenceManager") -> None:
+        """Apply any state saved by a previous run, then register for future
+        saves. Restoring before registering keeps a fresh start (empty bag) a
+        no-op."""
+        for participant in self._persistence_participants():
+            saved = manager.restored_slice(participant.state_key)
+            if saved is not None:
+                participant.restore_state(saved)
+            manager.register(participant)

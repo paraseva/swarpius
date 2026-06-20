@@ -47,6 +47,7 @@ from app.roon.zone_snapshot import ZoneSnapshotBuilder
 from app.runtime.llm_clients import LLMClientsManager
 from app.runtime.result_store_manager import ResultStoreManager
 from app.runtime.result_store_types import ResultStoreEntry
+from app.runtime.roon_persistence import QueueRefsState
 from app.runtime.state_helpers import (
     _backend_ok,
     _build_web_search_tool,  # noqa: F401 — imported by tests via app.runtime.state.*
@@ -673,6 +674,7 @@ class RuntimeState(_StateInitMixin, _StateZoneMixin):
         if self.roon_connection is None:
             return
         self._restore_and_register(manager, self.roon_connection.session_manager)
+        self._restore_and_register(manager, QueueRefsState(self.roon_connection))
 
     @staticmethod
     def _restore_and_register(

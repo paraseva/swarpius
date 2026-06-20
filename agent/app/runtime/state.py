@@ -663,7 +663,22 @@ class RuntimeState(_StateInitMixin, _StateZoneMixin):
         saves. Restoring before registering keeps a fresh start (empty bag) a
         no-op."""
         for participant in self._persistence_participants():
-            saved = manager.restored_slice(participant.state_key)
-            if saved is not None:
-                participant.restore_state(saved)
-            manager.register(participant)
+            self._restore_and_register(manager, participant)
+
+    def attach_roon_persistence(self, manager: "PersistenceManager") -> None:
+        """Attach the Roon-connection-scoped participants (browse-session
+        pool). Called once the Roon connection exists — its construction is
+        later than the runtime's, so it registers separately from
+        ``attach_persistence``. No-op if there is no connection."""
+        if self.roon_connection is None:
+            return
+        self._restore_and_register(manager, self.roon_connection.session_manager)
+
+    @staticmethod
+    def _restore_and_register(
+        manager: "PersistenceManager", participant: "PersistentState",
+    ) -> None:
+        saved = manager.restored_slice(participant.state_key)
+        if saved is not None:
+            participant.restore_state(saved)
+        manager.register(participant)

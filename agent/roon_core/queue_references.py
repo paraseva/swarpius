@@ -8,7 +8,7 @@ like immutable search results.
 """
 
 import secrets
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 # Maximum number of invalidated references to retain for informative errors.
 _MAX_INVALIDATED = 200
@@ -87,6 +87,22 @@ class QueueReferenceMap:
         self._refs.clear()
         self._reverse.clear()
         self._invalidated.clear()
+
+    # ── Persistence ────────────────────────────────────────────────
+
+    def capture_state(self) -> Dict[str, Any]:
+        """Snapshot the qid<->hex mapping. ``_reverse`` is derived from
+        ``_refs`` and rebuilt on restore. JSON object keys must be strings,
+        so queue_item_ids are stringified."""
+        return {
+            "refs": {str(qid): hex_ref for qid, hex_ref in self._refs.items()},
+            "invalidated": dict(self._invalidated),
+        }
+
+    def restore_state(self, data: Dict[str, Any]) -> None:
+        self._refs = {int(qid): hex_ref for qid, hex_ref in data.get("refs", {}).items()}
+        self._reverse = {hex_ref: qid for qid, hex_ref in self._refs.items()}
+        self._invalidated = dict(data.get("invalidated", {}))
 
     # ── Bulk operations (called from event handlers) ──────────────
 

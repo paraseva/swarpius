@@ -35,6 +35,7 @@ from roon_core.browse_session import (
     SearchRecipe,
     StableReference,
 )
+from roon_core.events import RoonEventsMixin
 from roon_core.schemas import (
     RoonCoreItemSchema,
     RoonCoreListSchema,
@@ -44,15 +45,20 @@ from roon_core.schemas import (
 _DEFAULT_ALBUM_ACTIONS = ["Play Now", "Add Next", "Queue", "Start Radio"]
 
 
-class BrowseFake(RoonBrowseMixin):
+class BrowseFake(RoonBrowseMixin, RoonEventsMixin):
     """Fake Roon connection that runs production browse logic against
     a scripted ``browse_core``.
+
+    Composes both the browse and events mixins (as the real
+    ``RoonConnection`` does), so persistence that spans the session ref
+    pool and the queue-reference maps sees a faithful connection.
 
     See module docstring for the registration model.
     """
 
     def __init__(self) -> None:
         self.session_manager = BrowseSessionManager()
+        self._queue_ref_maps: Dict[str, Any] = {}
         # Single shared session for all registered items — keeps tests
         # from worrying about multi-session state. Production is
         # multi-session capable but the recovery/intent tests don't need

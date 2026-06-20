@@ -12,12 +12,13 @@ exercised today: :class:`SqliteMessageStore` for WS mode and
 from __future__ import annotations
 
 import json
-import sqlite3
 import threading
 import time
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Any, Dict, List, Optional
+
+from app.io.db_schema import open_versioned_db
 
 
 class MessageStore(ABC):
@@ -47,20 +48,10 @@ class SqliteMessageStore(MessageStore):
 
     def __init__(self, db_path: Path | str) -> None:
         self._db_path = str(db_path)
-        self._conn = sqlite3.connect(self._db_path, check_same_thread=False)
-        self._conn.execute("PRAGMA journal_mode=WAL")
-        self._conn.execute(
-            """
-            CREATE TABLE IF NOT EXISTS ws_messages (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                channel TEXT NOT NULL,
-                payload TEXT NOT NULL,
-                meta TEXT,
-                created_at INTEGER NOT NULL
-            )
-            """,
-        )
-        self._conn.commit()
+        # Opens with WAL, runs schema migrations, and moves a corrupt /
+        # future DB aside rather than failing startup. The schema (incl.
+        # ws_messages) lives in db_schema.py, the single source of truth.
+        self._conn = open_versioned_db(self._db_path)
         self._lock = threading.Lock()
 
     def clear(self) -> None:

@@ -194,7 +194,6 @@ See `--help` for all flags. Useful CLI-mode flags:
 | Flag | Purpose |
 |---|---|
 | `--show-request-ids` | Display request IDs (`rq-cNN-NNNN`) on the user-input and response panels. Off by default; enable to grep `data/logs/conversation/<date>/<cNN>/<rid>/` when debugging. |
-| `--keep-history` | **WS only** — passing this without `--ws` is a hard error. Retains chat history from the previous WS session (rendered greyed-out in the frontend). For CLI use the readline history (up-arrow / reverse-i-search) to recall prior input. |
 
 ### What CLI mode looks like
 

@@ -1,8 +1,8 @@
 """Persistent message store for WebSocket message replay across browser refreshes.
 
 Stores outbound WS messages in SQLite so they can be replayed when a new
-client connects.  Cleared on server startup by default; use ``--keep-history``
-to retain messages from a previous session (shown greyed-out in the frontend).
+client connects. History persists across restarts (pruned only by the
+configured retention window), so the chat survives a server restart.
 
 Uses an abstract ``MessageStore`` interface with two implementations
 exercised today: :class:`SqliteMessageStore` for WS mode and

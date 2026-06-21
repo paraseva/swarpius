@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
@@ -85,6 +86,8 @@ __all__ = [
     "_BoundedDict",
 ]
 
+logger = logging.getLogger(__name__)
+
 _SOURCE_LABELS = {"roon_search": "Roon", "web_search": "Web"}
 
 
@@ -143,6 +146,7 @@ class RuntimeState(_StateInitMixin, _StateZoneMixin):
         self.global_step: int = 0
         self.llm_call_count: int = 0
         self.validation_retry_count: int = 0
+        self._persistence_manager: Optional["PersistenceManager"] = None
         self.skills_dir = AGENT_ROOT / "skills"
         # ``stop_marker_title`` is wired in ``_ensure_initialised_locked``
         # via ``set_stop_marker_title`` so ``__init__`` does not snapshot
@@ -662,7 +666,9 @@ class RuntimeState(_StateInitMixin, _StateZoneMixin):
     def attach_persistence(self, manager: "PersistenceManager") -> None:
         """Apply any state saved by a previous run, then register for future
         saves. Restoring before registering keeps a fresh start (empty bag) a
-        no-op."""
+        no-op. The manager is retained so Roon-scoped state can attach once
+        the connection exists and so request completion can commit."""
+        self._persistence_manager = manager
         for participant in self._persistence_participants():
             self._restore_and_register(manager, participant)
 
@@ -684,3 +690,20 @@ class RuntimeState(_StateInitMixin, _StateZoneMixin):
         if saved is not None:
             participant.restore_state(saved)
         manager.register(participant)
+
+    def persist_state(self) -> None:
+        """Commit the current state snapshot. Called by the deterministic
+        request-completion plumbing, not the LLM coordinator. Skipped when a
+        restart has been requested, so an in-flight request terminated by the
+        restart is dropped and the restore boundary stays at the last request
+        that completed before it. Never raises — a persistence failure must
+        not break the user's request."""
+        if self._persistence_manager is None:
+            return
+        from app.runtime.restart_signal import is_restart_requested
+        if is_restart_requested():
+            return
+        try:
+            self._persistence_manager.commit()
+        except Exception:  # noqa: BLE001 — persistence must never break a request
+            logger.exception("Failed to persist runtime state")

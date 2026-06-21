@@ -49,6 +49,7 @@ from app.io.message_store import SqliteMessageStore, set_message_store
 from app.io.state_db import StateDb
 from app.io.static_files import resolve_dist_dir, serve_dist
 from app.io.websocket_flow import websocket_handler as _websocket_handler_impl
+from app.runtime.persistence import PersistenceManager
 from app.runtime.request_logger import RequestIdGenerator, cleanup_old_logs, get_retention_days
 from app.runtime.server_logger import cleanup_old_server_logs
 from app.runtime.state import RuntimeState
@@ -174,12 +175,19 @@ runtime.configure_io_callbacks(
     get_ws_event_loop=lambda: ws_event_loop,
 )
 
-# Message persistence for WS mode — cleared by default, retained via --keep-history.
-# StateDb owns the shared connection backing both the transcript and the
-# persisted state tables.
+# Shared state DB: StateDb owns the one connection backing both the
+# transcript (message store) and the persisted runtime state. History and
+# state persist across restarts — there is no clear-on-boot.
 _state_db = StateDb(messages_db_path())
 _session_store = SqliteMessageStore(_state_db)
 set_message_store(_session_store)
+
+# Restore working memory now; Roon-scoped state restores once the connection
+# exists (RuntimeState.ensure_initialised). Request completion commits via
+# runtime.persist_state().
+_persistence_manager = PersistenceManager(_state_db)
+runtime.attach_persistence(_persistence_manager)
+
 _server_start_ms = int(time.time() * 1000)
 
 
@@ -948,31 +956,11 @@ def main() -> None:
         ),
     )
     parser.add_argument(
-        "--keep-history",
-        action="store_true",
-        help=(
-            "WS mode only: retain chat history from the previous session "
-            "(frontend renders it greyed-out so users know the coordinator "
-            "doesn't have that context). Has no effect in CLI mode — use the readline "
-            "history (up-arrow / reverse-i-search) to recall prior input."
-        ),
-    )
-    parser.add_argument(
         "--show-request-ids",
         action="store_true",
         help="CLI mode: show request IDs (rq-cNN-NNNN) on user/agent panels for log lookup.",
     )
     args = parser.parse_args()
-
-    if args.keep_history and not args.ws:
-        parser.error(
-            "--keep-history is only meaningful with --ws (the CLI surface "
-            "doesn't replay previous conversations). Run with --ws or drop "
-            "the flag.",
-        )
-
-    if not args.keep_history:
-        _session_store.clear()
     SHOW_REQUEST_IDS = args.show_request_ids
 
     try:

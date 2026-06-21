@@ -68,8 +68,8 @@ class TestArgvForwarding(unittest.TestCase):
             seen.append(list(argv))
             return 0
 
-        run_supervised(runner, ["--ws", "--keep-history"])
-        self.assertEqual(seen, [["--ws", "--keep-history"]])
+        run_supervised(runner, ["--ws", "--show-request-ids"])
+        self.assertEqual(seen, [["--ws", "--show-request-ids"]])
 
     def test_same_argv_forwarded_across_restarts(self):
         seen: list[list[str]] = []

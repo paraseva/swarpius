@@ -1,6 +1,10 @@
 import React from 'react'
 import f from './fields.module.css'
-import { useWebSocket, type SocketMessage } from '../../websocketContext'
+import {
+  useWebSocket,
+  type ChannelId,
+  type SocketMessage,
+} from '../../websocketContext'
 
 type Phase = 'idle' | 'confirming' | 'clearing' | 'done' | 'error'
 
@@ -23,13 +27,22 @@ function parseResponse(message: SocketMessage): ClearResponse | null {
   return null
 }
 
-/**
- * Privacy & Data tab. An action tab (not a settings form): it does not
- * participate in Save & Validate. Lets the user delete the locally-stored
- * conversation history + the assistant's working memory.
- */
-export const PrivacyTab: React.FC = () => {
-  const { sendMessage, clearMessages, messages, isLlmActive } = useWebSocket()
+interface ClearActionProps {
+  label: string
+  warning: string
+  doneMessage: string
+  requestChannel: ChannelId
+  responseChannel: ChannelId
+  disabled?: boolean
+  disabledHint?: string
+  onSuccess?: () => void
+}
+
+const ClearAction: React.FC<ClearActionProps> = ({
+  label, warning, doneMessage, requestChannel, responseChannel,
+  disabled, disabledHint, onSuccess,
+}) => {
+  const { sendMessage, messages } = useWebSocket()
   const [phase, setPhase] = React.useState<Phase>('idle')
   const [error, setError] = React.useState('')
   const pendingId = React.useRef<string | null>(null)
@@ -38,7 +51,7 @@ export const PrivacyTab: React.FC = () => {
     if (phase !== 'clearing' || !pendingId.current) return
     const match = messages.find(
       (m) =>
-        m.channel === 'clear-conversation-response' &&
+        m.channel === responseChannel &&
         m.direction === 'inbound' &&
         parseResponse(m)?.request_id === pendingId.current,
     )
@@ -46,58 +59,82 @@ export const PrivacyTab: React.FC = () => {
     const payload = parseResponse(match)
     pendingId.current = null
     if (payload?.ok) {
-      clearMessages?.()
+      onSuccess?.()
       setPhase('done')
     } else {
-      setError(payload?.reason || 'Could not clear history. Please try again.')
+      setError(payload?.reason || 'Could not complete the request. Please try again.')
       setPhase('error')
     }
-  }, [messages, phase, clearMessages])
+  }, [messages, phase, responseChannel, onSuccess])
 
   const confirm = () => {
     const requestId = crypto.randomUUID()
     pendingId.current = requestId
     setError('')
     setPhase('clearing')
-    sendMessage('clear-conversation-request', JSON.stringify({ request_id: requestId }))
+    sendMessage(requestChannel, JSON.stringify({ request_id: requestId }))
   }
 
   const showButton = phase === 'idle' || phase === 'done' || phase === 'error'
 
   return (
     <div>
-      <p className={f.tabIntro}>
-        Swarpius stores your chat history and the assistant&apos;s working
-        memory on this machine, so a restart resumes where you left off.
-        Clearing removes the conversation transcript, the assistant&apos;s
-        memory of it, and any cached search results — a fresh start. Your saved
-        zones and other settings are kept.
-      </p>
-
       {showButton ? (
-        <button type="button" onClick={() => setPhase('confirming')} disabled={isLlmActive}>
-          Clear conversation history
+        <button type="button" onClick={() => setPhase('confirming')} disabled={disabled}>
+          {label}
         </button>
       ) : null}
-
-      {isLlmActive ? (
-        <p>Finish the current request before clearing history.</p>
-      ) : null}
-
+      {disabled && disabledHint ? <p>{disabledHint}</p> : null}
       {phase === 'confirming' ? (
-        <div role="group" aria-label="Confirm clear history">
-          <p>
-            This permanently deletes your chat history and the assistant&apos;s
-            memory of this conversation. It cannot be undone.
-          </p>
+        <div role="group" aria-label={label}>
+          <p>{warning}</p>
           <button type="button" onClick={confirm}>Yes, clear it</button>
           <button type="button" onClick={() => setPhase('idle')}>Cancel</button>
         </div>
       ) : null}
-
       {phase === 'clearing' ? <p>Clearing…</p> : null}
-      {phase === 'done' ? <p role="status">Conversation history cleared.</p> : null}
+      {phase === 'done' ? <p role="status">{doneMessage}</p> : null}
       {phase === 'error' ? <p role="alert">{error}</p> : null}
+    </div>
+  )
+}
+
+/**
+ * Privacy & Data tab. An action tab (not a settings form): it does not
+ * participate in Save & Validate. Lets the user delete the locally-stored
+ * conversation history + the assistant's working memory, and the listening
+ * history, independently.
+ */
+export const PrivacyTab: React.FC = () => {
+  const { clearMessages, isLlmActive } = useWebSocket()
+
+  return (
+    <div>
+      <p className={f.tabIntro}>
+        Swarpius stores your chat history, the assistant&apos;s working memory,
+        and a record of what you&apos;ve played — on this machine — so a
+        restart resumes where you left off and you can ask about past
+        listening. Your saved zones and other settings are kept.
+      </p>
+
+      <ClearAction
+        label="Clear conversation history"
+        warning="This permanently deletes your chat history and the assistant's memory of this conversation. It cannot be undone."
+        doneMessage="Conversation history cleared."
+        requestChannel="clear-conversation-request"
+        responseChannel="clear-conversation-response"
+        disabled={isLlmActive}
+        disabledHint="Finish the current request before clearing conversation history."
+        onSuccess={clearMessages}
+      />
+
+      <ClearAction
+        label="Clear listening history"
+        warning="This permanently deletes the record of what you've played. It cannot be undone."
+        doneMessage="Listening history cleared."
+        requestChannel="clear-listening-history-request"
+        responseChannel="clear-listening-history-response"
+      />
     </div>
   )
 }

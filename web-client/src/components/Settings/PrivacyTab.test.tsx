@@ -50,6 +50,17 @@ describe('PrivacyTab', () => {
     )
   })
 
+  it('sends the listening-history clear on the dedicated channel', async () => {
+    const sendMessage = vi.fn(() => '')
+    renderTab({ sendMessage })
+    await userEvent.click(screen.getByRole('button', { name: /clear listening history/i }))
+    await userEvent.click(screen.getByRole('button', { name: /yes, clear it/i }))
+    expect(sendMessage).toHaveBeenCalledWith(
+      'clear-listening-history-request',
+      expect.stringContaining('request_id'),
+    )
+  })
+
   it('clears the local view when the server confirms', async () => {
     // Drive request_id determinism so the response matches.
     vi.spyOn(crypto, 'randomUUID').mockReturnValue('11111111-1111-1111-1111-111111111111')

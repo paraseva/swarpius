@@ -63,7 +63,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
 }) => {
   const {
     status, messages, sendMessage, isLlmActive, trimmedCount,
-    requestHistory, reachedBeginning,
+    requestHistory, reachedBeginning, historyBatchToken,
   } = useWebSocket()
   const [draft, setDraft] = React.useState('')
   const speech = useSpeechRecognition()
@@ -102,7 +102,9 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
   })
 
   useStickyBottomScroll(scrollContainerRef, 'chat')
-  useHistoryScrollback(scrollContainerRef, messages, requestHistory, reachedBeginning ?? false)
+  useHistoryScrollback(
+    scrollContainerRef, messages, requestHistory, reachedBeginning ?? false, historyBatchToken ?? 0,
+  )
 
   // Explicit affordance to pull older history — works even when today's
   // content doesn't overflow (so there's no scrollbar to drag up).

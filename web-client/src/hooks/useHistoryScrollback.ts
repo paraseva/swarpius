@@ -2,62 +2,64 @@ import React from 'react'
 import { type SocketMessage } from '../websocketContext'
 
 const TOP_THRESHOLD_PX = 80
+const AT_BOTTOM_TOLERANCE_PX = 32
 
 /**
  * Lazy-load older history when the user scrolls near the top, preserving the
- * viewport position when older messages prepend (so the content the user is
- * reading doesn't jump).
+ * viewport position as a day prepends.
  *
- * Fire-and-forget: it calls `onLoadMore(beforeMs)` and returns; the prepended
- * messages arrive via the passive receive. Preservation keys off the oldest
- * message changing — so it also handles a future server-initiated prepend, not
- * just our own request.
+ * A day arrives as many messages over many renders, all inserted above the
+ * viewport. We keep the user's *distance from the bottom* constant across the
+ * whole batch, so the content being read stays put regardless of how many
+ * messages land. Loads are fire-and-forget; `batchToken` (bumped when the
+ * server's history-cursor closes a batch) releases the in-flight guard exactly
+ * when the requested day is fully delivered — so one scroll-to-top loads one
+ * day, not a cascade.
+ *
+ * When the user is at the bottom this hook stays out of the way: the
+ * sticky-bottom hook owns that case (following live messages).
  */
 export function useHistoryScrollback<T extends HTMLElement>(
   scrollRef: React.RefObject<T | null>,
   messages: SocketMessage[],
   onLoadMore: ((beforeMs: number) => void) | undefined,
   reachedBeginning: boolean,
+  batchToken: number,
 ): void {
+  const distanceFromBottomRef = React.useRef(0)
+  const atBottomRef = React.useRef(true)
   const loadingRef = React.useRef(false)
-  const prevFirstIdRef = React.useRef<string | null>(null)
-  const prevHeightRef = React.useRef(0)
 
-  // Before paint: if the oldest message changed and content grew, an older
-  // batch prepended — shift scrollTop by the added height to stay anchored.
-  React.useLayoutEffect(() => {
-    const el = scrollRef.current
-    if (!el) return
-    const firstId = messages.length ? messages[0].id : null
-    if (
-      prevFirstIdRef.current !== null &&
-      firstId !== prevFirstIdRef.current &&
-      el.scrollHeight > prevHeightRef.current
-    ) {
-      el.scrollTop += el.scrollHeight - prevHeightRef.current
-      loadingRef.current = false
-    }
-    prevFirstIdRef.current = firstId
-    prevHeightRef.current = el.scrollHeight
-  }, [messages, scrollRef])
-
-  // A finished load that turned out to be the last clears the in-flight guard.
-  React.useEffect(() => {
-    if (reachedBeginning) loadingRef.current = false
-  }, [reachedBeginning])
-
+  // Capture the user's position + trigger a load near the top. Programmatic
+  // scrolls during a batch (our own anchoring) are ignored so the captured
+  // distance and at-bottom flag reflect the user, not our restores.
   React.useEffect(() => {
     const el = scrollRef.current
     if (!el) return
     const onScroll = () => {
-      if (loadingRef.current || reachedBeginning || messages.length === 0 || !onLoadMore) return
-      if (el.scrollTop <= TOP_THRESHOLD_PX) {
+      if (loadingRef.current) return
+      atBottomRef.current = el.scrollHeight - el.scrollTop - el.clientHeight <= AT_BOTTOM_TOLERANCE_PX
+      distanceFromBottomRef.current = el.scrollHeight - el.scrollTop
+      if (!reachedBeginning && onLoadMore && messages.length > 0 && el.scrollTop <= TOP_THRESHOLD_PX) {
         loadingRef.current = true
-        prevHeightRef.current = el.scrollHeight  // anchor before the prepend
         onLoadMore(messages[0].timestamp - 1)
       }
     }
     el.addEventListener('scroll', onScroll, { passive: true })
+    onScroll()
     return () => el.removeEventListener('scroll', onScroll)
   }, [scrollRef, messages, reachedBeginning, onLoadMore])
+
+  // Before paint: while scrolled up, hold distance-from-bottom constant so a
+  // prepend doesn't shift the read position. At the bottom, defer to sticky.
+  React.useLayoutEffect(() => {
+    const el = scrollRef.current
+    if (!el || atBottomRef.current) return
+    el.scrollTop = el.scrollHeight - distanceFromBottomRef.current
+  }, [messages, scrollRef])
+
+  // A batch finished delivering — allow the next load.
+  React.useEffect(() => {
+    loadingRef.current = false
+  }, [batchToken])
 }

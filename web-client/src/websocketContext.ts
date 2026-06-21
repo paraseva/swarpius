@@ -70,6 +70,10 @@ export interface WebSocketContextValue {
   /** True once the server has signalled (via history-cursor) that no older
    *  history exists past what is loaded — i.e. scroll-back is exhausted. */
   reachedBeginning?: boolean
+  /** Increments each time a history batch finishes delivering (a
+   *  history-cursor is received). Lets scroll-back release its in-flight
+   *  guard exactly when a requested day is fully loaded. */
+  historyBatchToken?: number
   /** Whether any LLM call is currently in-flight (tracked incrementally). */
   isLlmActive: boolean
   /** Parsed payload of the most recent `zone-snapshots` message, or null

@@ -2,7 +2,8 @@ import React from 'react'
 import { RequestIdBadge } from './RequestIdBadge'
 import { parseJson } from '../utils/parseJson'
 import { useWebSocket } from '../websocketContext'
-import { useRequestFocusSync } from '../hooks/useRequestFocusSync'
+import { scrollRequestIntoView } from '../hooks/useRequestFocusSync'
+import { useRequestFocus } from '../requestFocusContext'
 import s from './RequestSummaryPanel.module.css'
 
 interface RequestCompleteEvent {
@@ -271,23 +272,37 @@ export const RequestSummaryPanel: React.FC = () => {
       .slice(0, 20)
   }, [messages])
 
-  // Requests are grouped under collapsed conversations, so expand the one
-  // holding a focused request before the sync scrolls to it — otherwise its
-  // card isn't rendered and nothing flashes. Ref-backed so the callback stays
-  // stable (or the sync would re-fire on every message).
+  // Requests are grouped under collapsed conversations, so a focused request's
+  // card may not be rendered yet. On focus, expand its conversation and mark it
+  // pending; a second effect scrolls once the card has actually rendered (keyed
+  // on expandedConversations, so it waits for the expand rather than guessing a
+  // frame). conversationsRef keeps the lookup current without re-running on
+  // every message.
+  const focus = useRequestFocus()
+  const focused = focus?.focusedRequest
+  const pendingScrollRef = React.useRef<string | null>(null)
   const conversationsRef = React.useRef(conversations)
   React.useEffect(() => {
     conversationsRef.current = conversations
   }, [conversations])
-  const expandConversationFor = React.useCallback((requestId: string) => {
+
+  React.useEffect(() => {
+    if (!focused || focused.sourceKey === 'requests') return
     const conv = conversationsRef.current.find(
-      (c) => c.requests.some((r) => r.requestId === requestId),
+      (c) => c.requests.some((r) => r.requestId === focused.requestId),
     )
     if (!conv) return
+    pendingScrollRef.current = focused.requestId
     setExpandedConversations((prev) =>
       prev.has(conv.conversationId) ? prev : new Set(prev).add(conv.conversationId))
-  }, [])
-  useRequestFocusSync(scrollContainerRef, 'requests', expandConversationFor)
+  }, [focused])
+
+  React.useEffect(() => {
+    if (pendingScrollRef.current
+        && scrollRequestIntoView(scrollContainerRef.current, pendingScrollRef.current)) {
+      pendingScrollRef.current = null
+    }
+  }, [focused, expandedConversations])
 
   return (
     <div className="panel panel-history">

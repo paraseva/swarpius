@@ -107,8 +107,13 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
     scrollContainerRef, messages, requestHistory, reachedBeginning ?? false, historyBatchToken ?? 0,
   )
 
-  // Date picker: request the chosen day, then scroll to it once it arrives
-  // (fire-and-forget + reactive — the load may already be in memory).
+  // Date picker: request the chosen day, then scroll to it. The scroll fires
+  // once the batch has fully loaded (the batch token), NOT per message —
+  // otherwise the in-between days streaming in would keep shifting the target.
+  const chatMessagesRef = React.useRef(chatMessages)
+  React.useEffect(() => {
+    chatMessagesRef.current = chatMessages
+  }, [chatMessages])
   const [pendingScrollTs, setPendingScrollTs] = React.useState<number | null>(null)
   const handlePickDate = React.useCallback((dayStartMs: number) => {
     // If the day is older than what's loaded, fill the whole gap up to the
@@ -124,14 +129,15 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
 
   React.useEffect(() => {
     if (pendingScrollTs == null) return
-    const target = chatMessages.find((m) => m.timestamp >= pendingScrollTs)
+    const target = chatMessagesRef.current.find((m) => m.timestamp >= pendingScrollTs)
     if (!target) return  // the day isn't loaded yet — wait for the batch
-    const el = scrollContainerRef.current?.querySelector(`[data-message-id="${target.id}"]`)
-    if (el) {
-      el.scrollIntoView({ block: 'start' })
-      setPendingScrollTs(null)
-    }
-  }, [pendingScrollTs, chatMessages])
+    const container = scrollContainerRef.current
+    // Land on the day separator so the "—— Wed 17 Jun ——" line is at the top.
+    const el = container?.querySelector(`[data-day-for="${target.id}"]`)
+      ?? container?.querySelector(`[data-message-id="${target.id}"]`)
+    el?.scrollIntoView({ block: 'start' })
+    setPendingScrollTs(null)
+  }, [pendingScrollTs, historyBatchToken])
 
   // Populate textarea from speech recognition results. Syncing from
   // an external system (Web Speech API) is exactly the case where the
@@ -203,11 +209,9 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
         <span className="panel-heading-group">
           <h2>Chat</h2>
           <GuidanceButton id="chat-basics" />
-        </span>
-        <span className="panel-header-right">
           <HistoryDatePicker onPick={handlePickDate} />
-          <span className={`status status-${status}`}>{status.toUpperCase()}</span>
         </span>
+        <span className={`status status-${status}`}>{status.toUpperCase()}</span>
       </div>
       {banners.length > 0 ? (
         <div className={cs.rateLimitBannerStack} role="status" aria-live="polite">
@@ -275,7 +279,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
               return (
                 <React.Fragment key={m.id}>
                 {showDaySeparator ? (
-                  <li className="message-day-separator" aria-hidden="true">
+                  <li className="message-day-separator" data-day-for={m.id} aria-hidden="true">
                     <span>{dayLabel(m.timestamp)}</span>
                   </li>
                 ) : null}

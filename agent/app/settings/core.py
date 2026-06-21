@@ -117,6 +117,9 @@ class Settings:
     roon_search_retry_limit: int
     roon_search_retry_delay: float
     log_retention_days: int
+    chat_history_retention_days: int
+    diagnostics_retention_days: int
+    listening_history_retention_days: int
     conversation_history_max_turns: int
     conversation_idle_timeout_seconds: int
     llm_timeout_seconds: int
@@ -224,6 +227,9 @@ class Settings:
             roon_search_retry_limit=_int_env("ROON_SEARCH_RETRY_LIMIT", 2),
             roon_search_retry_delay=_float_env("ROON_SEARCH_RETRY_DELAY", 1.0),
             log_retention_days=max(1, _int_env("LOG_RETENTION_DAYS", 7)),
+            chat_history_retention_days=_int_env("CHAT_HISTORY_RETENTION_DAYS", 90),
+            diagnostics_retention_days=_int_env("DIAGNOSTICS_RETENTION_DAYS", 30),
+            listening_history_retention_days=_int_env("LISTENING_HISTORY_RETENTION_DAYS", 365),
             conversation_history_max_turns=_int_env("CONVERSATION_HISTORY_MAX_TURNS", 5),
             conversation_idle_timeout_seconds=_int_env("CONVERSATION_IDLE_TIMEOUT_SECONDS", 300),
             llm_timeout_seconds=max(1, _int_env("LLM_TIMEOUT_SECONDS", 60)),

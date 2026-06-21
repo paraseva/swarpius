@@ -3,16 +3,21 @@ import { FormattedMessageBody } from './FormattedMessageBody'
 import { JsonTreeView } from './JsonTreeView'
 import { RequestIdBadge } from './RequestIdBadge'
 import { useStickyBottomScroll } from '../hooks/useStickyBottomScroll'
+import { useRequestFocusSync } from '../hooks/useRequestFocusSync'
 import { type ChannelId, useWebSocket } from '../websocketContext'
 
 interface HistoryWindowProps {
   title: string
   channel: ChannelId
+  /** When set, this panel participates in the request sync (clicking a badge
+   *  elsewhere scrolls it to that request, and its own badges focus). */
+  syncKey?: string
 }
 
 export const HistoryWindow: React.FC<HistoryWindowProps> = ({
   title,
   channel,
+  syncKey,
 }) => {
   const { messages } = useWebSocket()
   const scrollContainerRef = React.useRef<HTMLDivElement | null>(null)
@@ -31,6 +36,7 @@ export const HistoryWindow: React.FC<HistoryWindowProps> = ({
   )
 
   useStickyBottomScroll(scrollContainerRef, `history:${channel}`)
+  useRequestFocusSync(scrollContainerRef, syncKey)
 
   React.useEffect(() => {
     try {
@@ -132,6 +138,7 @@ export const HistoryWindow: React.FC<HistoryWindowProps> = ({
               return (
               <li
                 key={m.id}
+                data-request-id={typeof msgRequestId === 'string' ? msgRequestId : undefined}
                 className={`message message-${m.direction} ${isToolPairStart ? 'message-tool-pair-start' : ''} ${errorSeverity ? `message-error-severity-${errorSeverity}` : ''}`}
               >
                 <span className="message-meta">
@@ -141,7 +148,7 @@ export const HistoryWindow: React.FC<HistoryWindowProps> = ({
                     <span className="message-meta-date">{new Date(m.timestamp).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}</span>
                   </span>
                   {typeof msgRequestId === 'string' && msgRequestId ? (
-                    <RequestIdBadge requestId={msgRequestId} />
+                    <RequestIdBadge requestId={msgRequestId} syncKey={syncKey} />
                   ) : null}
                 </span>
                 {showRawPayload ? (

@@ -1,5 +1,6 @@
 import React from 'react'
 import { WebSocketProvider } from './WebSocketProvider'
+import { RequestFocusProvider } from './RequestFocusProvider'
 import { ChatPanel } from './components/ChatPanel'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { HistoryWindow } from './components/HistoryWindow'
@@ -630,9 +631,9 @@ const AppShell: React.FC = () => {
         <ErrorBoundary name="Live Diagnostics">
           <div className={s.accordionContainer} role="tablist" aria-label="Live Diagnostics panels">
             {([
-                { key: 'agents' as const, label: 'Agents', content: <HistoryWindow title="Agents" channel="agent-outputs" /> },
-                { key: 'tools' as const, label: 'Tools', content: <HistoryWindow title="Tools" channel="tool-outputs" /> },
-                { key: 'errors' as const, label: 'Errors', content: <HistoryWindow title="Errors" channel="errors" /> },
+                { key: 'agents' as const, label: 'Agents', content: <HistoryWindow title="Agents" channel="agent-outputs" syncKey="agent-outputs" /> },
+                { key: 'tools' as const, label: 'Tools', content: <HistoryWindow title="Tools" channel="tool-outputs" syncKey="tool-outputs" /> },
+                { key: 'errors' as const, label: 'Errors', content: <HistoryWindow title="Errors" channel="errors" syncKey="errors" /> },
                 { key: 'requests' as const, label: 'Session Requests', content: <RequestSummaryPanel /> },
                 { key: 'llm' as const, label: 'LLM Diagnostics', content: <LlmDiagnosticsPanel /> },
                 { key: 'prompt' as const, label: 'Prompt Budget', content: <PromptBudgetPanel /> },
@@ -703,9 +704,11 @@ const RemountingShell: React.FC = () => {
 const App: React.FC = () => (
   <GuidanceProvider>
     <WebSocketProvider>
-      <RemountingShell />
-      <SessionTakeoverOverlay />
-      <RestartModal />
+      <RequestFocusProvider>
+        <RemountingShell />
+        <SessionTakeoverOverlay />
+        <RestartModal />
+      </RequestFocusProvider>
     </WebSocketProvider>
   </GuidanceProvider>
 )

@@ -10,6 +10,7 @@ import { useChatBannerManager } from '../hooks/useChatBannerManager'
 import { useChatTtsAutoPlay } from '../hooks/useChatTtsAutoPlay'
 import { useStickyBottomScroll } from '../hooks/useStickyBottomScroll'
 import { useHistoryScrollback } from '../hooks/useHistoryScrollback'
+import { useRequestFocusSync } from '../hooks/useRequestFocusSync'
 import { HistoryDatePicker } from './HistoryDatePicker'
 import { dayLabel, isNewDay } from '../utils/dayLabel'
 import { correlateOutboundRequestIds } from '../utils/correlateOutboundRequestIds'
@@ -111,6 +112,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
   useHistoryScrollback(
     scrollContainerRef, messages, requestHistory, reachedBeginning ?? false, historyBatchToken ?? 0,
   )
+  useRequestFocusSync(scrollContainerRef, 'chat')
 
   // Scroll the chat to the first loaded day at/after dayStartMs (its separator
   // at the top). Returns false if that day isn't loaded yet.
@@ -291,6 +293,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                 <li
                   className={`message message-${m.direction}${directiveClass}${failedClass}`}
                   data-message-id={m.id}
+                  data-request-id={typeof msgRequestId === 'string' ? msgRequestId : undefined}
                   data-directive={isDirective ? 'true' : undefined}
                   data-failed={failureError ? 'true' : undefined}
                 >
@@ -298,7 +301,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                     <span className="message-meta-sender">
                       {isDirective ? 'Directive' : m.direction === 'outbound' ? 'You' : 'Swarpius'}
                       {isDevMode && typeof msgRequestId === 'string' && msgRequestId ? (
-                        <>{' '}<RequestIdBadge requestId={msgRequestId} /></>
+                        <>{' '}<RequestIdBadge requestId={msgRequestId} syncKey="chat" /></>
                       ) : null}
                       {ttsStatus?.messageId === m.id ? (
                         <>{' '}<TtsStatusIndicator phase={ttsStatus.phase} /></>

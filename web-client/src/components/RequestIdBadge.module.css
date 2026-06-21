@@ -19,6 +19,40 @@
   color: var(--color-text-default);
 }
 
+/* Sync variant: the id focuses the request elsewhere; a small icon copies. */
+.badgeSync {
+  cursor: default;
+  gap: 0.25rem;
+  padding-right: 0.15rem;
+}
+
+.badgeId {
+  cursor: pointer;
+}
+
+.badgeId:hover {
+  color: var(--color-text-default);
+  text-decoration: underline;
+}
+
+.badgeCopy {
+  display: inline-flex;
+  align-items: center;
+  background: transparent;
+  border: none;
+  padding: 0 0.1rem;
+  margin: 0;
+  font: inherit;
+  line-height: 1;
+  color: inherit;
+  opacity: 0.6;
+  cursor: pointer;
+}
+
+.badgeCopy:hover {
+  opacity: 1;
+}
+
 .copied {
   color: var(--color-success-text);
   background: rgba(6, 78, 59, 0.4);

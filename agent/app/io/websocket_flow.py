@@ -35,6 +35,8 @@ from app.constants import (
     CHANNEL_CHAT,
     CHANNEL_CLEAR_CONVERSATION_REQUEST,
     CHANNEL_CLEAR_CONVERSATION_RESPONSE,
+    CHANNEL_CLEAR_LISTENING_HISTORY_REQUEST,
+    CHANNEL_CLEAR_LISTENING_HISTORY_RESPONSE,
     CHANNEL_DEFAULT_ZONE_UPDATE,
     CHANNEL_ERRORS,
     CHANNEL_FEATURE_AVAILABILITY,
@@ -405,6 +407,18 @@ async def _handle_clear_conversation(
             "reason": "A request is in progress — try again once it finishes.",
         }
     await asyncio.to_thread(runtime.clear_conversation_state)
+    return {"ok": True}
+
+
+async def _handle_clear_listening_history(payload: dict, runtime: Any) -> dict:
+    """Delete the listening-history record. Independent of the conversation,
+    so it is not gated on an in-flight request — the store's clear is atomic
+    with concurrent play-event writes (both serialise on the state-DB lock)."""
+    _ = payload
+    store = getattr(runtime, "listening_history", None)
+    if store is None:
+        return {"ok": True}
+    await asyncio.to_thread(store.clear)
     return {"ok": True}
 
 
@@ -919,6 +933,12 @@ async def websocket_handler(
                 await _handle_json_request(
                     websocket, body, CHANNEL_CLEAR_CONVERSATION_RESPONSE,
                     lambda p: _handle_clear_conversation(p, runtime, state),
+                )
+                continue
+            if channel == CHANNEL_CLEAR_LISTENING_HISTORY_REQUEST:
+                await _handle_json_request(
+                    websocket, body, CHANNEL_CLEAR_LISTENING_HISTORY_RESPONSE,
+                    lambda p: _handle_clear_listening_history(p, runtime),
                 )
                 continue
             if channel == CHANNEL_IMAGE_REQUEST:

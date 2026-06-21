@@ -13,7 +13,6 @@ import { correlateOutboundRequestIds } from '../utils/correlateOutboundRequestId
 import { getDirectiveOutboundIds } from '../utils/getDirectiveOutboundIds'
 import { getFailedOutboundErrors } from '../utils/getFailedOutboundErrors'
 import { outboundClientMsgId } from '../utils/outboundClientMsgId'
-import { lastPreviousSessionIndex } from '../utils/previousSessionDivider'
 import cs from './ChatPanel.module.css'
 
 function formatElapsed(seconds: number): string {
@@ -87,12 +86,6 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
   )
 
   const visibleChatMessages = chatMessages
-  // A divider after this index marks where Swarpius's memory starts:
-  // everything above is a replayed previous session, not remembered.
-  const previousSessionDividerIndex = React.useMemo(
-    () => lastPreviousSessionIndex(visibleChatMessages),
-    [visibleChatMessages],
-  )
   const isLlmCallInProgress = isLlmActive
 
   const stepProgress = useChatStepLabel(messages, trimmedCount)
@@ -226,7 +219,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
           </div>
         ) : (
           <ul className="message-list">
-            {visibleChatMessages.map((m, idx) => {
+            {visibleChatMessages.map((m) => {
               const outboundKey = m.direction === 'outbound' ? outboundClientMsgId(m) : undefined
               const isDirective = outboundKey !== undefined && directiveOutboundIds.has(outboundKey)
               const failureError = outboundKey !== undefined ? failedOutboundErrors.get(outboundKey) : undefined
@@ -242,7 +235,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
               return (
                 <React.Fragment key={m.id}>
                 <li
-                  className={`message message-${m.direction}${m.meta?.previous_session ? ' message-previous-session' : ''}${directiveClass}${failedClass}`}
+                  className={`message message-${m.direction}${directiveClass}${failedClass}`}
                   data-directive={isDirective ? 'true' : undefined}
                   data-failed={failureError ? 'true' : undefined}
                 >
@@ -265,11 +258,6 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                     </span>
                   ) : null}
                 </li>
-                {idx === previousSessionDividerIndex ? (
-                  <li className="message-session-divider">
-                    <span>Earlier session — Swarpius doesn’t remember the messages above</span>
-                  </li>
-                ) : null}
                 </React.Fragment>
               )
             })}

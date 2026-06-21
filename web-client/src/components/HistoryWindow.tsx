@@ -132,7 +132,7 @@ export const HistoryWindow: React.FC<HistoryWindowProps> = ({
               return (
               <li
                 key={m.id}
-                className={`message message-${m.direction} ${isToolPairStart ? 'message-tool-pair-start' : ''} ${errorSeverity ? `message-error-severity-${errorSeverity}` : ''}${m.meta?.previous_session ? ' message-previous-session' : ''}`}
+                className={`message message-${m.direction} ${isToolPairStart ? 'message-tool-pair-start' : ''} ${errorSeverity ? `message-error-severity-${errorSeverity}` : ''}`}
               >
                 <span className="message-meta">
                   <span>

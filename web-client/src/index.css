@@ -524,6 +524,28 @@ body {
   gap: 0.4rem;
 }
 
+.message-load-earlier {
+  list-style: none;
+  display: flex;
+  justify-content: center;
+  margin: 0.2rem 0 0.4rem;
+}
+
+.message-load-earlier button {
+  background: transparent;
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.12));
+  border-radius: var(--radius-md);
+  color: var(--text-muted, #9a9a9a);
+  font-size: 0.74rem;
+  padding: 0.25rem 0.8rem;
+  cursor: pointer;
+}
+
+.message-load-earlier button:hover {
+  color: var(--text, #e6e6e6);
+  border-color: var(--border, rgba(255, 255, 255, 0.24));
+}
+
 .message-day-separator {
   list-style: none;
   display: flex;

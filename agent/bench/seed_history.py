@@ -9,8 +9,9 @@ Run against the instance's data dir, e.g.:
     ./dev python bench/seed_history.py            # default spread
     ./dev python bench/seed_history.py --days 0 1 3 8   # active days-ago
 
-Additive — it inserts rows; it does not clear. Writes to
-$SWARPIUS_DATA_DIR/messages.db (default agent/data/messages.db).
+Clears ws_messages first, then inserts — re-running gives the same clean set,
+no duplicates. Writes to $SWARPIUS_DATA_DIR/messages.db (default
+agent/data/messages.db).
 """
 
 from __future__ import annotations
@@ -68,14 +69,16 @@ def seed(days_ago: list[int]) -> int:
     conv = 0
     try:
         with db.transaction() as conn:
+            conn.execute("DELETE FROM ws_messages")  # clean slate — no duplicates on re-run
             for day in sorted(days_ago, reverse=True):
                 conv += 1
                 for turn in range(_TURNS_PER_DAY):
                     user_text, agent_text = _PROMPTS[(conv + turn) % len(_PROMPTS)]
                     rid = f"rq-c{conv:02d}-{turn + 1:04d}"
                     base = _ts_ms(day, 9 + turn)
-                    # user chat (outbound), agent reply (chat), plus a couple of
-                    # diagnostics events carrying the shared request_id.
+                    # Match the real persisted shapes: user chat is
+                    # {channel, body} with direction=outbound; the agent reply
+                    # is the structured chat_response payload the FE parses.
                     _insert(conn, "chat", {"channel": "chat", "body": user_text},
                             base, {"direction": "outbound"})
                     _insert(conn, "agent-outputs",
@@ -84,8 +87,10 @@ def seed(days_ago: list[int]) -> int:
                     _insert(conn, "tool-outputs",
                             {"request_id": rid, "source": "Roon", "summary": "roon_action"},
                             base + 1500)
-                    _insert(conn, "chat", {"channel": "chat", "body": agent_text},
-                            base + 2500, {"request_id": rid})
+                    _insert(conn, "chat",
+                            {"agent_name": "Coordinator", "chat_response": agent_text,
+                             "request_id": rid},
+                            base + 2500, {"agent_name": "Coordinator", "request_id": rid})
                     inserted += 4
     finally:
         db.close()
@@ -100,9 +105,9 @@ def main() -> None:
     )
     args = parser.parse_args()
     path = messages_db_path()
-    print(f"Seeding history into {path} for days-ago {sorted(args.days, reverse=True)} …")
+    print(f"Clearing + seeding history in {path} for days-ago {sorted(args.days, reverse=True)} …")
     n = seed(args.days)
-    print(f"Inserted {n} messages across {len(set(args.days))} day(s). "
+    print(f"Cleared existing messages, inserted {n} across {len(set(args.days))} day(s). "
           f"Restart/reconnect the agent to see them.")
 
 

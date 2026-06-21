@@ -70,6 +70,18 @@ class TestLoadDay(unittest.TestCase):
         self.assertEqual(result["messages"], [])
         self.assertFalse(result["has_older"])
 
+    def test_load_range_returns_everything_in_window_chronologically(self):
+        # [4 days ago 00:00, today 00:00) → the 4-days then 2-days messages,
+        # oldest first, excluding today; nothing older than the start.
+        result = self.store.load_range(_ms(4, 0), _ms(0, 0))
+        self.assertEqual(self._bodies(result), ["fourdays", "twodays"])
+        self.assertFalse(result["has_older"])
+
+    def test_load_range_reports_older_when_earlier_history_exists(self):
+        result = self.store.load_range(_ms(2, 0), _ms(0, 0))
+        self.assertEqual(self._bodies(result), ["twodays"])
+        self.assertTrue(result["has_older"])
+
 
 if __name__ == "__main__":
     unittest.main()

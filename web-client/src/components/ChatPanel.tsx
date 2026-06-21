@@ -64,7 +64,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
 }) => {
   const {
     status, messages, sendMessage, isLlmActive, trimmedCount,
-    requestHistory, reachedBeginning, historyBatchToken,
+    requestHistory, requestHistoryRange, reachedBeginning, historyBatchToken,
   } = useWebSocket()
   const [draft, setDraft] = React.useState('')
   const speech = useSpeechRecognition()
@@ -111,9 +111,16 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
   // (fire-and-forget + reactive — the load may already be in memory).
   const [pendingScrollTs, setPendingScrollTs] = React.useState<number | null>(null)
   const handlePickDate = React.useCallback((dayStartMs: number) => {
-    requestHistory?.(dayStartMs + 86_400_000 - 1)  // end of the selected local day
+    // If the day is older than what's loaded, fill the whole gap up to the
+    // earliest loaded message so history stays contiguous (no hole between the
+    // jumped-to day and what's already in memory). If it's already within the
+    // loaded range, just scroll to it.
+    const oldestLoaded = messages.length > 0 ? messages[0].timestamp : Date.now()
+    if (dayStartMs < oldestLoaded) {
+      requestHistoryRange?.(dayStartMs, oldestLoaded)
+    }
     setPendingScrollTs(dayStartMs)
-  }, [requestHistory])
+  }, [messages, requestHistoryRange])
 
   React.useEffect(() => {
     if (pendingScrollTs == null) return

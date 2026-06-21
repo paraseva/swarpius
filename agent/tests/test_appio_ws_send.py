@@ -34,6 +34,9 @@ class _CapturingStore(MessageStore):
     def load_day(self, before_ms):
         return {"messages": [], "has_older": False}
 
+    def load_range(self, start_ms, end_ms):
+        return {"messages": [], "has_older": False}
+
     def close(self):
         pass
 

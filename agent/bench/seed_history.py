@@ -25,6 +25,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from app.data_paths import messages_db_path  # noqa: E402
 from app.io.state_db import StateDb  # noqa: E402
+from app.settings.env_file import load_env_into_process  # noqa: E402
+
+# Resolve the same data dir the agent uses (honours SWARPIUS_DATA_DIR in .env).
+load_env_into_process()
 
 # Active days-ago to populate (gaps between them exercise skip-empty).
 _DEFAULT_DAYS_AGO = [0, 1, 4, 9]

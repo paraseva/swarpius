@@ -9,6 +9,8 @@ import { useChatStepLabel } from '../hooks/useChatStepLabel'
 import { useChatBannerManager } from '../hooks/useChatBannerManager'
 import { useChatTtsAutoPlay } from '../hooks/useChatTtsAutoPlay'
 import { useStickyBottomScroll } from '../hooks/useStickyBottomScroll'
+import { useHistoryScrollback } from '../hooks/useHistoryScrollback'
+import { dayLabel, isNewDay } from '../utils/dayLabel'
 import { correlateOutboundRequestIds } from '../utils/correlateOutboundRequestIds'
 import { getDirectiveOutboundIds } from '../utils/getDirectiveOutboundIds'
 import { getFailedOutboundErrors } from '../utils/getFailedOutboundErrors'
@@ -59,7 +61,10 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
   isAutoTtsEnabled, isDevMode, isMobile,
   ttsHealth = 'healthy', ttsWsUrl,
 }) => {
-  const { status, messages, sendMessage, isLlmActive, trimmedCount } = useWebSocket()
+  const {
+    status, messages, sendMessage, isLlmActive, trimmedCount,
+    requestHistory, reachedBeginning,
+  } = useWebSocket()
   const [draft, setDraft] = React.useState('')
   const speech = useSpeechRecognition()
   const scrollContainerRef = React.useRef<HTMLDivElement | null>(null)
@@ -97,6 +102,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
   })
 
   useStickyBottomScroll(scrollContainerRef, 'chat')
+  useHistoryScrollback(scrollContainerRef, messages, requestHistory, reachedBeginning ?? false)
 
   // Populate textarea from speech recognition results. Syncing from
   // an external system (Web Speech API) is exactly the case where the
@@ -219,7 +225,9 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
           </div>
         ) : (
           <ul className="message-list">
-            {visibleChatMessages.map((m) => {
+            {visibleChatMessages.map((m, idx) => {
+              const prev = idx > 0 ? visibleChatMessages[idx - 1] : undefined
+              const showDaySeparator = !prev || isNewDay(prev.timestamp, m.timestamp)
               const outboundKey = m.direction === 'outbound' ? outboundClientMsgId(m) : undefined
               const isDirective = outboundKey !== undefined && directiveOutboundIds.has(outboundKey)
               const failureError = outboundKey !== undefined ? failedOutboundErrors.get(outboundKey) : undefined
@@ -234,6 +242,11 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
               const failedClass = failureError ? ' message-failed' : ''
               return (
                 <React.Fragment key={m.id}>
+                {showDaySeparator ? (
+                  <li className="message-day-separator" aria-hidden="true">
+                    <span>{dayLabel(m.timestamp)}</span>
+                  </li>
+                ) : null}
                 <li
                   className={`message message-${m.direction}${directiveClass}${failedClass}`}
                   data-directive={isDirective ? 'true' : undefined}

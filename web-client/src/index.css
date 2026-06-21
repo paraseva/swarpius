@@ -524,6 +524,26 @@ body {
   gap: 0.4rem;
 }
 
+.message-day-separator {
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 0.3rem 0;
+  color: var(--text-muted, #8a8a8a);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.message-day-separator::before,
+.message-day-separator::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border-subtle, rgba(255, 255, 255, 0.08));
+}
+
 .message {
   max-width: 100%;
   min-width: 0;

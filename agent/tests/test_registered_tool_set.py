@@ -56,12 +56,13 @@ _ALWAYS_REGISTERED = {
     "roon_status",
     "roon_config",
     "result_fetch",
+    "listening_history",
 }
 
 
 class TestRegisteredToolSet(unittest.TestCase):
 
-    def test_five_roon_and_result_tools_registered_when_web_search_disabled(self):
+    def test_core_tools_registered_when_web_search_disabled(self):
         env = {**_BASE_ENV, "WEB_SEARCH_PROVIDER": "none"}
         with _env_and_settings_cache(env):
             rs = _initialise_runtime()

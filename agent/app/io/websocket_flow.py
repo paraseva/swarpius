@@ -957,18 +957,28 @@ async def websocket_handler(
                 )
                 continue
             if channel == CHANNEL_HISTORY_REQUEST:
-                # Fire-and-forget: send the requested day's messages on their
-                # normal channels (the FE's passive receive places them). No
-                # response envelope.
+                # Fire-and-forget: send the requested messages on their normal
+                # channels (the FE's passive receive places them). No response
+                # envelope. Either a single day (before_ms) or a contiguous
+                # range (start_ms/end_ms — a date jump fills the gap so loaded
+                # history stays contiguous).
                 try:
-                    before_ms = int(json.loads(body).get("before_ms"))
-                except (ValueError, TypeError, AttributeError):
+                    req = json.loads(body)
+                except (ValueError, TypeError):
                     continue
                 from agent import get_server_start_ms
                 from app.io.message_store import get_message_store
-                result = await loop.run_in_executor(
-                    None, get_message_store().load_day, before_ms,
-                )
+                store = get_message_store()
+                if "start_ms" in req and "end_ms" in req:
+                    result = await loop.run_in_executor(
+                        None, store.load_range, int(req["start_ms"]), int(req["end_ms"]),
+                    )
+                elif "before_ms" in req:
+                    result = await loop.run_in_executor(
+                        None, store.load_day, int(req["before_ms"]),
+                    )
+                else:
+                    continue
                 await _send_history_batch(websocket, result, get_server_start_ms())
                 continue
             if channel == CHANNEL_IMAGE_REQUEST:

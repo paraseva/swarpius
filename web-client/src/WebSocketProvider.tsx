@@ -320,6 +320,19 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
     }
   }, [])
 
+  // Load a contiguous range [startMs, endMs) — used by the date picker to
+  // fill the gap between a jumped-to day and what's already loaded, so the
+  // history stays contiguous.
+  const requestHistoryRange = useCallback((startMs: number, endMs: number) => {
+    const socket = socketRef.current
+    if (socket && socket.readyState === WebSocket.OPEN) {
+      socket.send(JSON.stringify({
+        channel: 'history-request',
+        body: JSON.stringify({ start_ms: startMs, end_ms: endMs }),
+      }))
+    }
+  }, [])
+
   const value = useMemo(
     () => ({
       status,
@@ -327,6 +340,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
       sendMessage,
       clearMessages,
       requestHistory,
+      requestHistoryRange,
       reachedBeginning,
       historyBatchToken,
       isLlmActive,
@@ -337,8 +351,8 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
       markRestarting,
     }),
     [
-      status, messages, sendMessage, clearMessages, requestHistory, reachedBeginning,
-      historyBatchToken, isLlmActive, latestZoneSnapshot,
+      status, messages, sendMessage, clearMessages, requestHistory, requestHistoryRange,
+      reachedBeginning, historyBatchToken, isLlmActive, latestZoneSnapshot,
       trimmedCount, connectionGeneration, isRestarting, markRestarting,
     ],
   )

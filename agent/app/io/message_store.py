@@ -52,6 +52,12 @@ class MessageStore(ABC):
         ``before_ms``: {"messages": [...], "has_older": bool}."""
 
     @abstractmethod
+    def load_range(self, start_ms: int, end_ms: int) -> Dict[str, Any]:
+        """Return every message in ``[start_ms, end_ms)`` (oldest first):
+        {"messages": [...], "has_older": bool}. Used to fill the gap when
+        jumping to an older date, keeping the loaded history contiguous."""
+
+    @abstractmethod
     def close(self) -> None:
         """Release resources."""
 
@@ -129,6 +135,24 @@ class SqliteMessageStore(MessageStore):
             "has_older": has_older,
         }
 
+    def load_range(self, start_ms: int, end_ms: int) -> Dict[str, Any]:
+        with self._db.lock:
+            rows = self._db.conn.execute(
+                "SELECT id, channel, payload, meta, created_at FROM ws_messages "
+                "WHERE created_at >= ? AND created_at < ? ORDER BY created_at, id",
+                (start_ms, end_ms),
+            ).fetchall()
+            has_older = bool(
+                self._db.conn.execute(
+                    "SELECT EXISTS(SELECT 1 FROM ws_messages WHERE created_at < ?)",
+                    (start_ms,),
+                ).fetchone()[0],
+            )
+        return {
+            "messages": [self._row_to_dict(r) for r in rows],
+            "has_older": has_older,
+        }
+
     @staticmethod
     def _row_to_dict(row: Any) -> Dict[str, Any]:
         row_id, channel, payload_json, meta_json, created_at = row
@@ -170,6 +194,9 @@ class NullMessageStore(MessageStore):
         return []
 
     def load_day(self, before_ms: int) -> Dict[str, Any]:
+        return {"messages": [], "has_older": False}
+
+    def load_range(self, start_ms: int, end_ms: int) -> Dict[str, Any]:
         return {"messages": [], "has_older": False}
 
     def close(self) -> None:

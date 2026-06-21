@@ -67,6 +67,10 @@ export interface WebSocketContextValue {
    *  or before `beforeMs`. The reply arrives as ordinary messages (passive
    *  receive) plus a history-cursor signal — there is no response to await. */
   requestHistory?: (beforeMs: number) => void
+  /** Fire-and-forget request for a contiguous range [startMs, endMs). Used by
+   *  the date picker to fill the gap to an older day, keeping loaded history
+   *  contiguous. */
+  requestHistoryRange?: (startMs: number, endMs: number) => void
   /** True once the server has signalled (via history-cursor) that no older
    *  history exists past what is loaded — i.e. scroll-back is exhausted. */
   reachedBeginning?: boolean

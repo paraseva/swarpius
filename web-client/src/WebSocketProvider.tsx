@@ -86,6 +86,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
   const trimmedCount = messageState.trimmedCount
   const [isLlmActive, setIsLlmActive] = useState(false)
   const [reachedBeginning, setReachedBeginning] = useState(false)
+  const [historyBatchToken, setHistoryBatchToken] = useState(0)
   const [latestZoneSnapshot, setLatestZoneSnapshot] = useState<unknown>(null)
   const [connectionGeneration, setConnectionGeneration] = useState(0)
   const [isRestarting, setIsRestarting] = useState(false)
@@ -200,6 +201,10 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
         if (channel === 'history-cursor') {
           const hasOlder = (payload as { has_older?: boolean } | undefined)?.has_older
           setReachedBeginning(hasOlder === false)
+          // The cursor closes a history batch (it's sent after the day's
+          // messages). Bumping the token lets scroll-back release its in-flight
+          // guard exactly when the batch is fully delivered.
+          setHistoryBatchToken((t) => t + 1)
           return
         }
 
@@ -323,6 +328,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
       clearMessages,
       requestHistory,
       reachedBeginning,
+      historyBatchToken,
       isLlmActive,
       latestZoneSnapshot,
       trimmedCount,
@@ -332,7 +338,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
     }),
     [
       status, messages, sendMessage, clearMessages, requestHistory, reachedBeginning,
-      isLlmActive, latestZoneSnapshot,
+      historyBatchToken, isLlmActive, latestZoneSnapshot,
       trimmedCount, connectionGeneration, isRestarting, markRestarting,
     ],
   )

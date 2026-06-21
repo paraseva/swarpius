@@ -692,6 +692,36 @@ class RuntimeState(_StateInitMixin, _StateZoneMixin):
             participant.restore_state(saved)
         manager.register(participant)
 
+    def clear_conversation_state(self) -> None:
+        """Wipe the conversation: the model's working memory and the Roon
+        references it built, the persisted snapshot, and the transcript — a
+        genuine fresh start. The runtime default zone is preserved (it's a
+        preference, not conversation content). Callers must ensure no request
+        is in flight (the clear control is disabled during a request)."""
+        # Working memory (group A) — mutate the shared-by-reference
+        # collections in place so tool-captured views stay valid.
+        self.conversation_history_provider.history.clear()
+        self.execution_trace.clear()
+        self.results.entries.clear()
+        self.results.history.clear()
+        self.results.counter = 0
+        self.results.last_handle = None
+        self.global_step = 0
+        self.execution_trace_provider.set_context("")
+        self.search_history_provider.set_context("")
+
+        # The conversation's Roon references (search-result + queue handles).
+        if self.roon_connection is not None:
+            session_manager = self.roon_connection.session_manager
+            session_manager.refs.clear()
+            session_manager._session_current_list.clear()
+            self.roon_connection._queue_ref_maps.clear()
+
+        # Persist the now-empty state, then wipe the transcript.
+        self.persist_state()
+        from app.io.message_store import get_message_store
+        get_message_store().clear()
+
     def persist_state(self) -> None:
         """Commit the current state snapshot. Called by the deterministic
         request-completion plumbing, not the LLM coordinator. Skipped when a

@@ -43,6 +43,12 @@ class PersistenceManager:
         self._participants: List[PersistentState] = []
         self._restored: Dict[str, Dict[str, Any]] = self._read_all()
 
+    @property
+    def state_db(self) -> StateDb:
+        """The shared DB handle, for stores that persist outside the
+        capture/restore snapshot (e.g. the listening-history table)."""
+        return self._db
+
     def _read_all(self) -> Dict[str, Dict[str, Any]]:
         with self._db.lock:
             rows = self._db.conn.execute(

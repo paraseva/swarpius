@@ -245,6 +245,9 @@ class _StateInitMixin:
         roon_connection.register_event_listener(self._forward_roon_live_event)
         roon_connection.register_event_listener(self.play_history.handle_event)
         self.play_history.set_stop_marker_title(settings.stop_marker_title)
+        if self.listening_history is not None:
+            roon_connection.register_event_listener(self.listening_history.handle_event)
+            self.listening_history.set_stop_marker_title(settings.stop_marker_title)
 
         # Stop-marker coordinator: builds + warms cache once Roon is
         # alive. initialise() walks marker → action_list and stores the

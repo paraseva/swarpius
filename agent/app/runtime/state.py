@@ -40,6 +40,7 @@ from app.llm.model_profiles import (  # noqa: F401 — get_model_profile / load_
 from app.llm.tool_registry import ToolRegistry
 from app.roon.config_action_service import ConfigActionService
 from app.roon.control_service import RoonControlService
+from app.roon.listening_history import ListeningHistoryStore
 from app.roon.play_history import PlayHistoryStore
 from app.roon.stop_marker import StopMarkerCoordinator
 from app.roon.zone_artwork_service import ZoneArtworkCache
@@ -155,6 +156,9 @@ class RuntimeState(_StateInitMixin, _StateZoneMixin):
         # ``ensure_initialised``.
         self.play_history = PlayHistoryStore(store_path=play_history_path())
         self.play_history.load()
+        # Queryable listening history ("what did I listen to…"). Created when
+        # persistence attaches (it needs the shared state DB).
+        self.listening_history: Optional[ListeningHistoryStore] = None
         # Zone subsystem bundles the two existing state owners and
         # exposes the artwork-cache mirror handles tests rely on.
         # Property delegations below preserve the legacy runtime.<attr>
@@ -669,6 +673,7 @@ class RuntimeState(_StateInitMixin, _StateZoneMixin):
         no-op. The manager is retained so Roon-scoped state can attach once
         the connection exists and so request completion can commit."""
         self._persistence_manager = manager
+        self.listening_history = ListeningHistoryStore(manager.state_db)
         for participant in self._persistence_participants():
             self._restore_and_register(manager, participant)
 

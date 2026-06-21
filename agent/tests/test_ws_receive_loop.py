@@ -4,9 +4,10 @@ async-iterates crafted frames and a stubbed runtime (deps are injected, so
 process_request / broadcast / runtime are supplied as test doubles).
 
 Contract: a settings-test frame routes to the test-response channel; a
-chat frame is persisted with outbound meta (so refresh-replay shows it as
-the user's bubble); a successful save that asked to restart re-broadcasts
-feature-availability and requests a restart.
+chat frame is NOT persisted on receipt (persistence is deferred to request
+completion so a dropped in-flight request leaves no orphan); a successful
+save that asked to restart re-broadcasts feature-availability and requests
+a restart.
 """
 import asyncio
 import importlib
@@ -124,7 +125,11 @@ class TestWebsocketReceiveLoop(unittest.TestCase):
             ], _make_runtime())
         self.assertIn(CHANNEL_SETTINGS_TEST_RESPONSE, _sent_channels(ws))
 
-    def test_chat_frame_persisted_with_outbound_meta(self):
+    def test_chat_frame_not_persisted_on_receipt(self):
+        # Persistence is deferred to request completion (request_flow's
+        # _persist_user_chat, grouped with the request) so a restart that
+        # drops the in-flight request leaves no orphaned message. The loop
+        # itself must not write the chat on receipt.
         store = _CapturingStore()
         set_message_store(store)
         _run_handler(
@@ -132,10 +137,7 @@ class TestWebsocketReceiveLoop(unittest.TestCase):
             _make_runtime(),
         )
         chat = [(c, p, m) for (c, p, m) in store.appended if c == CHANNEL_CHAT]
-        self.assertTrue(chat, "chat message was not persisted")
-        _, _, meta = chat[0]
-        self.assertEqual(meta.get("direction"), "outbound")
-        self.assertEqual(meta.get("client_msg_id"), "cm1")
+        self.assertEqual(chat, [], "user chat must not be persisted on receipt")
 
     def test_save_with_restart_rebroadcasts_and_requests_restart(self):
         runtime = _make_runtime()

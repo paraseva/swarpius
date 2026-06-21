@@ -827,7 +827,8 @@ def run_cli_loop() -> None:
 
     history_path = cli_history_path()
     cli_history.load_history(history_path)
-    id_generator = RequestIdGenerator()
+    # Use the process-level generator (restored across restarts) when wired.
+    id_generator = runtime.request_id_generator or RequestIdGenerator()
     session_usage = SessionUsageTracker()
 
     # Route CLI-mode TTS disable notices through Rich (yellow one-liner)

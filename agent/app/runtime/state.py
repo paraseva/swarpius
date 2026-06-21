@@ -47,6 +47,7 @@ from app.roon.zone_artwork_service import ZoneArtworkCache
 from app.roon.zone_domain import ZoneDomain
 from app.roon.zone_snapshot import ZoneSnapshotBuilder
 from app.runtime.llm_clients import LLMClientsManager
+from app.runtime.request_logger import RequestIdGenerator
 from app.runtime.result_store_manager import ResultStoreManager
 from app.runtime.result_store_types import ResultStoreEntry
 from app.runtime.roon_persistence import DefaultZoneState, QueueRefsState
@@ -148,6 +149,11 @@ class RuntimeState(_StateInitMixin, _StateZoneMixin):
         self.llm_call_count: int = 0
         self.validation_retry_count: int = 0
         self._persistence_manager: Optional["PersistenceManager"] = None
+        # Process-level conversation tracker / request-ID generator, shared by
+        # the WS handler and the CLI runner (single-session). Created when
+        # persistence attaches so its state can be restored; until then,
+        # process_request falls back to a transient one.
+        self.request_id_generator: Optional[RequestIdGenerator] = None
         self.skills_dir = AGENT_ROOT / "skills"
         # ``stop_marker_title`` is wired in ``_ensure_initialised_locked``
         # via ``set_stop_marker_title`` so ``__init__`` does not snapshot
@@ -674,6 +680,8 @@ class RuntimeState(_StateInitMixin, _StateZoneMixin):
         the connection exists and so request completion can commit."""
         self._persistence_manager = manager
         self.listening_history = ListeningHistoryStore(manager.state_db)
+        self.request_id_generator = RequestIdGenerator()
+        self._restore_and_register(manager, self.request_id_generator)
         for participant in self._persistence_participants():
             self._restore_and_register(manager, participant)
 

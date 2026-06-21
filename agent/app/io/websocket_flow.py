@@ -789,7 +789,10 @@ async def websocket_handler(
         session_id,
     )
     state = WebsocketSessionState()
-    id_generator = RequestIdGenerator()
+    # Process-level generator (shared across connections so a reconnect
+    # continues the conversation); fall back to a transient one if
+    # persistence wasn't wired.
+    id_generator = getattr(runtime, "request_id_generator", None) or RequestIdGenerator()
     loop = asyncio.get_running_loop()
 
     async def _start_next_if_idle() -> None:

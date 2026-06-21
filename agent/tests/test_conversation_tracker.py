@@ -213,3 +213,33 @@ class TestLastResponseTracking(unittest.TestCase):
         assert tracker.now == 5000.0
         clock.advance(100)
         assert tracker.now == 5100.0
+
+
+class TestPersistence(unittest.TestCase):
+    """Capture/restore so conversation grouping survives a restart."""
+
+    def test_round_trip_continues_conversation_and_topics(self):
+        clock = MockClock()
+        original = ConversationTracker(clock=clock)
+        original.assign_by_timeout()  # c01
+        original.update_topic("c01", "jazz")
+        original.set_last_response("c01", "Playing Take Five")
+
+        restored = ConversationTracker(clock=clock)
+        restored.restore_state(original.capture_state())
+
+        clock.advance(60)  # within idle window
+        self.assertEqual(restored.assign_by_timeout(), "c01")
+        thread = restored.get_active_threads()[0]
+        self.assertEqual(thread.topic_summary, "jazz")
+        self.assertEqual(thread.last_response_summary, "Playing Take Five")
+
+        clock.advance(10_000)  # past idle window → next conversation continues numbering
+        self.assertEqual(restored.assign_by_timeout(), "c02")
+
+    def test_default_clock_is_wall_clock(self):
+        # The default must be wall-clock so a persisted last-request time is
+        # comparable across processes (a monotonic value would not be).
+        import time
+        tracker = ConversationTracker()
+        self.assertAlmostEqual(tracker.now, time.time(), delta=2.0)

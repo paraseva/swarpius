@@ -135,7 +135,6 @@ class Settings:
 
     # Identity / connection
     llm_persona: Optional[str]
-    default_roon_zone: Optional[str]
     roon_core_url: Optional[str]
     roon_core_name: Optional[str]
     roon_profile_name: Optional[str]
@@ -241,7 +240,6 @@ class Settings:
             ),
             disable_simulated_stop=_bool_env("DISABLE_SIMULATED_STOP"),
             llm_persona=_opt_str_env("LLM_PERSONA"),
-            default_roon_zone=_opt_str_env("DEFAULT_ROON_ZONE"),
             roon_core_url=_opt_str_env("ROON_CORE_URL"),
             roon_core_name=_opt_str_env("ROON_CORE_NAME"),
             roon_profile_name=_opt_str_env("ROON_PROFILE_NAME"),

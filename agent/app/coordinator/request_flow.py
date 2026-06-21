@@ -142,7 +142,10 @@ def _write_context_snapshot(
     from app.settings import get_settings
     settings = get_settings()
     persona = settings.llm_persona
-    default_zone = settings.default_roon_zone
+    default_zone = (
+        runtime.roon_connection.get_default_zone()
+        if runtime.roon_connection else None
+    )
 
     resolved = runtime.resolved_profile
     model_profile: Dict[str, Any] = {}

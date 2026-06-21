@@ -202,7 +202,13 @@ class TestConfigPristine(unittest.TestCase):
 
     def test_false_when_non_llm_page_field_set(self):
         """A Roon-tab field counts the same as the LLM fields."""
-        self.assertFalse(self._pristine({"DEFAULT_ROON_ZONE": "Kitchen"}))
+        self.assertFalse(self._pristine({"ROON_CORE_URL": "http://10.0.0.1:9330"}))
+
+    def test_default_roon_zone_no_longer_a_recognised_config_var(self):
+        """DEFAULT_ROON_ZONE was removed — the default zone is chosen at
+        runtime and persisted, not configured via env. Setting it must not
+        count as configuring the assistant."""
+        self.assertTrue(self._pristine({"DEFAULT_ROON_ZONE": "Kitchen"}))
 
     def test_true_when_only_operational_vars_set(self):
         """Relocating the data dir or log file isn't configuring the

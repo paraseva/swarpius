@@ -14,7 +14,6 @@ import { usePublishTabForm } from './settingsFormContext'
 import type { UseSettingsState } from '../../hooks/useSettingsState'
 
 const FIELDS = [
-  'DEFAULT_ROON_ZONE',
   'ROON_CORE_URL',
   'ROON_CORE_NAME',
   'ROON_PROFILE_NAME',
@@ -33,17 +32,9 @@ export const RoonTab: React.FC<{ state: UseSettingsState }> = ({ state }) => {
     <div>
       <p className={f.tabIntro}>
         Optional overrides for your Roon setup. Leave everything blank
-        if auto-discovery is working for you.
+        if auto-discovery is working for you. The default zone is set from
+        the zone panel and remembered automatically.
       </p>
-
-      <TextField
-        id="roon-default-zone"
-        label="Default zone"
-        value={form.values.DEFAULT_ROON_ZONE}
-        onChange={(v) => form.setField('DEFAULT_ROON_ZONE', v)}
-        placeholder="e.g. Living Room"
-        help="The Roon zone the assistant uses by default. Leave blank to use whichever zone Roon shows first."
-      />
 
       <TextField
         id="roon-core-url"

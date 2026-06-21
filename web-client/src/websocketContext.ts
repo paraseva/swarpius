@@ -20,6 +20,8 @@ export type ChannelId =
   | 'open-data-folder-request'
   | 'session-control-request'
   | 'session-control-response'
+  | 'clear-conversation-request'
+  | 'clear-conversation-response'
   | 'rate-limit'
   | 'analysis-list-request'
   | 'analysis-list-response'
@@ -56,6 +58,11 @@ export interface WebSocketContextValue {
   status: ConnectionStatus
   messages: SocketMessage[]
   sendMessage: (channel: ChannelId, body: string) => string
+  /** Wipe the local message view. Used after the server confirms a
+   *  conversation-history clear, so the UI reflects the now-empty store
+   *  without waiting for a reconnect+replay. Optional so test fixtures need
+   *  not supply it; the live provider always does. */
+  clearMessages?: () => void
   /** Whether any LLM call is currently in-flight (tracked incrementally). */
   isLlmActive: boolean
   /** Parsed payload of the most recent `zone-snapshots` message, or null

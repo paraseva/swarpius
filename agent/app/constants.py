@@ -30,6 +30,11 @@ CHANNEL_CLEAR_CONVERSATION_REQUEST = "clear-conversation-request"
 CHANNEL_CLEAR_CONVERSATION_RESPONSE = "clear-conversation-response"
 CHANNEL_CLEAR_LISTENING_HISTORY_REQUEST = "clear-listening-history-request"
 CHANNEL_CLEAR_LISTENING_HISTORY_RESPONSE = "clear-listening-history-response"
+# History lazy-load: the request is fire-and-forget (the server replies by
+# sending the day's messages on their normal channels, tagged historical);
+# the cursor is a passive signal carrying whether older history exists.
+CHANNEL_HISTORY_REQUEST = "history-request"
+CHANNEL_HISTORY_CURSOR = "history-cursor"
 CHANNEL_RATE_LIMIT = "rate-limit"
 CHANNEL_ERRORS = "errors"
 CHANNEL_ANALYSIS_LIST_REQUEST = "analysis-list-request"
@@ -99,10 +104,3 @@ RESULT_HANDLE_REGEX = re.compile(r"\b(?:res|que)_\d{5}\b", re.IGNORECASE)
 PENDING_MESSAGES_MAXLEN = 20
 WS_MAX_FRAME_SIZE = 64 * 1024  # 64 KB per incoming frame
 WS_MAX_QUEUE_SIZE = 32  # incoming frames buffered before back-pressure
-
-# Eager-replay window for the persistent message store. On connect, only
-# messages newer than this are sent to the browser up front; older entries
-# stay in SQLite and are lazy-loaded on scroll-back, so the initial payload
-# stays bounded even though history persists across restarts.
-REPLAY_HISTORY_DAYS = 3
-REPLAY_HISTORY_MS = REPLAY_HISTORY_DAYS * 24 * 60 * 60 * 1000

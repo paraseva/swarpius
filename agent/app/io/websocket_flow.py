@@ -41,6 +41,8 @@ from app.constants import (
     CHANNEL_ERRORS,
     CHANNEL_FEATURE_AVAILABILITY,
     CHANNEL_FEATURE_VERIFY_REQUEST,
+    CHANNEL_HISTORY_CURSOR,
+    CHANNEL_HISTORY_REQUEST,
     CHANNEL_IMAGE_REQUEST,
     CHANNEL_IMAGE_RESPONSE,
     CHANNEL_LLM_DIAGNOSTICS,
@@ -383,6 +385,28 @@ async def _background_rerun(
 # (excluding request_id, which the dispatcher prepends). On error the
 # handler raises; _handle_json_request converts that into the standard
 # {ok: false, error: <str>} shape.
+
+
+async def _send_history_batch(
+    websocket: ServerConnection, result: dict, server_start_ms: int,
+) -> None:
+    """Send a load_day result to the client: each stored message on its own
+    channel (tagged historical, with its stable id + created_at so the FE can
+    sort-insert and dedup), then a passive history-cursor signal carrying
+    whether older history exists. Fire-and-forget — there is no request/response
+    correlation; the FE's passive receive places whatever arrives."""
+    for msg in result["messages"]:
+        meta = dict(msg.get("meta") or {})
+        meta["replay"] = True
+        meta["historical"] = True
+        meta["created_at"] = msg["created_at"]
+        meta["message_id"] = msg["id"]
+        if msg["created_at"] < server_start_ms:
+            meta["previous_session"] = True
+        await _ws_send_to_client(websocket, msg["channel"], msg["payload"], meta=meta)
+    await _ws_send_to_client(
+        websocket, CHANNEL_HISTORY_CURSOR, {"has_older": result["has_older"]},
+    )
 
 
 async def _handle_session_control(payload: dict, runtime: Any) -> dict:
@@ -884,28 +908,16 @@ async def websocket_handler(
         for queue_event in initial_queue_events:
             await _ws_send_to_client(websocket, CHANNEL_QUEUE_UPDATES, queue_event)
 
-        # Replay persisted messages — tag any from before this server session.
-        # Bound the eager window so a long-lived persistent store doesn't dump
-        # days of chat + diagnostics into every fresh connection. Older entries
-        # stay on disk and are lazy-loaded on scroll-back.
+        # Eager history: the most recent non-empty day (load_day at now).
+        # Older days are lazy-loaded on scroll-back via the history-request
+        # channel. Keeps the initial payload small against a long-retained
+        # store and gives one mechanism for connect + scroll-back.
         from agent import get_server_start_ms
-        from app.constants import REPLAY_HISTORY_MS
         from app.io.message_store import get_message_store
-        server_start_ms = get_server_start_ms()
-        replay_cutoff_ms = int(time.time() * 1000) - REPLAY_HISTORY_MS
-
-        for msg in get_message_store().get_all(since_ms=replay_cutoff_ms):
-            replay_meta = dict(msg.get("meta") or {})
-            replay_meta["replay"] = True
-            replay_meta["created_at"] = msg.get("created_at")
-            if msg.get("created_at", 0) < server_start_ms:
-                replay_meta["previous_session"] = True
-            await _ws_send_to_client(
-                websocket,
-                msg["channel"],
-                msg["payload"],
-                meta=replay_meta,
-            )
+        result = await loop.run_in_executor(
+            None, get_message_store().load_day, int(time.time() * 1000),
+        )
+        await _send_history_batch(websocket, result, get_server_start_ms())
 
         async for raw in websocket:
             try:
@@ -943,6 +955,21 @@ async def websocket_handler(
                     websocket, body, CHANNEL_CLEAR_LISTENING_HISTORY_RESPONSE,
                     lambda p: _handle_clear_listening_history(p, runtime),
                 )
+                continue
+            if channel == CHANNEL_HISTORY_REQUEST:
+                # Fire-and-forget: send the requested day's messages on their
+                # normal channels (the FE's passive receive places them). No
+                # response envelope.
+                try:
+                    before_ms = int(json.loads(body).get("before_ms"))
+                except (ValueError, TypeError, AttributeError):
+                    continue
+                from agent import get_server_start_ms
+                from app.io.message_store import get_message_store
+                result = await loop.run_in_executor(
+                    None, get_message_store().load_day, before_ms,
+                )
+                await _send_history_batch(websocket, result, get_server_start_ms())
                 continue
             if channel == CHANNEL_IMAGE_REQUEST:
                 await _handle_json_request(

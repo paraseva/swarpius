@@ -17,6 +17,11 @@ from __future__ import annotations
 from typing import Optional
 
 from app.runtime.state_helpers import _build_web_search_tool
+from tools.listening_history import (
+    ListeningHistoryTool,
+    ListeningHistoryToolConfig,
+    ListeningHistoryToolInputSchema,
+)
 from tools.result_fetch import ResultFetchTool, ResultFetchToolConfig, ResultFetchToolInputSchema
 from tools.roon_action import RoonActionTool, RoonActionToolConfig, RoonActionToolInputSchema
 from tools.roon_config import RoonConfigTool, RoonConfigToolConfig, RoonConfigToolInputSchema
@@ -34,6 +39,11 @@ def register_runtime_tools(runtime, settings) -> Optional[WebSearchTool]:
         ResultFetchToolConfig(
             result_store=runtime.result_store,
             search_history=runtime.search_history,
+        ),
+    )
+    listening_history_tool = ListeningHistoryTool(
+        ListeningHistoryToolConfig(
+            get_listening_history=lambda: runtime.listening_history,
         ),
     )
     roon_config_tool = RoonConfigTool(RoonConfigToolConfig(
@@ -77,6 +87,8 @@ def register_runtime_tools(runtime, settings) -> Optional[WebSearchTool]:
          RoonConfigToolInputSchema, roon_config_tool, "Updating configuration"),
         ("result_fetch", "Retrieve cached search results by result_handle",
          ResultFetchToolInputSchema, result_fetch_tool, "Fetching results"),
+        ("listening_history", "Look up what was played and when (listening history)",
+         ListeningHistoryToolInputSchema, listening_history_tool, "Checking listening history"),
     ]
     if web_search_tool is not None:
         tool_specs.append(

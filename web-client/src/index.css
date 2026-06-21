@@ -552,33 +552,6 @@ body {
   border-color: var(--color-border-subtle);
 }
 
-.message-previous-session {
-  opacity: 0.45;
-}
-
-/* Boundary between a replayed previous session (above) and the live
-   session (below): everything above is not in the assistant's memory. */
-.message-session-divider {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  margin: 0.5rem 0;
-  font-size: 0.78rem;
-  color: var(--color-text-muted);
-  text-align: center;
-}
-
-.message-session-divider::before,
-.message-session-divider::after {
-  content: '';
-  flex: 1;
-  border-top: 1px solid var(--color-border);
-}
-
-[data-theme='light'] .message-previous-session {
-  opacity: 0.6;
-}
-
 .message-directive {
   align-self: flex-end;
   max-width: 60%;

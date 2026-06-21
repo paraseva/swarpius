@@ -102,11 +102,6 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
     isAutoTtsEnabled, ttsHealth, ttsWsUrl, addTransientErrorBanner,
   })
 
-  useStickyBottomScroll(scrollContainerRef, 'chat')
-  useHistoryScrollback(
-    scrollContainerRef, messages, requestHistory, reachedBeginning ?? false, historyBatchToken ?? 0,
-  )
-
   // Date picker: request the chosen day, then scroll to it. The scroll fires
   // once the batch has fully loaded (the batch token), NOT per message —
   // otherwise the in-between days streaming in would keep shifting the target.
@@ -115,6 +110,13 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
     chatMessagesRef.current = chatMessages
   }, [chatMessages])
   const [pendingScrollTs, setPendingScrollTs] = React.useState<number | null>(null)
+
+  // Suppress bottom-pinning while a jump is in flight so it doesn't drag the
+  // view back to the bottom as the requested range streams in.
+  useStickyBottomScroll(scrollContainerRef, 'chat', pendingScrollTs != null)
+  useHistoryScrollback(
+    scrollContainerRef, messages, requestHistory, reachedBeginning ?? false, historyBatchToken ?? 0,
+  )
   const handlePickDate = React.useCallback((dayStartMs: number) => {
     // If the day is older than what's loaded, fill the whole gap up to the
     // earliest loaded message so history stays contiguous (no hole between the

@@ -20,8 +20,17 @@ const positionStore = new Map<string, StickyPosition>()
 export function useStickyBottomScroll<T extends HTMLElement>(
   scrollRef: React.RefObject<T | null>,
   storageKey?: string,
+  suppressed = false,
 ) {
   const wasAtBottomRef = React.useRef(true)
+  // While a date-jump is in flight, the jump owns the scroll position — don't
+  // let bottom-pinning fight it as the requested range streams in. Read via a
+  // ref so the listeners see the latest without re-running the main effect
+  // (which would reset wasAtBottom).
+  const suppressedRef = React.useRef(suppressed)
+  React.useEffect(() => {
+    suppressedRef.current = suppressed
+  }, [suppressed])
 
   React.useEffect(() => {
     const el = scrollRef.current
@@ -63,6 +72,7 @@ export function useStickyBottomScroll<T extends HTMLElement>(
     }
 
     const onResize = () => {
+      if (suppressedRef.current) return  // a date-jump owns the scroll
       // A pending cross-mount restore beats sticky-pin. Wait for the
       // replay batch to grow scrollHeight enough that the saved offset
       // is actually reachable, then land there and re-derive

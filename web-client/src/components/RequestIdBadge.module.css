@@ -28,6 +28,9 @@
 
 .badgeId {
   cursor: pointer;
+  /* Hold the slot at the id's width (mono, ~11 chars) so swapping in "copied!"
+     doesn't resize the badge or shift the copy icon. */
+  min-width: 11ch;
 }
 
 .badgeId:hover {

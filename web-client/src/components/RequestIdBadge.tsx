@@ -71,23 +71,16 @@ export const RequestIdBadge: React.FC<RequestIdBadgeProps> = ({ requestId, syncK
     )
   }
 
-  // On copy, show the same green "copied!" feedback as the copy-only badge.
-  if (copied) {
-    return (
-      <span className={`${s.badge} ${s.copied}`}>
-        <span aria-live="polite">copied!</span>
-      </span>
-    )
-  }
-
-  // With sync, the id focuses the request elsewhere; a small icon copies.
+  // With sync, the id focuses the request elsewhere; a small icon copies. On
+  // copy, only the id text becomes a green "copied!" (the id slot keeps its
+  // width and the copy icon stays put).
   const doFocus = (e: React.SyntheticEvent) => {
     e.stopPropagation()
     focus!.focusRequest(requestId, syncKey!)
   }
 
   return (
-    <span className={`${s.badge} ${s.badgeSync}`}>
+    <span className={`${s.badge} ${s.badgeSync}${copied ? ` ${s.copied}` : ''}`}>
       <span
         className={s.badgeId}
         onClick={doFocus}
@@ -102,7 +95,7 @@ export const RequestIdBadge: React.FC<RequestIdBadgeProps> = ({ requestId, syncK
           }
         }}
       >
-        {requestId}
+        <span aria-live="polite">{copied ? 'copied!' : requestId}</span>
       </span>
       <button
         type="button"

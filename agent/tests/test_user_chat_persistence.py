@@ -22,8 +22,9 @@ class _CapturingStore(MessageStore):
     def clear(self) -> None:
         pass
 
-    def append(self, channel: str, payload: Any, meta: Optional[Dict[str, Any]] = None) -> None:
-        self.appended.append((channel, payload, meta))
+    def append(self, channel: str, payload: Any, meta: Optional[Dict[str, Any]] = None,
+               created_at: Optional[int] = None) -> None:
+        self.appended.append((channel, payload, meta, created_at))
 
     def get_all(self, since_ms: Optional[int] = None) -> List[Dict[str, Any]]:
         return []
@@ -53,15 +54,22 @@ class TestUserChatPersistence(unittest.TestCase):
         _persist_user_chat("play some jazz", "cm-1")
         chat = [a for a in self.store.appended if a[0] == "chat"]
         self.assertEqual(len(chat), 1)
-        _, payload, meta = chat[0]
+        _, payload, meta, _ = chat[0]
         self.assertEqual(payload["body"], "play some jazz")
         self.assertEqual(meta.get("direction"), "outbound")
         self.assertEqual(meta.get("client_msg_id"), "cm-1")
 
     def test_omits_client_msg_id_when_absent(self):
         _persist_user_chat("hello", None)
-        _, _, meta = self.store.appended[0]
+        _, _, meta, _ = self.store.appended[0]
         self.assertNotIn("client_msg_id", meta)
+
+    def test_persists_user_message_with_its_send_time(self):
+        # The committed timestamp is when the message was sent, so a replay
+        # matches what was shown live — not the (later) completion time.
+        _persist_user_chat("play jazz", "cm-1", created_at_ms=111)
+        _, _, _, created_at = self.store.appended[0]
+        self.assertEqual(created_at, 111)
 
     def test_skipped_while_restart_pending(self):
         restart_signal.request_restart()

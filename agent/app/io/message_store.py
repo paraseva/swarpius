@@ -37,8 +37,11 @@ class MessageStore(ABC):
         """Delete all stored messages."""
 
     @abstractmethod
-    def append(self, channel: str, payload: Any, meta: Optional[Dict[str, Any]] = None) -> None:
-        """Store a single outbound WS message."""
+    def append(self, channel: str, payload: Any, meta: Optional[Dict[str, Any]] = None,
+               created_at: Optional[int] = None) -> None:
+        """Store a single outbound WS message. ``created_at`` (epoch ms)
+        overrides the default of now — used to stamp a message with its real
+        event time rather than its (later) commit time."""
 
     @abstractmethod
     def get_all(self, since_ms: Optional[int] = None) -> List[Dict[str, Any]]:
@@ -78,14 +81,15 @@ class SqliteMessageStore(MessageStore):
             self._db.conn.execute("DELETE FROM ws_messages")
             self._db.conn.commit()
 
-    def append(self, channel: str, payload: Any, meta: Optional[Dict[str, Any]] = None) -> None:
+    def append(self, channel: str, payload: Any, meta: Optional[Dict[str, Any]] = None,
+               created_at: Optional[int] = None) -> None:
         payload_json = json.dumps(payload, default=str)
         meta_json = json.dumps(meta, default=str) if meta else None
-        now_ms = int(time.time() * 1000)
+        ts_ms = created_at if created_at is not None else int(time.time() * 1000)
         with self._db.lock:
             self._db.conn.execute(
                 "INSERT INTO ws_messages (channel, payload, meta, created_at) VALUES (?, ?, ?, ?)",
-                (channel, payload_json, meta_json, now_ms),
+                (channel, payload_json, meta_json, ts_ms),
             )
             self._db.conn.commit()
 
@@ -187,7 +191,8 @@ class NullMessageStore(MessageStore):
     def clear(self) -> None:
         pass
 
-    def append(self, channel: str, payload: Any, meta: Optional[Dict[str, Any]] = None) -> None:
+    def append(self, channel: str, payload: Any, meta: Optional[Dict[str, Any]] = None,
+               created_at: Optional[int] = None) -> None:
         pass
 
     def get_all(self, since_ms: Optional[int] = None) -> List[Dict[str, Any]]:

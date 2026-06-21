@@ -13,21 +13,32 @@ import { useRequestFocus } from '../requestFocusContext'
 export function useRequestFocusSync<T extends HTMLElement>(
   scrollRef: React.RefObject<T | null>,
   myKey: string | undefined,
+  /** Called before scrolling — e.g. to expand a collapsed group so the target
+   *  item renders. Must be stable (useCallback) or the sync re-fires. */
+  prepare?: (requestId: string) => void,
 ): void {
   const focus = useRequestFocus()
   const focused = focus?.focusedRequest
 
   React.useEffect(() => {
     if (!focused || !myKey || focused.sourceKey === myKey) return
-    const container = scrollRef.current
-    if (!container) return
-    const el = container.querySelector<HTMLElement>(
-      `[data-request-id="${focused.requestId}"]`,
-    )
-    if (!el) return
-    container.scrollTop += el.getBoundingClientRect().top - container.getBoundingClientRect().top
-    el.classList.add('request-focus-flash')
-    const timer = window.setTimeout(() => el.classList.remove('request-focus-flash'), 1200)
-    return () => window.clearTimeout(timer)
-  }, [focused, myKey, scrollRef])
+    prepare?.(focused.requestId)
+    let flashTimer = 0
+    // rAF so any expand from `prepare` has rendered the target before we scroll.
+    const raf = window.requestAnimationFrame(() => {
+      const container = scrollRef.current
+      if (!container) return
+      const el = container.querySelector<HTMLElement>(`[data-request-id="${focused.requestId}"]`)
+      if (!el) return
+      const top = container.scrollTop
+        + el.getBoundingClientRect().top - container.getBoundingClientRect().top
+      container.scrollTo({ top, behavior: 'smooth' })
+      el.classList.add('request-focus-flash')
+      flashTimer = window.setTimeout(() => el.classList.remove('request-focus-flash'), 1300)
+    })
+    return () => {
+      window.cancelAnimationFrame(raf)
+      window.clearTimeout(flashTimer)
+    }
+  }, [focused, myKey, scrollRef, prepare])
 }

@@ -113,7 +113,6 @@ const STATUS_LABELS: Record<string, string> = {
 export const RequestSummaryPanel: React.FC = () => {
   const { messages } = useWebSocket()
   const scrollContainerRef = React.useRef<HTMLDivElement | null>(null)
-  useRequestFocusSync(scrollContainerRef, 'requests')
   const [expandedConversations, setExpandedConversations] = React.useState<Set<string>>(new Set())
   const [expandedRequests, setExpandedRequests] = React.useState<Set<string>>(new Set())
 
@@ -271,6 +270,24 @@ export const RequestSummaryPanel: React.FC = () => {
       .sort((a, b) => b.latestTimestampMs - a.latestTimestampMs)
       .slice(0, 20)
   }, [messages])
+
+  // Requests are grouped under collapsed conversations, so expand the one
+  // holding a focused request before the sync scrolls to it — otherwise its
+  // card isn't rendered and nothing flashes. Ref-backed so the callback stays
+  // stable (or the sync would re-fire on every message).
+  const conversationsRef = React.useRef(conversations)
+  React.useEffect(() => {
+    conversationsRef.current = conversations
+  }, [conversations])
+  const expandConversationFor = React.useCallback((requestId: string) => {
+    const conv = conversationsRef.current.find(
+      (c) => c.requests.some((r) => r.requestId === requestId),
+    )
+    if (!conv) return
+    setExpandedConversations((prev) =>
+      prev.has(conv.conversationId) ? prev : new Set(prev).add(conv.conversationId))
+  }, [])
+  useRequestFocusSync(scrollContainerRef, 'requests', expandConversationFor)
 
   return (
     <div className="panel panel-history">

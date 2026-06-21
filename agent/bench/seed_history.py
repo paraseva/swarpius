@@ -75,12 +75,19 @@ def seed(days_ago: list[int]) -> int:
                 for turn in range(_TURNS_PER_DAY):
                     user_text, agent_text = _PROMPTS[(conv + turn) % len(_PROMPTS)]
                     rid = f"rq-c{conv:02d}-{turn + 1:04d}"
+                    cmid = f"seed-c{conv:02d}-{turn + 1}"
                     base = _ts_ms(day, 9 + turn)
                     # Match the real persisted shapes: user chat is
-                    # {channel, body} with direction=outbound; the agent reply
-                    # is the structured chat_response payload the FE parses.
+                    # {channel, body} outbound carrying a client_msg_id; a
+                    # request_id_assignment event pairs that to the request_id
+                    # (this is how the FE shows the badge on outbound bubbles);
+                    # the agent reply is the structured chat_response payload.
                     _insert(conn, "chat", {"channel": "chat", "body": user_text},
-                            base, {"direction": "outbound"})
+                            base, {"direction": "outbound", "client_msg_id": cmid})
+                    _insert(conn, "agent-outputs",
+                            {"event_type": "request_id_assignment", "request_id": rid,
+                             "client_msg_id": cmid},
+                            base + 100)
                     _insert(conn, "agent-outputs",
                             {"event_type": "request_started", "request_id": rid},
                             base + 500)
@@ -91,7 +98,7 @@ def seed(days_ago: list[int]) -> int:
                             {"agent_name": "Coordinator", "chat_response": agent_text,
                              "request_id": rid},
                             base + 2500, {"agent_name": "Coordinator", "request_id": rid})
-                    inserted += 4
+                    inserted += 5
     finally:
         db.close()
     return inserted

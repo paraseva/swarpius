@@ -45,6 +45,7 @@ from app.data_paths import (
     messages_db_path,
 )
 from app.io import AppIO
+from app.io.history_retention import prune_history
 from app.io.message_store import SqliteMessageStore, set_message_store
 from app.io.state_db import StateDb
 from app.io.static_files import resolve_dist_dir, serve_dist
@@ -181,6 +182,16 @@ runtime.configure_io_callbacks(
 _state_db = StateDb(messages_db_path())
 _session_store = SqliteMessageStore(_state_db)
 set_message_store(_session_store)
+
+# Prune persisted history past its retention windows before anything reads it.
+_retention_settings = _get_settings()
+prune_history(
+    _state_db,
+    chat_days=_retention_settings.chat_history_retention_days,
+    diagnostics_days=_retention_settings.diagnostics_retention_days,
+    listening_days=_retention_settings.listening_history_retention_days,
+    now_ms=int(time.time() * 1000),
+)
 
 # Restore working memory now; Roon-scoped state restores once the connection
 # exists (RuntimeState.ensure_initialised). Request completion commits via

@@ -33,6 +33,8 @@ from app.constants import (
     CHANNEL_ANALYSIS_RUN_RESPONSE,
     CHANNEL_ANALYSIS_UPDATE,
     CHANNEL_CHAT,
+    CHANNEL_CLEAR_CONVERSATION_REQUEST,
+    CHANNEL_CLEAR_CONVERSATION_RESPONSE,
     CHANNEL_DEFAULT_ZONE_UPDATE,
     CHANNEL_ERRORS,
     CHANNEL_FEATURE_AVAILABILITY,
@@ -387,6 +389,23 @@ async def _handle_session_control(payload: dict, runtime: Any) -> dict:
         raise UnsupportedActionError(f"Unsupported session control action '{action}'")
     runtime.rate_limit_override_event.set()
     return {"ok": True, "action": action}
+
+
+async def _handle_clear_conversation(
+    payload: dict, runtime: Any, state: "WebsocketSessionState",
+) -> dict:
+    """Delete the persisted conversation: transcript, the model's working
+    memory, and the conversation's Roon references. Refused while a request
+    is in flight so a clear can't race the commit that finalises it (the UI
+    also disables the control during a request)."""
+    _ = payload
+    if state.active_task is not None:
+        return {
+            "ok": False,
+            "reason": "A request is in progress — try again once it finishes.",
+        }
+    await asyncio.to_thread(runtime.clear_conversation_state)
+    return {"ok": True}
 
 
 async def _handle_image_request(
@@ -894,6 +913,12 @@ async def websocket_handler(
                 await _handle_json_request(
                     websocket, body, CHANNEL_SESSION_CONTROL_RESPONSE,
                     lambda p: _handle_session_control(p, runtime),
+                )
+                continue
+            if channel == CHANNEL_CLEAR_CONVERSATION_REQUEST:
+                await _handle_json_request(
+                    websocket, body, CHANNEL_CLEAR_CONVERSATION_RESPONSE,
+                    lambda p: _handle_clear_conversation(p, runtime, state),
                 )
                 continue
             if channel == CHANNEL_IMAGE_REQUEST:

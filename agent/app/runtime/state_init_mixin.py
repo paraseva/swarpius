@@ -231,6 +231,11 @@ class _StateInitMixin:
             lifecycle_callback=self.roon_lifecycle_callback,
         )
         self.roon_connection = roon_connection
+        # Restore Roon-scoped persisted state (browse-session ref pool, queue
+        # references) now that the connection — and its session manager —
+        # exist. No-op when persistence is not wired (e.g. tests).
+        if self._persistence_manager is not None:
+            self.attach_roon_persistence(self._persistence_manager)
         self._load_zone_aliases()
         self._zone_cache = self._build_zone_cache()
 

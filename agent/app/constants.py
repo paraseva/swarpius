@@ -96,10 +96,9 @@ PENDING_MESSAGES_MAXLEN = 20
 WS_MAX_FRAME_SIZE = 64 * 1024  # 64 KB per incoming frame
 WS_MAX_QUEUE_SIZE = 32  # incoming frames buffered before back-pressure
 
-# Replay window for the persistent message store. On connect, only
-# messages newer than this are sent to the browser; older entries stay
-# in SQLite (so they can still be inspected on disk) but don't bloat
-# the client. Only relevant when --keep-history retains messages
-# across server restarts.
+# Eager-replay window for the persistent message store. On connect, only
+# messages newer than this are sent to the browser up front; older entries
+# stay in SQLite and are lazy-loaded on scroll-back, so the initial payload
+# stays bounded even though history persists across restarts.
 REPLAY_HISTORY_DAYS = 3
 REPLAY_HISTORY_MS = REPLAY_HISTORY_DAYS * 24 * 60 * 60 * 1000

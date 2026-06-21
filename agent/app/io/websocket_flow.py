@@ -849,10 +849,9 @@ async def websocket_handler(
             await _ws_send_to_client(websocket, CHANNEL_QUEUE_UPDATES, queue_event)
 
         # Replay persisted messages — tag any from before this server session.
-        # Bound the replay window so a long-lived --keep-history store
-        # doesn't dump days of chat + diagnostics into every fresh
-        # connection. Older entries stay on disk; they're just not
-        # surfaced to the browser.
+        # Bound the eager window so a long-lived persistent store doesn't dump
+        # days of chat + diagnostics into every fresh connection. Older entries
+        # stay on disk and are lazy-loaded on scroll-back.
         from agent import get_server_start_ms
         from app.constants import REPLAY_HISTORY_MS
         from app.io.message_store import get_message_store

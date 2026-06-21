@@ -867,6 +867,7 @@ def process_request(
             usage=None,
             coordinator_model=coordinator_model,
         ))
+        runtime.persist_state()
         return
     except Exception as err:
         _handle_loop_exception(
@@ -879,6 +880,7 @@ def process_request(
         logger.update_conversation_summary(
             topic_summary=assignment.topic_summary if assignment else None,
         )
+        runtime.persist_state()
         return
 
     # ── Extract and emit the response ──
@@ -948,4 +950,5 @@ def process_request(
         request_id, status, total_steps, total_duration_ms,
     )
 
+    runtime.persist_state()
     clear_request_id()

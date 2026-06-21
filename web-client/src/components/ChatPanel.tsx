@@ -102,44 +102,47 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
     isAutoTtsEnabled, ttsHealth, ttsWsUrl, addTransientErrorBanner,
   })
 
-  // Date picker: request the chosen day, then scroll to it. The scroll fires
-  // once the batch has fully loaded (the batch token), NOT per message —
-  // otherwise the in-between days streaming in would keep shifting the target.
   const chatMessagesRef = React.useRef(chatMessages)
   React.useEffect(() => {
     chatMessagesRef.current = chatMessages
   }, [chatMessages])
-  const [pendingScrollTs, setPendingScrollTs] = React.useState<number | null>(null)
 
-  // Suppress bottom-pinning while a jump is in flight so it doesn't drag the
-  // view back to the bottom as the requested range streams in.
-  useStickyBottomScroll(scrollContainerRef, 'chat', pendingScrollTs != null)
+  useStickyBottomScroll(scrollContainerRef, 'chat')
   useHistoryScrollback(
     scrollContainerRef, messages, requestHistory, reachedBeginning ?? false, historyBatchToken ?? 0,
   )
-  const handlePickDate = React.useCallback((dayStartMs: number) => {
-    // If the day is older than what's loaded, fill the whole gap up to the
-    // earliest loaded message so history stays contiguous (no hole between the
-    // jumped-to day and what's already in memory). If it's already within the
-    // loaded range, just scroll to it.
-    const oldestLoaded = messages.length > 0 ? messages[0].timestamp : Date.now()
-    if (dayStartMs < oldestLoaded) {
-      requestHistoryRange?.(dayStartMs, oldestLoaded)
-    }
-    setPendingScrollTs(dayStartMs)
-  }, [messages, requestHistoryRange])
 
-  React.useEffect(() => {
-    if (pendingScrollTs == null) return
-    const target = chatMessagesRef.current.find((m) => m.timestamp >= pendingScrollTs)
-    if (!target) return  // the day isn't loaded yet — wait for the batch
+  // Scroll the chat to the first loaded day at/after dayStartMs (its separator
+  // at the top). Returns false if that day isn't loaded yet.
+  const scrollToDay = React.useCallback((dayStartMs: number): boolean => {
+    const target = chatMessagesRef.current.find((m) => m.timestamp >= dayStartMs)
+    if (!target) return false
     const container = scrollContainerRef.current
-    // Land on the day separator so the "—— Wed 17 Jun ——" line is at the top.
     const el = container?.querySelector(`[data-day-for="${target.id}"]`)
       ?? container?.querySelector(`[data-message-id="${target.id}"]`)
     el?.scrollIntoView({ block: 'start' })
-    setPendingScrollTs(null)
-  }, [pendingScrollTs, historyBatchToken])
+    return true
+  }, [])
+
+  // Date picker. If the day is already loaded, scroll now. Otherwise load every
+  // day from it up to the earliest in memory (keeping history contiguous) and
+  // scroll once that batch has fully arrived — NOT before, or `find` would
+  // match an already-loaded later day.
+  const pendingJumpDayRef = React.useRef<number | null>(null)
+  const handlePickDate = React.useCallback((dayStartMs: number) => {
+    const oldestLoaded = messages.length > 0 ? messages[0].timestamp : Date.now()
+    if (dayStartMs < oldestLoaded) {
+      requestHistoryRange?.(dayStartMs, oldestLoaded)
+      pendingJumpDayRef.current = dayStartMs
+    } else {
+      scrollToDay(dayStartMs)
+    }
+  }, [messages, requestHistoryRange, scrollToDay])
+
+  React.useEffect(() => {
+    if (pendingJumpDayRef.current == null) return
+    if (scrollToDay(pendingJumpDayRef.current)) pendingJumpDayRef.current = null
+  }, [historyBatchToken, scrollToDay])
 
   // Populate textarea from speech recognition results. Syncing from
   // an external system (Web Speech API) is exactly the case where the

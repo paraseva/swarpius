@@ -56,13 +56,23 @@
   opacity: 1;
 }
 
-.copied {
+/* The :hover variants keep the green showing while the pointer is still over
+   the badge (otherwise .badge:hover wins and only the green border shows). */
+.copied,
+.copied:hover {
   color: var(--color-success-text);
   background: rgba(6, 78, 59, 0.4);
   border-color: rgba(16, 185, 129, 0.4);
 }
 
-:global([data-theme='light']) .copied {
+/* Don't recolor/underline the id slot while it shows "copied!". */
+.copied .badgeId:hover {
+  color: inherit;
+  text-decoration: none;
+}
+
+:global([data-theme='light']) .copied,
+:global([data-theme='light']) .copied:hover {
   color: #14532d;
   background: #bbf7d0;
   border-color: #16a34a;
@@ -74,7 +84,8 @@
   border-color: rgba(255, 255, 255, 0.35);
 }
 
-:global([data-theme='light']) :global(.message-outbound) .copied {
+:global([data-theme='light']) :global(.message-outbound) .copied,
+:global([data-theme='light']) :global(.message-outbound) .copied:hover {
   color: #ffffff;
   background: rgba(21, 128, 61, 0.6);
   border-color: rgba(255, 255, 255, 0.4);

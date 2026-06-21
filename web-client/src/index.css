@@ -524,6 +524,44 @@ body {
   gap: 0.4rem;
 }
 
+.panel-header-right {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.history-date-picker {
+  position: relative;
+  display: inline-flex;
+}
+
+.history-date-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  padding: 0.15rem;
+  border-radius: var(--radius-sm, 4px);
+  color: var(--text-muted, #9a9a9a);
+  cursor: pointer;
+}
+
+.history-date-button:hover {
+  color: var(--text, #e6e6e6);
+}
+
+/* Kept in layout (not display:none) so showPicker() works; visually hidden. */
+.history-date-input {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
 .message-day-separator {
   list-style: none;
   display: flex;

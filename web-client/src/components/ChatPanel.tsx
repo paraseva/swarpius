@@ -10,6 +10,7 @@ import { useChatBannerManager } from '../hooks/useChatBannerManager'
 import { useChatTtsAutoPlay } from '../hooks/useChatTtsAutoPlay'
 import { useStickyBottomScroll } from '../hooks/useStickyBottomScroll'
 import { useHistoryScrollback } from '../hooks/useHistoryScrollback'
+import { HistoryDatePicker } from './HistoryDatePicker'
 import { dayLabel, isNewDay } from '../utils/dayLabel'
 import { correlateOutboundRequestIds } from '../utils/correlateOutboundRequestIds'
 import { getDirectiveOutboundIds } from '../utils/getDirectiveOutboundIds'
@@ -106,6 +107,25 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
     scrollContainerRef, messages, requestHistory, reachedBeginning ?? false, historyBatchToken ?? 0,
   )
 
+  // Date picker: request the chosen day, then scroll to it once it arrives
+  // (fire-and-forget + reactive — the load may already be in memory).
+  const [pendingScrollTs, setPendingScrollTs] = React.useState<number | null>(null)
+  const handlePickDate = React.useCallback((dayStartMs: number) => {
+    requestHistory?.(dayStartMs + 86_400_000 - 1)  // end of the selected local day
+    setPendingScrollTs(dayStartMs)
+  }, [requestHistory])
+
+  React.useEffect(() => {
+    if (pendingScrollTs == null) return
+    const target = chatMessages.find((m) => m.timestamp >= pendingScrollTs)
+    if (!target) return  // the day isn't loaded yet — wait for the batch
+    const el = scrollContainerRef.current?.querySelector(`[data-message-id="${target.id}"]`)
+    if (el) {
+      el.scrollIntoView({ block: 'start' })
+      setPendingScrollTs(null)
+    }
+  }, [pendingScrollTs, chatMessages])
+
   // Populate textarea from speech recognition results. Syncing from
   // an external system (Web Speech API) is exactly the case where the
   // setState-in-effect rule's official carve-out applies.
@@ -177,7 +197,10 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
           <h2>Chat</h2>
           <GuidanceButton id="chat-basics" />
         </span>
-        <span className={`status status-${status}`}>{status.toUpperCase()}</span>
+        <span className="panel-header-right">
+          <HistoryDatePicker onPick={handlePickDate} />
+          <span className={`status status-${status}`}>{status.toUpperCase()}</span>
+        </span>
       </div>
       {banners.length > 0 ? (
         <div className={cs.rateLimitBannerStack} role="status" aria-live="polite">
@@ -251,6 +274,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                 ) : null}
                 <li
                   className={`message message-${m.direction}${directiveClass}${failedClass}`}
+                  data-message-id={m.id}
                   data-directive={isDirective ? 'true' : undefined}
                   data-failed={failureError ? 'true' : undefined}
                 >

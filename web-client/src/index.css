@@ -556,6 +556,17 @@ body {
   pointer-events: none;
 }
 
+/* Brief ring flash on the item a request-id click scrolled into view. */
+@keyframes request-focus-flash {
+  0% { box-shadow: 0 0 0 2px var(--color-accent, #3b82f6); }
+  100% { box-shadow: 0 0 0 2px transparent; }
+}
+
+.request-focus-flash {
+  animation: request-focus-flash 1.2s ease-out;
+  border-radius: var(--radius-md);
+}
+
 .message-day-separator {
   list-style: none;
   display: flex;

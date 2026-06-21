@@ -886,26 +886,9 @@ async def websocket_handler(
                 raw_client_msg_id if isinstance(raw_client_msg_id, str) and raw_client_msg_id else None
             )
 
-            # Persist user chat messages for replay on browser refresh.
-            # `direction` here uses the frontend's client-centric convention
-            # (see `WebSocketProvider.tsx:182` + `ChatPanel.tsx:238`):
-            # "outbound" means "user bubble" (sent OUT of the browser), not
-            # the server-centric networking meaning. Flipping to "inbound"
-            # would make refresh-replayed user messages render as Swarpius's
-            # replies. Leave as "outbound".
-            #
-            # client_msg_id is persisted so the FE can re-pair badges
-            # and directive pills on replay; the replayed outbound is
-            # assigned a fresh local id otherwise.
-            if channel == CHANNEL_CHAT:
-                chat_meta: dict[str, Any] = {"direction": "outbound"}
-                if client_msg_id is not None:
-                    chat_meta["client_msg_id"] = client_msg_id
-                get_message_store().append(
-                    "chat",
-                    {"channel": "chat", "body": body},
-                    meta=chat_meta,
-                )
+            # User chat is persisted at request completion (request_flow's
+            # _persist_user_chat), grouped with that request — so a restart
+            # dropping the in-flight request leaves no orphaned message.
 
             if channel == CHANNEL_SESSION_CONTROL_REQUEST:
                 await _handle_json_request(

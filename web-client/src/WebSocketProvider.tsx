@@ -281,11 +281,16 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
 
   const markRestarting = useCallback(() => setIsRestarting(true), [])
 
+  const clearMessages = useCallback(() => {
+    setMessageState({ messages: [], trimmedCount: 0 })
+  }, [])
+
   const value = useMemo(
     () => ({
       status,
       messages,
       sendMessage,
+      clearMessages,
       isLlmActive,
       latestZoneSnapshot,
       trimmedCount,
@@ -294,7 +299,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
       markRestarting,
     }),
     [
-      status, messages, sendMessage, isLlmActive, latestZoneSnapshot,
+      status, messages, sendMessage, clearMessages, isLlmActive, latestZoneSnapshot,
       trimmedCount, connectionGeneration, isRestarting, markRestarting,
     ],
   )

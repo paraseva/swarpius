@@ -62,4 +62,17 @@ export function useHistoryScrollback<T extends HTMLElement>(
   React.useEffect(() => {
     loadingRef.current = false
   }, [batchToken])
+
+  // Auto-fill: if the loaded content doesn't fill the viewport and older
+  // history exists, pull the previous day so there's always something to
+  // scroll (no scrollbar otherwise = no way to scroll back). Re-checked after
+  // each batch; stops once the viewport overflows or history is exhausted.
+  React.useEffect(() => {
+    const el = scrollRef.current
+    if (!el || loadingRef.current || reachedBeginning || !onLoadMore || messages.length === 0) return
+    if (el.scrollHeight <= el.clientHeight + AT_BOTTOM_TOLERANCE_PX) {
+      loadingRef.current = true
+      onLoadMore(messages[0].timestamp - 1)
+    }
+  }, [batchToken, messages, reachedBeginning, onLoadMore, scrollRef])
 }

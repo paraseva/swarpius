@@ -106,13 +106,6 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
     scrollContainerRef, messages, requestHistory, reachedBeginning ?? false, historyBatchToken ?? 0,
   )
 
-  // Explicit affordance to pull older history — works even when today's
-  // content doesn't overflow (so there's no scrollbar to drag up).
-  const loadEarlier = React.useCallback(() => {
-    if (messages.length > 0) requestHistory?.(messages[0].timestamp - 1)
-  }, [messages, requestHistory])
-  const canLoadEarlier = !(reachedBeginning ?? false) && messages.length > 0
-
   // Populate textarea from speech recognition results. Syncing from
   // an external system (Web Speech API) is exactly the case where the
   // setState-in-effect rule's official carve-out applies.
@@ -234,11 +227,6 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
           </div>
         ) : (
           <ul className="message-list">
-            {canLoadEarlier ? (
-              <li className="message-load-earlier">
-                <button type="button" onClick={loadEarlier}>Load earlier messages</button>
-              </li>
-            ) : null}
             {visibleChatMessages.map((m, idx) => {
               const prev = idx > 0 ? visibleChatMessages[idx - 1] : undefined
               const showDaySeparator = !prev || isNewDay(prev.timestamp, m.timestamp)

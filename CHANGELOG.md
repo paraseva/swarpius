@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Chat history, conversation memory, and Roon reference state now persist across a restart. After the agent restarts, the conversation continues as before: the assistant still remembers what was said, previously found search results and queue items still resolve, and a runtime default-zone choice is retained.
+
+### Changed
+
+- Chat history is now retained across restarts by default and is no longer shown greyed-out as a "previous session". Previously, history was cleared on every startup unless `--keep-history` was passed.
+
+### Removed
+
+- The `--keep-history` command-line flag has been removed; history retention is now the default behaviour. Remove the flag from any custom launch command (the bundled Docker Compose file has been updated).
+
 ## [1.0.1] - 2026-06-18
 
 ### Fixed

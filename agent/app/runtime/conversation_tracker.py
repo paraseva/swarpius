@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import time
 from dataclasses import dataclass
-from typing import Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional
 
 
 @dataclass
@@ -38,7 +38,7 @@ class ConversationTracker:
         start_conversation_num: int = 1,
         max_conversations: int = 20,
         aging_hours: float = 24.0,
-        clock: Callable[[], float] = time.monotonic,
+        clock: Callable[[], float] = time.time,
     ) -> None:
         self._idle_timeout = idle_timeout_seconds
         self._max_conversations = max_conversations
@@ -127,6 +127,44 @@ class ConversationTracker:
         if self._current_id and self._current_id in self._threads:
             return self._threads[self._current_id].numeric_id
         return self._next_num
+
+    # ── Persistence ────────────────────────────────────────────────
+
+    def capture_state(self) -> Dict[str, Any]:
+        """Snapshot the conversation threads + counters. Timestamps are
+        wall-clock, so they stay comparable after a restart."""
+        return {
+            "threads": {
+                conv_id: {
+                    "id": t.id,
+                    "numeric_id": t.numeric_id,
+                    "topic_summary": t.topic_summary,
+                    "last_request_timestamp": t.last_request_timestamp,
+                    "request_count": t.request_count,
+                    "last_response_summary": t.last_response_summary,
+                }
+                for conv_id, t in self._threads.items()
+            },
+            "current_id": self._current_id,
+            "next_num": self._next_num,
+            "last_request_time": self._last_request_time,
+        }
+
+    def restore_state(self, data: Dict[str, Any]) -> None:
+        self._threads = {
+            conv_id: ConversationThread(
+                id=t["id"],
+                numeric_id=t["numeric_id"],
+                topic_summary=t.get("topic_summary", ""),
+                last_request_timestamp=t.get("last_request_timestamp", 0.0),
+                request_count=t.get("request_count", 0),
+                last_response_summary=t.get("last_response_summary", ""),
+            )
+            for conv_id, t in data.get("threads", {}).items()
+        }
+        self._current_id = data.get("current_id")
+        self._next_num = data.get("next_num", 1)
+        self._last_request_time = data.get("last_request_time", 0.0)
 
     def _mint_new(self, now: float) -> str:
         """Create a new conversation thread and set it as current."""

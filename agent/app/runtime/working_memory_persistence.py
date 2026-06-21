@@ -12,8 +12,8 @@ through ``RuntimeState.attach_persistence``.
 
 from __future__ import annotations
 
-from datetime import datetime
-from typing import Any, Dict
+from datetime import datetime, timedelta
+from typing import Any, Dict, Optional
 
 from app.runtime.state_internals import SearchHistoryEntry
 
@@ -26,6 +26,17 @@ class WorkingMemoryState:
 
     def __init__(self, runtime: Any) -> None:
         self._rt = runtime
+
+    @staticmethod
+    def _chat_retention_cutoff() -> Optional[datetime]:
+        """The oldest turn worth restoring: anything older than the chat
+        retention window has been pruned from the transcript. Returns None
+        when retention is disabled (0), meaning keep everything."""
+        from app.settings import get_settings
+        days = get_settings().chat_history_retention_days
+        if not days or days <= 0:
+            return None
+        return datetime.now() - timedelta(days=days)
 
     def capture_state(self) -> Dict[str, Any]:
         rt = self._rt
@@ -64,13 +75,20 @@ class WorkingMemoryState:
 
         # Conversation turns — re-inject with their ORIGINAL timestamps so the
         # provider's staleness rendering stays truthful (a restored turn must
-        # not read as if it just happened).
+        # not read as if it just happened). Drop turns older than the
+        # chat-retention window: the transcript was pruned at that boundary, so
+        # keeping them would leave the model "remembering" turns the user can
+        # no longer see (A/B-consistency invariant).
+        cutoff = self._chat_retention_cutoff()
         rt.conversation_history_provider.history.clear()
         for turn in data.get("conversation_turns", []):
+            timestamp = datetime.fromisoformat(turn["timestamp"])
+            if cutoff is not None and timestamp < cutoff:
+                continue
             rt.conversation_history_provider.add_turn(
                 turn["user"],
                 turn["agent"],
-                timestamp=datetime.fromisoformat(turn["timestamp"]),
+                timestamp=timestamp,
             )
 
         rt.execution_trace[:] = data.get("execution_trace", [])

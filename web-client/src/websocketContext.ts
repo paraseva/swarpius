@@ -63,6 +63,13 @@ export interface WebSocketContextValue {
    *  without waiting for a reconnect+replay. Optional so test fixtures need
    *  not supply it; the live provider always does. */
   clearMessages?: () => void
+  /** Fire-and-forget request for the most recent non-empty day of history at
+   *  or before `beforeMs`. The reply arrives as ordinary messages (passive
+   *  receive) plus a history-cursor signal — there is no response to await. */
+  requestHistory?: (beforeMs: number) => void
+  /** True once the server has signalled (via history-cursor) that no older
+   *  history exists past what is loaded — i.e. scroll-back is exhausted. */
+  reachedBeginning?: boolean
   /** Whether any LLM call is currently in-flight (tracked incrementally). */
   isLlmActive: boolean
   /** Parsed payload of the most recent `zone-snapshots` message, or null

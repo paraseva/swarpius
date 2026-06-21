@@ -7,6 +7,7 @@ import React, {
 } from 'react'
 import { APP_WS_URL } from './config'
 import { createUuid } from './utils/uuid'
+import { insertMessage } from './utils/insertMessage'
 import {
   type ChannelId,
   type ConnectionStatus,
@@ -84,6 +85,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
   const messages = messageState.messages
   const trimmedCount = messageState.trimmedCount
   const [isLlmActive, setIsLlmActive] = useState(false)
+  const [reachedBeginning, setReachedBeginning] = useState(false)
   const [latestZoneSnapshot, setLatestZoneSnapshot] = useState<unknown>(null)
   const [connectionGeneration, setConnectionGeneration] = useState(0)
   const [isRestarting, setIsRestarting] = useState(false)
@@ -129,6 +131,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
         // half-finished dirty-edits, etc.) — the server replays
         // whatever remains relevant.
         setMessageState({ messages: [], trimmedCount: 0 })
+        setReachedBeginning(false)
         activeCallIdsRef.current.clear()
         setIsLlmActive(false)
         setConnectionGeneration((g) => g + 1)
@@ -192,6 +195,14 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
           return
         }
 
+        // Passive history-cursor signal: not a message, just whether older
+        // history exists past what's now loaded. Drives "can I scroll back".
+        if (channel === 'history-cursor') {
+          const hasOlder = (payload as { has_older?: boolean } | undefined)?.has_older
+          setReachedBeginning(hasOlder === false)
+          return
+        }
+
         if (IGNORED_CHANNELS.has(channel)) return
 
         // Incremental active-call tracking.
@@ -216,23 +227,28 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
           ? String((payload as Record<string, unknown>)?.body ?? '')
           : rawBody
 
+        const record: SocketMessage = {
+          id: createUuid(),
+          channel,
+          direction,
+          body: messageBody,
+          payload,
+          meta,
+          timestamp: typeof meta?.created_at === 'number' ? meta.created_at : Date.now(),
+        }
         setMessageState((prev) => {
-          const next = [
-            ...prev.messages,
-            {
-              id: createUuid(),
-              channel,
-              direction,
-              body: messageBody,
-              payload,
-              meta,
-              timestamp: typeof meta?.created_at === 'number' ? meta.created_at : Date.now(),
-            },
-          ]
-          if (next.length <= MAX_MESSAGES) return { messages: next, trimmedCount: prev.trimmedCount }
-          const beforeLen = next.length
-          const trimmed = trimMessages(next)
-          return { messages: trimmed, trimmedCount: prev.trimmedCount + (beforeLen - trimmed.length) }
+          const next = insertMessage(prev.messages, record)
+          if (next === prev.messages) return prev  // duplicate (server id seen)
+          // Trim only when a live message lands at the end (the bounded live
+          // tail); never trim a historical prepend, or scroll-back would undo
+          // itself.
+          const appendedAtEnd = next[next.length - 1] === record
+          if (appendedAtEnd && next.length > MAX_MESSAGES) {
+            const beforeLen = next.length
+            const trimmed = trimMessages(next)
+            return { messages: trimmed, trimmedCount: prev.trimmedCount + (beforeLen - trimmed.length) }
+          }
+          return { messages: next, trimmedCount: prev.trimmedCount }
         })
       }
 
@@ -285,12 +301,28 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
     setMessageState({ messages: [], trimmedCount: 0 })
   }, [])
 
+  // Fire-and-forget: ask the server for the most recent non-empty day at or
+  // before beforeMs. The reply arrives as ordinary messages on their channels
+  // (handled by the passive receive above) plus a history-cursor signal — no
+  // response correlation here.
+  const requestHistory = useCallback((beforeMs: number) => {
+    const socket = socketRef.current
+    if (socket && socket.readyState === WebSocket.OPEN) {
+      socket.send(JSON.stringify({
+        channel: 'history-request',
+        body: JSON.stringify({ before_ms: beforeMs }),
+      }))
+    }
+  }, [])
+
   const value = useMemo(
     () => ({
       status,
       messages,
       sendMessage,
       clearMessages,
+      requestHistory,
+      reachedBeginning,
       isLlmActive,
       latestZoneSnapshot,
       trimmedCount,
@@ -299,7 +331,8 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
       markRestarting,
     }),
     [
-      status, messages, sendMessage, clearMessages, isLlmActive, latestZoneSnapshot,
+      status, messages, sendMessage, clearMessages, requestHistory, reachedBeginning,
+      isLlmActive, latestZoneSnapshot,
       trimmedCount, connectionGeneration, isRestarting, markRestarting,
     ],
   )

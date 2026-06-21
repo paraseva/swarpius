@@ -224,7 +224,10 @@ class _StateInitMixin:
             )
 
         roon_connection = _state.RoonConnection(
-            default_zone=settings.default_roon_zone,
+            # No env-configured default zone — RoonConnection seeds the first
+            # discovered zone, and any persisted runtime choice is restored by
+            # attach_roon_persistence below.
+            default_zone=None,
             roon_core_host=roon_core_host,
             roon_core_port=roon_core_port,
             profile=settings.roon_profile_name,
@@ -295,7 +298,7 @@ class _StateInitMixin:
             "Swarpius initialised — coordinator=%s  zone=%s  profile=%s  "
             "prompt_caching=%s  diagnostic_agent=%s  web_search=%s",
             coord_model,
-            settings.default_roon_zone or "",
+            (self.roon_connection.get_default_zone() if self.roon_connection else None) or "",
             settings.roon_profile_name or "(default)",
             is_prompt_caching_enabled(),
             is_diagnostic_agent_enabled(),

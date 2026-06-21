@@ -127,10 +127,17 @@ def collect_banner_facts(
     if parallel_max is not None and parallel_max < 1:
         parallel_max = None  # 0 / negative → unlimited
 
+    default_zone = None
+    if roon_conn is not None:
+        try:
+            default_zone = roon_conn.get_default_zone()
+        except Exception:  # noqa: BLE001 — banner must never fail on a zone read
+            default_zone = None
+
     return {
         "roon_core": roon_core,
         "roon_profile": settings.roon_profile_name or "(default)",
-        "default_zone": settings.default_roon_zone or "(unset)",
+        "default_zone": default_zone or "(auto)",
         "coordinator_model": coordinator_model,
         "coordinator_pattern": coordinator_pattern,
         "arbiter_model": arbiter_model,

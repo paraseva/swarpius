@@ -154,6 +154,7 @@ class TestCollectBannerFacts(unittest.TestCase):
         runtime.roon_connection.roon_core_host = "10.0.0.1"
         runtime.roon_connection.roon_core_port = 9100
         runtime.roon_connection.api.core_name = "Test Core"
+        runtime.roon_connection.get_default_zone.return_value = "Living Room"
         runtime.llm_client.model = "anthropic/claude-sonnet-4-6"
         runtime.arbiter_client.model = "anthropic/claude-haiku-4-5"
         runtime.diagnostic_client.model = "anthropic/claude-haiku-4-5"
@@ -162,7 +163,6 @@ class TestCollectBannerFacts(unittest.TestCase):
 
         settings = MagicMock()
         settings.roon_profile_name = "Default"
-        settings.default_roon_zone = "Living Room"
         settings.tts_url_cli = ""
         settings.parallel_tools = False
         settings.roon_max_parallel = 5

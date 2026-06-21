@@ -28,6 +28,9 @@ class _CapturingStore(MessageStore):
     def get_all(self, since_ms: Optional[int] = None) -> List[Dict[str, Any]]:
         return []
 
+    def load_day(self, before_ms: int) -> Dict[str, Any]:
+        return {"messages": [], "has_older": False}
+
     def close(self) -> None:
         pass
 

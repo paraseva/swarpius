@@ -14,9 +14,19 @@ from __future__ import annotations
 import json
 import time
 from abc import ABC, abstractmethod
+from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional
 
 from app.io.state_db import StateDb
+
+
+def _local_day_bounds(ts_ms: int) -> tuple[int, int]:
+    """Local-time [start, end) epoch-ms bounds of the calendar day containing
+    ``ts_ms``."""
+    start = datetime.fromtimestamp(ts_ms / 1000).replace(
+        hour=0, minute=0, second=0, microsecond=0,
+    )
+    return int(start.timestamp() * 1000), int((start + timedelta(days=1)).timestamp() * 1000)
 
 
 class MessageStore(ABC):
@@ -32,9 +42,14 @@ class MessageStore(ABC):
 
     @abstractmethod
     def get_all(self, since_ms: Optional[int] = None) -> List[Dict[str, Any]]:
-        """Retrieve stored messages in order. Each dict has channel,
+        """Retrieve stored messages in order. Each dict has id, channel,
         payload, meta, created_at. When ``since_ms`` is supplied, only
         messages with ``created_at >= since_ms`` are returned."""
+
+    @abstractmethod
+    def load_day(self, before_ms: int) -> Dict[str, Any]:
+        """Return the most recent non-empty calendar day at or before
+        ``before_ms``: {"messages": [...], "has_older": bool}."""
 
     @abstractmethod
     def close(self) -> None:
@@ -72,31 +87,70 @@ class SqliteMessageStore(MessageStore):
         with self._db.lock:
             if since_ms is None:
                 cursor = self._db.conn.execute(
-                    "SELECT channel, payload, meta, created_at FROM ws_messages ORDER BY id",
+                    "SELECT id, channel, payload, meta, created_at FROM ws_messages ORDER BY id",
                 )
             else:
                 cursor = self._db.conn.execute(
-                    "SELECT channel, payload, meta, created_at FROM ws_messages "
+                    "SELECT id, channel, payload, meta, created_at FROM ws_messages "
                     "WHERE created_at >= ? ORDER BY id",
                     (since_ms,),
                 )
             rows = cursor.fetchall()
-        result = []
-        for channel, payload_json, meta_json, created_at in rows:
+        return [self._row_to_dict(row) for row in rows]
+
+    def load_day(self, before_ms: int) -> Dict[str, Any]:
+        """The lazy-load primitive: the most recent non-empty calendar day at
+        or before ``before_ms`` (skipping empty days), with ``has_older`` set
+        when earlier history exists. ``messages`` is empty when there is no
+        history at or before the cursor. Day boundaries are local time
+        (matching the date picker's native date input)."""
+        with self._db.lock:
+            row = self._db.conn.execute(
+                "SELECT MAX(created_at) FROM ws_messages WHERE created_at <= ?",
+                (before_ms,),
+            ).fetchone()
+            newest = row[0] if row else None
+            if newest is None:
+                return {"messages": [], "has_older": False}
+            day_start, day_end = _local_day_bounds(newest)
+            rows = self._db.conn.execute(
+                "SELECT id, channel, payload, meta, created_at FROM ws_messages "
+                "WHERE created_at >= ? AND created_at < ? ORDER BY id",
+                (day_start, day_end),
+            ).fetchall()
+            has_older = bool(
+                self._db.conn.execute(
+                    "SELECT EXISTS(SELECT 1 FROM ws_messages WHERE created_at < ?)",
+                    (day_start,),
+                ).fetchone()[0],
+            )
+        return {
+            "messages": [self._row_to_dict(r) for r in rows],
+            "has_older": has_older,
+        }
+
+    @staticmethod
+    def _row_to_dict(row: Any) -> Dict[str, Any]:
+        row_id, channel, payload_json, meta_json, created_at = row
+        try:
+            payload = json.loads(payload_json)
+        except (json.JSONDecodeError, TypeError):
+            payload = payload_json
+        meta = None
+        if meta_json:
             try:
-                payload = json.loads(payload_json)
+                meta = json.loads(meta_json)
             except (json.JSONDecodeError, TypeError):
-                payload = payload_json
-            meta = None
-            if meta_json:
-                try:
-                    meta = json.loads(meta_json)
-                except (json.JSONDecodeError, TypeError):
-                    # Stored meta is opt-in legacy JSON; leave as None on
-                    # parse failure rather than poison the whole row.
-                    pass
-            result.append({"channel": channel, "payload": payload, "meta": meta, "created_at": created_at})
-        return result
+                # Stored meta is opt-in legacy JSON; leave as None on
+                # parse failure rather than poison the whole row.
+                pass
+        return {
+            "id": row_id,
+            "channel": channel,
+            "payload": payload,
+            "meta": meta,
+            "created_at": created_at,
+        }
 
     def close(self) -> None:
         # The connection belongs to StateDb; its owner closes it.
@@ -114,6 +168,9 @@ class NullMessageStore(MessageStore):
 
     def get_all(self, since_ms: Optional[int] = None) -> List[Dict[str, Any]]:
         return []
+
+    def load_day(self, before_ms: int) -> Dict[str, Any]:
+        return {"messages": [], "has_older": False}
 
     def close(self) -> None:
         pass

@@ -35,8 +35,8 @@ CHANNEL_CLEAR_LISTENING_HISTORY_RESPONSE = "clear-listening-history-response"
 # the cursor is a passive signal carrying whether older history exists.
 CHANNEL_HISTORY_REQUEST = "history-request"
 CHANNEL_HISTORY_CURSOR = "history-cursor"
-# Cost dashboard: request carries an optional range + agent/model filter; the
-# response carries totals + breakdowns by agent / model / day from the ledger.
+# Cost dashboard: request = optional range + agent/model filter; response = the
+# ledger aggregate.
 CHANNEL_COST_METRICS_REQUEST = "cost-metrics-request"
 CHANNEL_COST_METRICS_RESPONSE = "cost-metrics-response"
 CHANNEL_RATE_LIMIT = "rate-limit"

@@ -19,7 +19,8 @@ from app.io.state_db import StateDb
 
 logger = logging.getLogger(__name__)
 
-# Sum expressions shared by the total + every grouped query, in a fixed order.
+# Shared SUM expressions; the column order is load-bearing — _metrics() reads
+# the row by position.
 _SUMS = (
     "COALESCE(SUM(cost_usd), 0), "
     "COALESCE(SUM(input_tokens), 0), "
@@ -30,8 +31,8 @@ _SUMS = (
 )
 
 
-# Buckets a request by coordinator step count for the by-complexity breakdown.
-# Keys are stable; the frontend maps them to display labels.
+# Buckets a request by coordinator step count. The keys are a contract with the
+# frontend, which maps them to display labels.
 _SHAPE_EXPR = (
     "CASE WHEN steps BETWEEN 1 AND 2 THEN 'simple' "
     "WHEN steps BETWEEN 3 AND 4 THEN 'compound' "
@@ -130,8 +131,7 @@ class CostLedger:
             )
             by_agent = grouped("agent")
             by_model = grouped("model")
-            # Mean cost per request by complexity (coordinator step count).
-            # Only rows with steps (coordinator requests) qualify.
+            # Only coordinator rows carry steps; sub-agent/analyser rows lack them.
             by_shape = grouped(_SHAPE_EXPR, order_desc="key ASC", extra="steps IS NOT NULL")
             # Local-day buckets, oldest first (for a trend line).
             by_day = grouped(
@@ -160,7 +160,6 @@ class NullCostLedger:
         }
 
 
-# Module-level singleton — callers use get/set, never import the instance.
 _ledger: Any = NullCostLedger()
 
 

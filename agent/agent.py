@@ -184,8 +184,7 @@ _state_db = StateDb(messages_db_path())
 _session_store = SqliteMessageStore(_state_db)
 set_message_store(_session_store)
 
-# Cost ledger shares the same DB; every LLM agent records its spend here for
-# the cost dashboard. Available in both CLI and WS modes (this runs on import).
+# Module-level so the ledger records in CLI mode as well as WS.
 set_cost_ledger(CostLedger(_state_db))
 
 # Prune persisted history past its retention windows before anything reads it.

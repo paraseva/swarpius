@@ -58,9 +58,8 @@ class TestCostLedger(unittest.TestCase):
         self.assertAlmostEqual(agg["total"]["cost_usd"], 0.30)
 
     def test_by_shape_buckets_by_step_count(self):
-        # Mean cost per request by complexity: rows bucket by coordinator step
-        # count (1-2 simple, 3-4 compound, 5+ complex). Rows without steps
-        # (sub-agent/analyser) are excluded.
+        # Rows bucket by step count (1-2 simple, 3-4 compound, 5+ complex);
+        # rows without steps are excluded.
         self.ledger.record(agent="Coordinator", model="m", cost_usd=0.02, steps=1, ts=1000)
         self.ledger.record(agent="Coordinator", model="m", cost_usd=0.04, steps=2, ts=2000)
         self.ledger.record(agent="Coordinator", model="m", cost_usd=0.10, steps=4, ts=3000)

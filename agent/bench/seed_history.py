@@ -118,8 +118,6 @@ def _seed_request(conn, rid: str, cmid: str, base: int, user_text: str,
              "request_id": rid, "total_steps": 1, "total_duration_ms": 2500,
              "status": "ok", "coordinator_model": _MODEL, "conversation_id": conv_id},
             base + 2600)
-    # The Coordinator cost for this request; cost grows with the step count
-    # (the caller spreads steps across the complexity buckets).
     _insert_cost(conn, agent="Coordinator", model=_MODEL,
                  cost_usd=0.005 + steps * 0.004,
                  input_tokens=2000 + steps * 800, output_tokens=200 + steps * 40,
@@ -178,8 +176,7 @@ def seed(days_ago: list[int]) -> int:
                         # Spread step counts across simple/compound/complex buckets.
                         steps = 1 + ((conv + turn * 2) % 6)
                         inserted += _seed_request(conn, rid, cmid, base, user_text, agent_text, conv_id, steps)
-                # Sub-agent / analyser spend for the day (no conversation id —
-                # these group under the dashboard's unattributed bucket).
+                # A daily Analyser + Diagnostic charge on distinct models.
                 day_end = _ts_ms(day, 23)
                 _insert_cost(conn, agent="Analyser", model=_ANALYSER_MODEL,
                              cost_usd=0.12 + (conv % 3) * 0.06,

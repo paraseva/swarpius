@@ -35,8 +35,7 @@ const SHAPES = [
   { key: 'complex', label: 'Complex (5+ steps)' },
 ]
 
-// The fixed set of LLM consumers (sub-agents are off by default; they only
-// appear in the data when enabled, but the filter offers them regardless).
+// Sub-agents are off by default, but the filter offers them regardless.
 const AGENTS = ['Coordinator', 'Diagnostic', 'Arbiter', 'Analyser']
 const DAY_MS = 86_400_000
 
@@ -47,7 +46,6 @@ const COLOURS = {
   cost: '#d9534f',
   grid: 'rgba(128,128,128,0.15)',
 }
-// Segment palette for the by-agent donut.
 const PALETTE = ['#4a90e2', '#e1b84a', '#7ed6df', '#d9534f', '#b57edc', '#5cb85c']
 
 const CHART = { marginLeft: 46, marginRight: 46, marginTop: 12, marginBottom: 44, chartWidth: 400, chartHeight: 160 }

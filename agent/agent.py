@@ -45,6 +45,7 @@ from app.data_paths import (
     messages_db_path,
 )
 from app.io import AppIO
+from app.io.cost_ledger import CostLedger, set_cost_ledger
 from app.io.history_retention import prune_history
 from app.io.message_store import SqliteMessageStore, set_message_store
 from app.io.state_db import StateDb
@@ -182,6 +183,10 @@ runtime.configure_io_callbacks(
 _state_db = StateDb(messages_db_path())
 _session_store = SqliteMessageStore(_state_db)
 set_message_store(_session_store)
+
+# Cost ledger shares the same DB; every LLM agent records its spend here for
+# the cost dashboard. Available in both CLI and WS modes (this runs on import).
+set_cost_ledger(CostLedger(_state_db))
 
 # Prune persisted history past its retention windows before anything reads it.
 _retention_settings = _get_settings()

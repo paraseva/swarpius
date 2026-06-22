@@ -69,10 +69,12 @@ LLM tuning (temperature, sampling params, coordinator step caps, provider-specif
 | `ROON_CORE_URL` | (auto-discover) | Explicit Roon Core address (e.g. `http://192.168.1.100:9330`) |
 | `ROON_CORE_NAME` |—| Roon Core name to pair with when multiple Cores are on the network (matches Settings > General > ROON SERVER). Ignored if only one Core is discovered or `ROON_CORE_URL` is set. |
 | `ROON_PROFILE_NAME` |—| Roon profile to authenticate as. Note: the Roon API doesn't currently set this properly |
-| `DEFAULT_ROON_ZONE` | (first zone the Core reports) | Default Roon zone name used for actions when the user doesn't specify one |
 | `LLM_PERSONA` |—| Persona for Swarpius to adopt — character name (e.g. `Peter Griffin`) or personality description (e.g. `Funny and sarcastic`) |
 | `LOG_FILE` | `data/logs/swarpius.log` (all modes) | Path to the agent log file (rotates at 10MB, keeps 3 backups). Unset → the default path is used in every mode. CLI mode routes INFO to the file so the terminal stays clean; WS / Docker keep stderr alongside the file. |
-| `LOG_RETENTION_DAYS` | `7` | Request log retention in days |
+| `LOG_RETENTION_DAYS` | `7` | Request/server **log** retention in days (distinct from the persisted-history retention below) |
+| `CHAT_HISTORY_RETENTION_DAYS` | `90` | Persisted chat transcript + working memory retention in days (`0` = keep forever) |
+| `DIAGNOSTICS_RETENTION_DAYS` | `30` | Persisted diagnostics (agent/tool/LLM events) retention in days (`0` = keep forever) |
+| `LISTENING_HISTORY_RETENTION_DAYS` | `365` | Listening-history retention in days (`0` = keep forever) |
 | `CONVERSATION_IDLE_TIMEOUT_SECONDS` | `300` | Idle gap that starts a new conversation group |
 | `PARALLEL_TOOLS` | `false` | Run parallelisable tool calls concurrently within a step |
 | `ROON_MAX_PARALLEL` | `5` | Max concurrent Roon operations per step; parallel-safe calls run in batches of this size. Set `0` (or any value `< 1`) for unlimited. Default keeps Roon Cores from dropping or stalling responses on large multi-track requests. |

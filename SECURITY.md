@@ -203,22 +203,25 @@ and analysis. These contain **user-identifiable content** including:
 - `messages.db`: the chat transcript and diagnostics, **plus the persisted
   runtime state** that lets a restart resume where you left off — the
   assistant's working memory (recent conversation turns, cached search
-  results) and the Roon references built during the conversation. This is
-  retained across restarts **by default** (the previous `--keep-history`
-  flag has been removed).
+  results), the Roon references built during the conversation, the
+  conversation-tracker state, the default zone, and a **listening-history**
+  record of recently played tracks. This is retained across restarts **by
+  default** (the previous `--keep-history` flag has been removed).
 
-**Retention.** `LOG_RETENTION_DAYS` (default `7`) controls how long
-per-request and server logs under `logs/` are kept; cleanup runs on agent
-startup. The minimum practical value is `1` (setting `0` is silently treated
-as `1`). There is no built-in toggle to disable logging entirely. The
-`messages.db` history is not yet age-pruned — it persists until you clear it
-(see below).
+**Retention.** `LOG_RETENTION_DAYS` (default `7`) controls how long per-request
+and server logs under `logs/` are kept; cleanup runs on agent startup (minimum
+practical value `1`; `0` is treated as `1`). Persisted state in `messages.db` is
+pruned on its own startup schedule, with independent windows:
+`CHAT_HISTORY_RETENTION_DAYS` (chat transcript + working memory, default `90`),
+`DIAGNOSTICS_RETENTION_DAYS` (agent/tool/LLM event records, default `30`), and
+`LISTENING_HISTORY_RETENTION_DAYS` (default `365`). Set any to `0` to keep that
+data indefinitely. There is no built-in toggle to disable logging entirely.
 
-**Deleting chat history.** Open Settings → **Privacy & Data** → *Clear
-conversation history*. This deletes the transcript, the assistant's working
-memory, and the conversation's cached search references in one action (your
-saved zones and other settings are kept). It is the supported way to wipe the
-locally-stored conversation.
+**Deleting chat history.** Open Settings → **Privacy & Data**. *Clear
+conversation history* deletes the transcript, the assistant's working memory,
+and the conversation's cached search references in one action; *Clear listening
+history* deletes the played-track record separately (your saved zones and other
+settings are kept). These are the supported ways to wipe locally-stored data.
 
 **`.gitignore` coverage.** All log paths under `agent/data/` are
 git-ignored; they will not be accidentally committed. The provided

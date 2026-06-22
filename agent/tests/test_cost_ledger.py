@@ -57,6 +57,18 @@ class TestCostLedger(unittest.TestCase):
         agg = self.ledger.aggregate(model="m2")
         self.assertAlmostEqual(agg["total"]["cost_usd"], 0.30)
 
+    def test_by_conversation_excludes_null_bucket(self):
+        # Coordinator rows carry a conversation; sub-agent/analyser rows don't.
+        # "By conversation" should list only real conversations, not the null
+        # catch-all (which is covered by by_agent / by_model).
+        self.ledger.record(agent="Coordinator", model="m1", cost_usd=0.10,
+                           conversation_id="c01", ts=1000)
+        self.ledger.record(agent="Analyser", model="m2", cost_usd=0.30, ts=2000)
+        agg = self.ledger.aggregate()
+        self.assertEqual([r["key"] for r in agg["by_conversation"]], ["c01"])
+        # The analyser spend is still in the totals + by_agent.
+        self.assertAlmostEqual(agg["total"]["cost_usd"], 0.40)
+
     def test_time_range(self):
         self.ledger.record(agent="A", model="m", cost_usd=0.10, ts=1000)
         self.ledger.record(agent="A", model="m", cost_usd=0.20, ts=5000)

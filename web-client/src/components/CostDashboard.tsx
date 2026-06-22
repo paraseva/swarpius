@@ -196,8 +196,10 @@ const CostDonut: React.FC<{ rows: GroupRow[] }> = ({ rows }) => {
 }
 
 const CostBar: React.FC<{ rows: GroupRow[]; limit?: number; stripPrefix?: boolean }> = ({ rows, limit, stripPrefix }) => {
-  const shown = (limit ? rows.slice(0, limit) : rows).filter((r) => r.cost_usd > 0)
-  if (shown.length === 0) return <div className={s.metricsEmpty}>No cost in the selected range.</div>
+  const all = rows.filter((r) => r.cost_usd > 0)
+  if (all.length === 0) return <div className={s.metricsEmpty}>No cost in the selected range.</div>
+  const shown = limit ? all.slice(0, limit) : all
+  const moreCount = all.length - shown.length
 
   const maxCost = shown[0].cost_usd || 1
   const barHeight = 8, gap = 4, labelWidth = 72, countWidth = 52, chartW = 120
@@ -208,22 +210,25 @@ const CostBar: React.FC<{ rows: GroupRow[]; limit?: number; stripPrefix?: boolea
     return stripPrefix ? v.replace(/^[^/]+\//, '') : v
   }
   return (
-    <div className={s.chartBarContainer}>
-      <svg width="100%" viewBox={`0 0 ${svgWidth} ${svgHeight}`} preserveAspectRatio="xMinYMin meet">
-        {shown.map((r, i) => {
-          const y = i * (barHeight + gap)
-          const w = maxCost > 0 ? (r.cost_usd / maxCost) * chartW : 0
-          return (
-            <g key={r.key ?? '—'}>
-              <title>{`${label(r.key)}: ${formatCost(r.cost_usd)} (${r.count} req)`}</title>
-              <text x={labelWidth - 4} y={y + barHeight / 2} textAnchor="end" dominantBaseline="central" className={s.chartBarLabel}>{label(r.key)}</text>
-              <rect x={labelWidth} y={y} width={Math.max(w, 2)} height={barHeight} rx={3} className={s.chartBarFill} />
-              <text x={labelWidth + chartW + 4} y={y + barHeight / 2} dominantBaseline="central" className={s.chartBarCount}>{formatCost(r.cost_usd)}</text>
-            </g>
-          )
-        })}
-      </svg>
-    </div>
+    <>
+      <div className={s.chartBarContainer}>
+        <svg width="100%" viewBox={`0 0 ${svgWidth} ${svgHeight}`} preserveAspectRatio="xMinYMin meet">
+          {shown.map((r, i) => {
+            const y = i * (barHeight + gap)
+            const w = maxCost > 0 ? (r.cost_usd / maxCost) * chartW : 0
+            return (
+              <g key={r.key ?? '—'}>
+                <title>{`${label(r.key)}: ${formatCost(r.cost_usd)} (${r.count} req)`}</title>
+                <text x={labelWidth - 4} y={y + barHeight / 2} textAnchor="end" dominantBaseline="central" className={s.chartBarLabel}>{label(r.key)}</text>
+                <rect x={labelWidth} y={y} width={Math.max(w, 2)} height={barHeight} rx={3} className={s.chartBarFill} />
+                <text x={labelWidth + chartW + 4} y={y + barHeight / 2} dominantBaseline="central" className={s.chartBarCount}>{formatCost(r.cost_usd)}</text>
+              </g>
+            )
+          })}
+        </svg>
+      </div>
+      {moreCount > 0 ? <p className={c.more}>+{moreCount} more</p> : null}
+    </>
   )
 }
 

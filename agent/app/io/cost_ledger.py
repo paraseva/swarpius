@@ -103,9 +103,12 @@ class CostLedger:
             params.append(model)
         clause = (" WHERE " + " AND ".join(where)) if where else ""
 
-        def grouped(expr: str, order_desc: str = "SUM(cost_usd) DESC") -> List[Dict[str, Any]]:
+        def grouped(expr: str, order_desc: str = "SUM(cost_usd) DESC", extra: str = "") -> List[Dict[str, Any]]:
+            where = clause
+            if extra:
+                where = f"{clause} AND {extra}" if clause else f" WHERE {extra}"
             rows = self._db.conn.execute(
-                f"SELECT {expr} AS key, {_SUMS} FROM cost_ledger{clause} "
+                f"SELECT {expr} AS key, {_SUMS} FROM cost_ledger{where} "
                 f"GROUP BY key ORDER BY {order_desc}",
                 params,
             ).fetchall()
@@ -117,9 +120,9 @@ class CostLedger:
             )
             by_agent = grouped("agent")
             by_model = grouped("model")
-            # Coordinator rows carry a conversation; sub-agent/analyser rows
-            # don't (key is null), grouped under their own bucket.
-            by_conversation = grouped("conversation_id")
+            # Only real conversations (Coordinator rows). Sub-agent/analyser
+            # rows carry no conversation id; their spend is in by_agent/by_model.
+            by_conversation = grouped("conversation_id", extra="conversation_id IS NOT NULL")
             # Local-day buckets, oldest first (for a trend line).
             by_day = grouped(
                 "strftime('%Y-%m-%d', ts / 1000, 'unixepoch', 'localtime')",

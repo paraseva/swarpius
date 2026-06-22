@@ -1,0 +1,188 @@
+.dashboard {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  background: var(--color-bg-base);
+  color: var(--color-text-default);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.8rem 1.2rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.title {
+  margin: 0;
+  font-size: var(--text-lg);
+}
+
+.closeButton {
+  background: transparent;
+  border: none;
+  color: var(--color-text-muted);
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 0.3rem;
+}
+
+.closeButton:hover {
+  color: var(--color-text-default);
+}
+
+.filterBar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  padding: 0.8rem 1.2rem;
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.select {
+  font-size: var(--text-sm);
+  padding: 0.35rem 0.6rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-bg-overlay);
+  color: var(--color-text-default);
+}
+
+.body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 1.2rem;
+}
+
+.cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+  margin-bottom: 1.4rem;
+}
+
+.card {
+  flex: 1 1 8rem;
+  padding: 0.9rem 1rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border-subtle);
+  background: var(--color-bg-elevated);
+}
+
+.cardValue {
+  font-size: var(--text-xl);
+  font-weight: 600;
+}
+
+.cardLabel {
+  margin-top: 0.2rem;
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.section {
+  margin-bottom: 1.6rem;
+}
+
+.sectionTitle {
+  margin: 0 0 0.6rem;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+}
+
+.table th {
+  text-align: left;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  padding: 0.3rem 0.6rem;
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.table th:not(:first-child) {
+  text-align: right;
+}
+
+.table td {
+  padding: 0.35rem 0.6rem;
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.nameCell {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  word-break: break-word;
+}
+
+.numCell {
+  text-align: right;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.trend {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.trendRow {
+  display: grid;
+  grid-template-columns: 5.5rem 1fr 5rem;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: var(--text-xs);
+}
+
+.trendDay {
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.trendBarTrack {
+  height: 0.7rem;
+  background: var(--color-bg-overlay);
+  border-radius: var(--radius-sm, 3px);
+  overflow: hidden;
+}
+
+.trendBar {
+  display: block;
+  height: 100%;
+  background: var(--color-brand-primary);
+  border-radius: var(--radius-sm, 3px);
+}
+
+.trendCost {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.empty {
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
+.more {
+  margin: 0.4rem 0 0;
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+.error {
+  color: var(--color-error-text);
+  font-size: var(--text-sm);
+}

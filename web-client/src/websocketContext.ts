@@ -31,6 +31,8 @@ export type ChannelId =
   | 'analysis-run-response'
   | 'analysis-metrics-request'
   | 'analysis-metrics-response'
+  | 'cost-metrics-request'
+  | 'cost-metrics-response'
   | 'settings-read-request'
   | 'settings-read-response'
   | 'settings-save-request'

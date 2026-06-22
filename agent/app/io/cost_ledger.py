@@ -117,12 +117,21 @@ class CostLedger:
             )
             by_agent = grouped("agent")
             by_model = grouped("model")
+            # Coordinator rows carry a conversation; sub-agent/analyser rows
+            # don't (key is null), grouped under their own bucket.
+            by_conversation = grouped("conversation_id")
             # Local-day buckets, oldest first (for a trend line).
             by_day = grouped(
                 "strftime('%Y-%m-%d', ts / 1000, 'unixepoch', 'localtime')",
                 order_desc="key ASC",
             )
-        return {"total": total, "by_agent": by_agent, "by_model": by_model, "by_day": by_day}
+        return {
+            "total": total,
+            "by_agent": by_agent,
+            "by_model": by_model,
+            "by_conversation": by_conversation,
+            "by_day": by_day,
+        }
 
 
 class NullCostLedger:
@@ -132,7 +141,10 @@ class NullCostLedger:
         pass
 
     def aggregate(self, **kwargs: Any) -> Dict[str, Any]:
-        return {"total": _metrics((0, 0, 0, 0, 0, 0)), "by_agent": [], "by_model": [], "by_day": []}
+        return {
+            "total": _metrics((0, 0, 0, 0, 0, 0)),
+            "by_agent": [], "by_model": [], "by_conversation": [], "by_day": [],
+        }
 
 
 # Module-level singleton — callers use get/set, never import the instance.

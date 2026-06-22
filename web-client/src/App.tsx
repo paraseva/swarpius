@@ -17,6 +17,9 @@ const AnalysisBrowser = React.lazy(() =>
 const RoonExplorer = React.lazy(() =>
   import('./components/RoonExplorer').then(m => ({ default: m.RoonExplorer })),
 )
+const CostDashboard = React.lazy(() =>
+  import('./components/CostDashboard').then(m => ({ default: m.CostDashboard })),
+)
 const Settings = React.lazy(() =>
   import('./components/Settings/Settings').then(m => ({ default: m.Settings })),
 )
@@ -100,7 +103,7 @@ const AppShell: React.FC = () => {
   const [appView, setAppView] = React.useState<AppView>(() => {
     try {
       const stored = localStorage.getItem('swarpius:appView')
-      if (stored === 'assistant' || stored === 'analysis' || stored === 'settings' || stored === 'roon-explorer') {
+      if (stored === 'assistant' || stored === 'analysis' || stored === 'settings' || stored === 'roon-explorer' || stored === 'cost') {
         return stored
       }
     } catch { /* ignore */ }
@@ -482,6 +485,23 @@ const AppShell: React.FC = () => {
           )}
           <button
             type="button"
+            className={`${s.headerIconButton} ${effectiveAppView === 'cost' ? s.headerIconButtonActive : ''}`}
+            disabled={requiresSettings}
+            onClick={() => {
+              const next = effectiveAppView === 'cost' ? 'assistant' : 'cost'
+              setAppView(next)
+              if (next === 'cost') setIsDiagnosticsOpen(false)
+            }}
+            aria-pressed={effectiveAppView === 'cost'}
+            title={effectiveAppView === 'cost' ? 'Close Cost dashboard' : 'Open Cost dashboard'}
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="12" y1="1" x2="12" y2="23" />
+              <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+            </svg>
+          </button>
+          <button
+            type="button"
             className={`${s.headerIconButton} ${effectiveAppView === 'settings' ? s.headerIconButtonActive : ''}`}
             disabled={requiresSettings}
             onClick={() => {
@@ -560,6 +580,13 @@ const AppShell: React.FC = () => {
             </ErrorBoundary>
           </main>
         )}
+        <main className="app-main app-main-analysis" style={{ display: effectiveAppView === 'cost' ? undefined : 'none' }}>
+          <ErrorBoundary name="Cost Dashboard">
+            <React.Suspense fallback={<div className={s.lazyLoadFallback}>Loading cost dashboard…</div>}>
+              <CostDashboard onClose={() => setAppView('assistant')} />
+            </React.Suspense>
+          </ErrorBoundary>
+        </main>
         <main className="app-main app-main-analysis" style={{ display: effectiveAppView === 'settings' ? undefined : 'none' }}>
           <ErrorBoundary name="Settings">
             <React.Suspense fallback={<div className={s.lazyLoadFallback}>Loading settings…</div>}>

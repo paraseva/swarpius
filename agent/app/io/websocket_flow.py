@@ -37,6 +37,8 @@ from app.constants import (
     CHANNEL_CLEAR_CONVERSATION_RESPONSE,
     CHANNEL_CLEAR_LISTENING_HISTORY_REQUEST,
     CHANNEL_CLEAR_LISTENING_HISTORY_RESPONSE,
+    CHANNEL_COST_METRICS_REQUEST,
+    CHANNEL_COST_METRICS_RESPONSE,
     CHANNEL_DEFAULT_ZONE_UPDATE,
     CHANNEL_ERRORS,
     CHANNEL_FEATURE_AVAILABILITY,
@@ -406,6 +408,23 @@ async def _send_history_batch(
         await _ws_send_to_client(websocket, msg["channel"], msg["payload"], meta=meta)
     await _ws_send_to_client(
         websocket, CHANNEL_HISTORY_CURSOR, {"has_older": result["has_older"]},
+    )
+
+
+async def _handle_cost_metrics(payload: dict) -> dict:
+    """Aggregate the cost ledger for the dashboard: optional time range +
+    agent/model filter → totals + breakdowns. The aggregator is a plain
+    in-process function, so CLI ``/usage`` can call it directly too."""
+    from app.io.cost_ledger import get_cost_ledger
+
+    def _opt_int(value: Any) -> Optional[int]:
+        return int(value) if isinstance(value, (int, float)) else None
+
+    return get_cost_ledger().aggregate(
+        since_ms=_opt_int(payload.get("since_ms")),
+        until_ms=_opt_int(payload.get("until_ms")),
+        agent=payload.get("agent") or None,
+        model=payload.get("model") or None,
     )
 
 
@@ -980,6 +999,11 @@ async def websocket_handler(
                 else:
                     continue
                 await _send_history_batch(websocket, result, get_server_start_ms())
+                continue
+            if channel == CHANNEL_COST_METRICS_REQUEST:
+                await _handle_json_request(
+                    websocket, body, CHANNEL_COST_METRICS_RESPONSE, _handle_cost_metrics,
+                )
                 continue
             if channel == CHANNEL_IMAGE_REQUEST:
                 await _handle_json_request(

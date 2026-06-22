@@ -11,6 +11,7 @@ Swarpius navigates your [Roon](https://roon.app) library using multi-step tool c
 - **Voice output:** optional text-to-speech via **[F5-TTS](https://github.com/SWivid/F5-TTS)** by SWivid (not redistributed with this project). Note that operating your own server requires an NVIDIA GPU and CUDA 12.8
 - **Live playback UI:** real-time zone status, artwork, and transport controls in the browser
 - **Persistent history:** chat and the assistant's working memory survive a restart, so you carry on where you left off. Scroll back through earlier days or jump to a date, and ask what you played ("what did I listen to last Tuesday?")
+- **Cost dashboard:** track LLM spend across every agent — the coordinator, the lightweight sub-agents, and the conversation analyser — with a cost-over-time trend, breakdowns by agent and model, and mean cost per request by complexity. Filter by date range, agent, or model. Open it from the `$` icon in the header (no Developer Mode required); the command-line `/usage` view shows a matching all-time summary
 - **Developer Mode with Live Diagnostics & Conversation Analysis:** real-time request tracing, LLM call diagnostics, token usage tracking, and automated post-hoc conversation and action reviews. Double-click the Swarpius logo to toggle Developer Mode on and off; once on, Ctrl+Shift+D toggles the diagnostics drawer and Ctrl+Shift+A toggles the analysis browser
 - **Any LLM provider:** Anthropic, OpenAI, Gemini, Ollama, LM Studio, or anything LiteLLM supports. Bring your own key
 
@@ -252,7 +253,7 @@ Once authorised, you can talk to the agent in the terminal, e.g.:
 > /exit
 ```
 
-Slash commands: `/exit` to quit, `/usage` for detailed token usage. Readline command history persists between sessions.
+Slash commands: `/exit` to quit, `/usage` for detailed token usage plus an all-time cost summary. Readline command history persists between sessions.
 
 ### Using the Web UI
 

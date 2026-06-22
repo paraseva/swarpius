@@ -249,6 +249,12 @@ State persists across a restart so the user can continue as though the agent had
 
 **History browsing (web client).** Only the most recent non-empty day loads on connect; the chat lazy-loads earlier days on scroll-up (skipping empty days) and via a date picker, using one server primitive — "the messages for the day at or before timestamp T". Requests are fire-and-forget; the client's passive receive sorts and de-dupes whatever arrives by a stable server message id, so live messages, replay, and lazy-loaded history all assemble through one path. See `docs/web-client.md`.
 
+## Cost tracking
+
+Every LLM call's cost is recorded to a `cost_ledger` table in the same `messages.db` (`app/io/cost_ledger.py`), one row per invocation: agent, model, token counts, `cost_usd` (from LiteLLM), the request/conversation id and coordinator step count where applicable, and a timestamp. All four LLM consumers record — the coordinator (per request, at completion), the diagnostic agent, the interrupt arbiter, and the conversation analyser (per analysis call) — through a shared `record_cost_from_usage` helper, so the cost surface covers the whole system, not just the coordinator. A failed ledger write is swallowed and logged; cost accounting never breaks the request it measures.
+
+Unlike the diagnostics window, the ledger is **never pruned** — cost rows are tiny and the dashboard's value is the long view. `CostLedger.aggregate()` is a plain in-process query returning totals plus breakdowns by agent, by model, by local day, and by request complexity (coordinator step count, bucketed simple/compound/complex), over an optional time range and agent/model filter. The web client's Cost view requests this over the `cost-metrics` channel; the CLI `/usage` view calls `aggregate()` directly for its all-time summary.
+
 ## Model profiles
 
 Per-model tuning is configured in `model_profiles.yaml` and managed by `model_profiles.py`. Profiles are matched by regex against the full `provider/model` string (first match wins); models without a matching profile get the defaults. Prompts, context, and validation are the same for all models — only the loop limits and generation parameters vary.

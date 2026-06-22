@@ -73,18 +73,19 @@ def _insert(conn, channel: str, payload: dict, created_at: int, meta: dict | Non
 
 def _insert_cost(conn, *, agent: str, model: str, cost_usd: float,
                  input_tokens: int, output_tokens: int, ts: int,
-                 request_id: str | None = None, conversation_id: str | None = None) -> None:
+                 request_id: str | None = None, conversation_id: str | None = None,
+                 steps: int | None = None) -> None:
     conn.execute(
-        "INSERT INTO cost_ledger (ts, agent, model, request_id, conversation_id, "
+        "INSERT INTO cost_ledger (ts, agent, model, request_id, conversation_id, steps, "
         "input_tokens, output_tokens, cache_creation_tokens, cache_read_tokens, cost_usd) "
-        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-        (ts, agent, model, request_id, conversation_id,
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        (ts, agent, model, request_id, conversation_id, steps,
          input_tokens, output_tokens, 0, 0, round(cost_usd, 4)),
     )
 
 
 def _seed_request(conn, rid: str, cmid: str, base: int, user_text: str,
-                  agent_text: str, conv_id: str) -> int:
+                  agent_text: str, conv_id: str, steps: int) -> int:
     """A successful request: chat Q+A plus the agent-outputs lifecycle
     (request_id_assignment → coordinator_step → response → request_complete)
     and a tool call. Appears in Chat, Agents, Tools and Session Requests."""
@@ -117,11 +118,12 @@ def _seed_request(conn, rid: str, cmid: str, base: int, user_text: str,
              "request_id": rid, "total_steps": 1, "total_duration_ms": 2500,
              "status": "ok", "coordinator_model": _MODEL, "conversation_id": conv_id},
             base + 2600)
-    # The Coordinator cost for this request (varies with prompt length).
+    # The Coordinator cost for this request; cost grows with the step count
+    # (the caller spreads steps across the complexity buckets).
     _insert_cost(conn, agent="Coordinator", model=_MODEL,
-                 cost_usd=0.006 + len(user_text) * 0.0004,
-                 input_tokens=3200 + len(user_text) * 20, output_tokens=240,
-                 ts=base + 2600, request_id=rid, conversation_id=conv_id)
+                 cost_usd=0.005 + steps * 0.004,
+                 input_tokens=2000 + steps * 800, output_tokens=200 + steps * 40,
+                 ts=base + 2600, request_id=rid, conversation_id=conv_id, steps=steps)
     return 7
 
 
@@ -173,7 +175,9 @@ def seed(days_ago: list[int]) -> int:
                         inserted += _seed_failed(conn, rid, cmid, base, user_text, error_text)
                     else:
                         user_text, agent_text = _PROMPTS[(conv + turn) % len(_PROMPTS)]
-                        inserted += _seed_request(conn, rid, cmid, base, user_text, agent_text, conv_id)
+                        # Spread step counts across simple/compound/complex buckets.
+                        steps = 1 + ((conv + turn * 2) % 6)
+                        inserted += _seed_request(conn, rid, cmid, base, user_text, agent_text, conv_id, steps)
                 # Sub-agent / analyser spend for the day (no conversation id —
                 # these group under the dashboard's unattributed bucket).
                 day_end = _ts_ms(day, 23)

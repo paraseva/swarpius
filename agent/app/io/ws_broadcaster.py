@@ -332,6 +332,7 @@ class WsBroadcaster(Renderer):
             usage=usage,
             request_id=event.request_id,
             conversation_id=extract_conversation_dir(event.request_id),
+            steps=event.total_steps,
             ts=event.emitted_at_ms,
         )
 

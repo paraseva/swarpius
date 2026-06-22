@@ -57,17 +57,21 @@ class TestCostLedger(unittest.TestCase):
         agg = self.ledger.aggregate(model="m2")
         self.assertAlmostEqual(agg["total"]["cost_usd"], 0.30)
 
-    def test_by_conversation_excludes_null_bucket(self):
-        # Coordinator rows carry a conversation; sub-agent/analyser rows don't.
-        # "By conversation" should list only real conversations, not the null
-        # catch-all (which is covered by by_agent / by_model).
-        self.ledger.record(agent="Coordinator", model="m1", cost_usd=0.10,
-                           conversation_id="c01", ts=1000)
-        self.ledger.record(agent="Analyser", model="m2", cost_usd=0.30, ts=2000)
-        agg = self.ledger.aggregate()
-        self.assertEqual([r["key"] for r in agg["by_conversation"]], ["c01"])
-        # The analyser spend is still in the totals + by_agent.
-        self.assertAlmostEqual(agg["total"]["cost_usd"], 0.40)
+    def test_by_shape_buckets_by_step_count(self):
+        # Mean cost per request by complexity: rows bucket by coordinator step
+        # count (1-2 simple, 3-4 compound, 5+ complex). Rows without steps
+        # (sub-agent/analyser) are excluded.
+        self.ledger.record(agent="Coordinator", model="m", cost_usd=0.02, steps=1, ts=1000)
+        self.ledger.record(agent="Coordinator", model="m", cost_usd=0.04, steps=2, ts=2000)
+        self.ledger.record(agent="Coordinator", model="m", cost_usd=0.10, steps=4, ts=3000)
+        self.ledger.record(agent="Coordinator", model="m", cost_usd=0.30, steps=7, ts=4000)
+        self.ledger.record(agent="Analyser", model="m", cost_usd=1.00, ts=5000)  # no steps
+        by_shape = {r["key"]: r for r in self.ledger.aggregate()["by_shape"]}
+        self.assertEqual(set(by_shape), {"simple", "compound", "complex"})
+        self.assertAlmostEqual(by_shape["simple"]["cost_usd"], 0.06)
+        self.assertEqual(by_shape["simple"]["count"], 2)
+        self.assertAlmostEqual(by_shape["compound"]["cost_usd"], 0.10)
+        self.assertAlmostEqual(by_shape["complex"]["cost_usd"], 0.30)
 
     def test_time_range(self):
         self.ledger.record(agent="A", model="m", cost_usd=0.10, ts=1000)

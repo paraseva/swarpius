@@ -24,9 +24,16 @@ interface CostMetrics {
   total: Metric
   by_agent: GroupRow[]
   by_model: GroupRow[]
-  by_conversation: GroupRow[]
+  by_shape: GroupRow[]
   by_day: GroupRow[]
 }
+
+// Display labels for the by-complexity buckets; keys match the backend.
+const SHAPES = [
+  { key: 'simple', label: 'Simple (1–2 steps)' },
+  { key: 'compound', label: 'Compound (3–4 steps)' },
+  { key: 'complex', label: 'Complex (5+ steps)' },
+]
 
 // The fixed set of LLM consumers (sub-agents are off by default; they only
 // appear in the data when enabled, but the filter offers them regardless).
@@ -61,7 +68,7 @@ const netInputOf = (p: GroupRow) => Math.max(0, p.input_tokens - p.cache_read_to
 const CollapsibleSection: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => {
   const [open, setOpen] = React.useState(true)
   return (
-    <div className={`${s.metricsSection} ${c.section}`}>
+    <div className={s.metricsSection}>
       <button type="button" className={s.metricsSectionToggle} onClick={() => setOpen(!open)}>
         <span className={s.metricsSectionTitle}>{title}</span>
         <svg className={`${s.metricsSectionChevron} ${open ? s.expanded : ''}`} viewBox="0 0 24 24"
@@ -195,11 +202,9 @@ const CostDonut: React.FC<{ rows: GroupRow[] }> = ({ rows }) => {
   )
 }
 
-const CostBar: React.FC<{ rows: GroupRow[]; limit?: number; stripPrefix?: boolean }> = ({ rows, limit, stripPrefix }) => {
-  const all = rows.filter((r) => r.cost_usd > 0)
-  if (all.length === 0) return <div className={s.metricsEmpty}>No cost in the selected range.</div>
-  const shown = limit ? all.slice(0, limit) : all
-  const moreCount = all.length - shown.length
+const CostBar: React.FC<{ rows: GroupRow[]; stripPrefix?: boolean }> = ({ rows, stripPrefix }) => {
+  const shown = rows.filter((r) => r.cost_usd > 0)
+  if (shown.length === 0) return <div className={s.metricsEmpty}>No cost in the selected range.</div>
 
   const maxCost = shown[0].cost_usd || 1
   const barHeight = 8, gap = 4, labelWidth = 72, countWidth = 52, chartW = 120
@@ -210,25 +215,53 @@ const CostBar: React.FC<{ rows: GroupRow[]; limit?: number; stripPrefix?: boolea
     return stripPrefix ? v.replace(/^[^/]+\//, '') : v
   }
   return (
-    <>
-      <div className={s.chartBarContainer}>
-        <svg width="100%" viewBox={`0 0 ${svgWidth} ${svgHeight}`} preserveAspectRatio="xMinYMin meet">
-          {shown.map((r, i) => {
-            const y = i * (barHeight + gap)
-            const w = maxCost > 0 ? (r.cost_usd / maxCost) * chartW : 0
-            return (
-              <g key={r.key ?? '—'}>
-                <title>{`${label(r.key)}: ${formatCost(r.cost_usd)} (${r.count} req)`}</title>
-                <text x={labelWidth - 4} y={y + barHeight / 2} textAnchor="end" dominantBaseline="central" className={s.chartBarLabel}>{label(r.key)}</text>
-                <rect x={labelWidth} y={y} width={Math.max(w, 2)} height={barHeight} rx={3} className={s.chartBarFill} />
-                <text x={labelWidth + chartW + 4} y={y + barHeight / 2} dominantBaseline="central" className={s.chartBarCount}>{formatCost(r.cost_usd)}</text>
-              </g>
-            )
-          })}
-        </svg>
-      </div>
-      {moreCount > 0 ? <p className={c.more}>+{moreCount} more</p> : null}
-    </>
+    <div className={s.chartBarContainer}>
+      <svg width="100%" viewBox={`0 0 ${svgWidth} ${svgHeight}`} preserveAspectRatio="xMinYMin meet">
+        {shown.map((r, i) => {
+          const y = i * (barHeight + gap)
+          const w = maxCost > 0 ? (r.cost_usd / maxCost) * chartW : 0
+          return (
+            <g key={r.key ?? '—'}>
+              <title>{`${label(r.key)}: ${formatCost(r.cost_usd)} (${r.count} req)`}</title>
+              <text x={labelWidth - 4} y={y + barHeight / 2} textAnchor="end" dominantBaseline="central" className={s.chartBarLabel}>{label(r.key)}</text>
+              <rect x={labelWidth} y={y} width={Math.max(w, 2)} height={barHeight} rx={3} className={s.chartBarFill} />
+              <text x={labelWidth + chartW + 4} y={y + barHeight / 2} dominantBaseline="central" className={s.chartBarCount}>{formatCost(r.cost_usd)}</text>
+            </g>
+          )
+        })}
+      </svg>
+    </div>
+  )
+}
+
+const CostByShapeChart: React.FC<{ rows: GroupRow[] }> = ({ rows }) => {
+  const byKey = new Map(rows.map((r) => [r.key, r]))
+  const buckets = SHAPES.map((sh) => {
+    const row = byKey.get(sh.key)
+    const count = row?.count ?? 0
+    return { label: sh.label, meanCost: count > 0 ? (row as GroupRow).cost_usd / count : 0, requestCount: count }
+  })
+  const withData = buckets.filter((b) => b.requestCount > 0 && b.meanCost > 0)
+  if (withData.length === 0) return <div className={s.metricsEmpty}>No cost data in the selected range.</div>
+
+  const maxCost = Math.max(...buckets.map((b) => b.meanCost), 0.001)
+  const missing = buckets.filter((b) => b.requestCount === 0 || b.meanCost === 0).map((b) => b.label.replace(/\s*\(.*\)$/, ''))
+  const partialNote = withData.length < buckets.length ? `No cost data for ${missing.join(' or ')} in this range.` : null
+  return (
+    <div className={s.shapeChartWrapper}>
+      {buckets.map((b) => (
+        <div key={b.label} className={`${s.shapeBar} ${b.meanCost === 0 ? s.shapeBarDim : ''}`}>
+          <div className={s.shapeBarLabel}>{b.label}</div>
+          <div className={s.shapeBarTrack}>
+            <div className={s.shapeBarFill} style={{ width: `${b.meanCost > 0 ? (b.meanCost / maxCost) * 100 : 0}%`, background: '#e08a87' }} />
+            <span className={s.shapeBarValue}>
+              {b.meanCost > 0 ? `${formatCost(b.meanCost)}/req` : '—'}{' · '}{b.requestCount} req{b.requestCount === 1 ? '' : 's'}
+            </span>
+          </div>
+        </div>
+      ))}
+      {partialNote ? <div className={s.shapePartialNote}>{partialNote}</div> : null}
+    </div>
   )
 }
 
@@ -375,8 +408,8 @@ export const CostDashboard: React.FC<{ onClose: () => void }> = ({ onClose }) =>
               <CollapsibleSection title="Cost by model">
                 <CostBar rows={metrics.by_model} stripPrefix />
               </CollapsibleSection>
-              <CollapsibleSection title="Cost by conversation">
-                <CostBar rows={metrics.by_conversation} limit={15} />
+              <CollapsibleSection title="Mean cost per request, by complexity">
+                <CostByShapeChart rows={metrics.by_shape} />
               </CollapsibleSection>
             </>
           )}

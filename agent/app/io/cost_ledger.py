@@ -30,6 +30,15 @@ _SUMS = (
 )
 
 
+# Buckets a request by coordinator step count for the by-complexity breakdown.
+# Keys are stable; the frontend maps them to display labels.
+_SHAPE_EXPR = (
+    "CASE WHEN steps BETWEEN 1 AND 2 THEN 'simple' "
+    "WHEN steps BETWEEN 3 AND 4 THEN 'compound' "
+    "WHEN steps >= 5 THEN 'complex' END"
+)
+
+
 def _metrics(row: Any) -> Dict[str, Any]:
     return {
         "cost_usd": row[0],
@@ -59,17 +68,18 @@ class CostLedger:
         cache_read_tokens: int = 0,
         request_id: Optional[str] = None,
         conversation_id: Optional[str] = None,
+        steps: Optional[int] = None,
         ts: Optional[int] = None,
     ) -> None:
         ts_ms = ts if ts is not None else int(time.time() * 1000)
         with self._db.lock:
             self._db.conn.execute(
                 "INSERT INTO cost_ledger ("
-                "ts, agent, model, request_id, conversation_id, "
+                "ts, agent, model, request_id, conversation_id, steps, "
                 "input_tokens, output_tokens, cache_creation_tokens, cache_read_tokens, cost_usd"
-                ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 (
-                    ts_ms, agent, model, request_id, conversation_id,
+                    ts_ms, agent, model, request_id, conversation_id, steps,
                     input_tokens, output_tokens, cache_creation_tokens, cache_read_tokens,
                     float(cost_usd) if cost_usd is not None else 0.0,
                 ),
@@ -120,9 +130,9 @@ class CostLedger:
             )
             by_agent = grouped("agent")
             by_model = grouped("model")
-            # Only real conversations (Coordinator rows). Sub-agent/analyser
-            # rows carry no conversation id; their spend is in by_agent/by_model.
-            by_conversation = grouped("conversation_id", extra="conversation_id IS NOT NULL")
+            # Mean cost per request by complexity (coordinator step count).
+            # Only rows with steps (coordinator requests) qualify.
+            by_shape = grouped(_SHAPE_EXPR, order_desc="key ASC", extra="steps IS NOT NULL")
             # Local-day buckets, oldest first (for a trend line).
             by_day = grouped(
                 "strftime('%Y-%m-%d', ts / 1000, 'unixepoch', 'localtime')",
@@ -132,7 +142,7 @@ class CostLedger:
             "total": total,
             "by_agent": by_agent,
             "by_model": by_model,
-            "by_conversation": by_conversation,
+            "by_shape": by_shape,
             "by_day": by_day,
         }
 
@@ -146,7 +156,7 @@ class NullCostLedger:
     def aggregate(self, **kwargs: Any) -> Dict[str, Any]:
         return {
             "total": _metrics((0, 0, 0, 0, 0, 0)),
-            "by_agent": [], "by_model": [], "by_conversation": [], "by_day": [],
+            "by_agent": [], "by_model": [], "by_shape": [], "by_day": [],
         }
 
 
@@ -179,6 +189,7 @@ def record_cost_from_usage(
     usage: Optional[Dict[str, Any]],
     request_id: Optional[str] = None,
     conversation_id: Optional[str] = None,
+    steps: Optional[int] = None,
     ts: Optional[int] = None,
 ) -> None:
     """Record a cost row from an ``LLMResponse.usage`` dict (mapping its
@@ -195,5 +206,6 @@ def record_cost_from_usage(
         cache_read_tokens=usage.get("cache_read_input_tokens", 0),
         request_id=request_id,
         conversation_id=conversation_id,
+        steps=steps,
         ts=ts,
     )

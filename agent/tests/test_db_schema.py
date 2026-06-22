@@ -58,6 +58,7 @@ class TestRunMigrations(unittest.TestCase):
             self.assertIn("agent_state", tables)
             self.assertIn("listening_history", tables)
             self.assertIn("cost_ledger", tables)
+            self.assertIn("steps", _column_names(conn, "cost_ledger"))
             # Bucket-2 grouping columns present on the transcript table.
             ws_cols = _column_names(conn, "ws_messages")
             self.assertIn("request_id", ws_cols)

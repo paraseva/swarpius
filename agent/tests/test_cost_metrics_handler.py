@@ -33,7 +33,7 @@ class TestCostMetricsHandler(unittest.TestCase):
     def test_returns_totals_and_breakdowns(self):
         r = self._run({})
         self.assertAlmostEqual(r["total"]["cost_usd"], 0.40)
-        self.assertEqual({k for k in r}, {"total", "by_agent", "by_model", "by_conversation", "by_day"})
+        self.assertEqual({k for k in r}, {"total", "by_agent", "by_model", "by_shape", "by_day"})
 
     def test_agent_filter(self):
         self.assertAlmostEqual(self._run({"agent": "Analyser"})["total"]["cost_usd"], 0.30)

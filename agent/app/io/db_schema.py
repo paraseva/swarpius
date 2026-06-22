@@ -21,7 +21,7 @@ from typing import Callable, Dict
 
 logger = logging.getLogger(__name__)
 
-CURRENT_SCHEMA_VERSION = 2
+CURRENT_SCHEMA_VERSION = 3
 
 
 class SchemaTooNewError(Exception):
@@ -117,10 +117,18 @@ def _migrate_1_to_2(conn: sqlite3.Connection) -> None:
     conn.execute("CREATE INDEX IF NOT EXISTS idx_cost_ledger_ts ON cost_ledger(ts)")
 
 
+def _migrate_2_to_3(conn: sqlite3.Connection) -> None:
+    """Add steps to the cost ledger: the coordinator's tool-loop step count per
+    request, so the dashboard can show mean cost per request by complexity.
+    Null for sub-agent / analyser rows (steps don't apply)."""
+    _add_column_if_missing(conn, "cost_ledger", "steps", "INTEGER")
+
+
 # from-version -> migration that advances it to from-version + 1.
 _MIGRATIONS: Dict[int, Callable[[sqlite3.Connection], None]] = {
     0: _migrate_0_to_1,
     1: _migrate_1_to_2,
+    2: _migrate_2_to_3,
 }
 
 

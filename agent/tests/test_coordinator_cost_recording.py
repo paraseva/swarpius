@@ -48,6 +48,8 @@ class TestCoordinatorCostRecording(unittest.TestCase):
         self.assertEqual(agg["total"]["count"], 1)
         self.assertEqual(agg["by_agent"][0]["key"], "Coordinator")
         self.assertEqual(agg["by_model"][0]["key"], "anthropic/opus")
+        # total_steps flows through to the by-complexity breakdown.
+        self.assertEqual(agg["by_shape"][0]["key"], "simple")
 
     def test_records_zero_for_no_cost_model(self):
         self._complete(usage={"input_tokens": 100, "output_tokens": 20})  # no cost_usd

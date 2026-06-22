@@ -14,7 +14,9 @@ import logging
 import re
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal
+
+from app.io.cost_ledger import record_cost_from_usage
 
 try:
     import litellm
@@ -194,11 +196,36 @@ def llm_completion(
     try:
         response = litellm.completion(**kwargs)
         text = response.choices[0].message.content if response.choices else None
+        _record_analyser_cost(model, response)
         return CompletionResult(text=text)
     except Exception as e:
         kind = _classify_llm_error(e)
         _log.error("LLM completion error (%s): %s", kind, e)
         return CompletionResult(error_kind=kind, detail=str(e))
+
+
+def _record_analyser_cost(model: str, response: Any) -> None:
+    """Best-effort: record this analyser LLM call's cost to the ledger. Never
+    raises — cost accounting must not break analysis."""
+    try:
+        usage_obj = getattr(response, "usage", None)
+        usage: dict = {}
+        if usage_obj is not None:
+            usage = {
+                "input_tokens": getattr(usage_obj, "prompt_tokens", 0) or 0,
+                "output_tokens": getattr(usage_obj, "completion_tokens", 0) or 0,
+                "cache_read_input_tokens": getattr(usage_obj, "cache_read_input_tokens", 0) or 0,
+                "cache_creation_input_tokens": getattr(usage_obj, "cache_creation_input_tokens", 0) or 0,
+            }
+        try:
+            cost = litellm.completion_cost(completion_response=response, model=model)
+            if cost:
+                usage["cost_usd"] = float(cost)
+        except Exception:  # noqa: BLE001 — cost calc is best-effort
+            pass
+        record_cost_from_usage(agent="Analyser", model=model, usage=usage)
+    except Exception:  # noqa: BLE001 — never break analysis on cost accounting
+        _log.debug("Failed to record analyser cost", exc_info=True)
 
 
 def parse_json_response(text: str) -> dict | list | None:

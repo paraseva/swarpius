@@ -155,3 +155,30 @@ def record_cost(**kwargs: Any) -> None:
         _ledger.record(**kwargs)
     except Exception:  # noqa: BLE001 — cost accounting is best-effort
         logger.warning("Failed to record cost", exc_info=True)
+
+
+def record_cost_from_usage(
+    *,
+    agent: str,
+    model: str,
+    usage: Optional[Dict[str, Any]],
+    request_id: Optional[str] = None,
+    conversation_id: Optional[str] = None,
+    ts: Optional[int] = None,
+) -> None:
+    """Record a cost row from an ``LLMResponse.usage`` dict (mapping its
+    ``*_input_tokens`` cache keys to the ledger's columns). Used by every LLM
+    consumer so the key mapping lives in one place."""
+    usage = usage or {}
+    record_cost(
+        agent=agent,
+        model=model,
+        cost_usd=usage.get("cost_usd"),
+        input_tokens=usage.get("input_tokens", 0),
+        output_tokens=usage.get("output_tokens", 0),
+        cache_creation_tokens=usage.get("cache_creation_input_tokens", 0),
+        cache_read_tokens=usage.get("cache_read_input_tokens", 0),
+        request_id=request_id,
+        conversation_id=conversation_id,
+        ts=ts,
+    )

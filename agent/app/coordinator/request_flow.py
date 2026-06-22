@@ -45,6 +45,7 @@ from app.coordinator.sanitise import sanitise_agent_chat_text as _sanitise_agent
 from app.coordinator.sanitise import sanitise_for_tts as _sanitise_for_tts
 from app.coordinator.trace import build_trace_context as _build_trace_context
 from app.exceptions import RequestInterrupted
+from app.io.cost_ledger import record_cost_from_usage
 from app.io.redact import redact_secrets as _redact_secrets
 from app.llm.client import LLMResponse, is_known_llm_exception
 from app.llm.diagnostic_agent import (
@@ -397,6 +398,9 @@ def arbitrate_interrupt(
         response = asyncio.run(runtime.arbiter_client.completion(
             messages=messages, tools=None,
         ))
+        record_cost_from_usage(
+            agent="Arbiter", model=runtime.arbiter_client.model, usage=response.usage,
+        )
         if response.text:
             try:
                 parsed = extract_json_object(response.text)

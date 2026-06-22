@@ -19,6 +19,7 @@ import re
 from dataclasses import dataclass
 from typing import List, Optional
 
+from app.io.cost_ledger import record_cost_from_usage
 from app.llm.client import LLMClient
 from app.llm.json_extract import extract_json_object
 from app.runtime.conversation_tracker import ConversationThread, ConversationTracker
@@ -125,6 +126,7 @@ class DiagnosticAgent:
                 {"role": "user", "content": user_prompt},
             ],
         )
+        record_cost_from_usage(agent="Diagnostic", model=self._client.model, usage=response.usage)
         return self._parse_response(response.text)
 
     def apply_assignment(self, assignment: ConversationAssignment) -> None:

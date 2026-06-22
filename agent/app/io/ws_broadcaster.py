@@ -37,7 +37,7 @@ from app.coordinator.events import (
 )
 from app.coordinator.renderer import Renderer, ignore_event
 from app.coordinator.trace import pretty_json as _pretty_json
-from app.io.cost_ledger import record_cost
+from app.io.cost_ledger import record_cost_from_usage
 from app.llm.rate_limit import emit_rate_limit_banner as _emit_rate_limit_banner
 
 
@@ -326,16 +326,12 @@ class WsBroadcaster(Renderer):
         )
         self._send(CHANNEL_USAGE_METRICS, usage_payload)
 
-        record_cost(
+        record_cost_from_usage(
             agent="Coordinator",
             model=event.coordinator_model or "",
+            usage=usage,
             request_id=event.request_id,
             conversation_id=extract_conversation_dir(event.request_id),
-            input_tokens=usage.get("input_tokens", 0),
-            output_tokens=usage.get("output_tokens", 0),
-            cache_creation_tokens=usage.get("cache_creation_input_tokens", 0),
-            cache_read_tokens=usage.get("cache_read_input_tokens", 0),
-            cost_usd=usage.get("cost_usd"),
             ts=event.emitted_at_ms,
         )
 

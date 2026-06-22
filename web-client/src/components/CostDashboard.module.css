@@ -1,0 +1,17 @@
+/* Clear separation between chart sections, on top of the shared metricsBody gap. */
+.section {
+  padding-bottom: 0.9rem;
+}
+
+/* The donut's legend sits BELOW the donut, so it needs normal spacing — unlike
+   the shared trend legend, which carries a negative bottom margin for its
+   above-the-chart placement. */
+.donutLegend {
+  display: flex;
+  gap: 0.7rem;
+  flex-wrap: wrap;
+  justify-content: center;
+  font-size: 0.6rem;
+  color: var(--color-text-secondary);
+  margin-top: 0.35rem;
+}

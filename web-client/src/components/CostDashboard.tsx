@@ -2,6 +2,7 @@ import React from 'react'
 import { useWebSocket } from '../websocketContext'
 import { createUuid } from '../utils/uuid'
 import s from './AnalysisBrowser.module.css'
+import c from './CostDashboard.module.css'
 
 interface Metric {
   cost_usd: number
@@ -60,7 +61,7 @@ const netInputOf = (p: GroupRow) => Math.max(0, p.input_tokens - p.cache_read_to
 const CollapsibleSection: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => {
   const [open, setOpen] = React.useState(true)
   return (
-    <div className={s.metricsSection}>
+    <div className={`${s.metricsSection} ${c.section}`}>
       <button type="button" className={s.metricsSectionToggle} onClick={() => setOpen(!open)}>
         <span className={s.metricsSectionTitle}>{title}</span>
         <svg className={`${s.metricsSectionChevron} ${open ? s.expanded : ''}`} viewBox="0 0 24 24"
@@ -182,7 +183,7 @@ const CostDonut: React.FC<{ rows: GroupRow[] }> = ({ rows }) => {
           <text x={cx} y={cy + 12} textAnchor="middle" className={s.chartDonutLabel}>total</text>
         </svg>
       </div>
-      <div className={s.trendLegend}>
+      <div className={c.donutLegend}>
         {arcs.map((arc) => (
           <span key={arc.key} className={s.trendLegendItem}>
             <span className={s.trendLegendSwatch} style={{ background: arc.colour, width: '0.6rem', height: '0.6rem', borderRadius: '50%' }} />

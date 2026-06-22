@@ -20,6 +20,8 @@ export type ChannelId =
   | 'open-data-folder-request'
   | 'session-control-request'
   | 'session-control-response'
+  | 'clear-conversation-request'
+  | 'clear-conversation-response'
   | 'rate-limit'
   | 'analysis-list-request'
   | 'analysis-list-response'
@@ -56,6 +58,26 @@ export interface WebSocketContextValue {
   status: ConnectionStatus
   messages: SocketMessage[]
   sendMessage: (channel: ChannelId, body: string) => string
+  /** Wipe the local message view. Used after the server confirms a
+   *  conversation-history clear, so the UI reflects the now-empty store
+   *  without waiting for a reconnect+replay. Optional so test fixtures need
+   *  not supply it; the live provider always does. */
+  clearMessages?: () => void
+  /** Fire-and-forget request for the most recent non-empty day of history at
+   *  or before `beforeMs`. The reply arrives as ordinary messages (passive
+   *  receive) plus a history-cursor signal — there is no response to await. */
+  requestHistory?: (beforeMs: number) => void
+  /** Fire-and-forget request for a contiguous range [startMs, endMs). Used by
+   *  the date picker to fill the gap to an older day, keeping loaded history
+   *  contiguous. */
+  requestHistoryRange?: (startMs: number, endMs: number) => void
+  /** True once the server has signalled (via history-cursor) that no older
+   *  history exists past what is loaded — i.e. scroll-back is exhausted. */
+  reachedBeginning?: boolean
+  /** Increments each time a history batch finishes delivering (a
+   *  history-cursor is received). Lets scroll-back release its in-flight
+   *  guard exactly when a requested day is fully loaded. */
+  historyBatchToken?: number
   /** Whether any LLM call is currently in-flight (tracked incrementally). */
   isLlmActive: boolean
   /** Parsed payload of the most recent `zone-snapshots` message, or null

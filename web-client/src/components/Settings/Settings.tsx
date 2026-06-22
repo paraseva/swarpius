@@ -13,6 +13,7 @@ import { formatAgentIssues, formatBackendIssue, formatMissingField } from '../..
 import { AnalyserTab } from './AnalyserTab'
 import { ModelsTab } from './ModelsTab'
 import { PersonaTab } from './PersonaTab'
+import { PrivacyTab } from './PrivacyTab'
 import { RoonTab } from './RoonTab'
 import { SpeechTab } from './SpeechTab'
 import { WebSearchTab } from './WebSearchTab'
@@ -38,6 +39,7 @@ export type SettingsTabId =
   | 'speech'
   | 'analyser'
   | 'persona'
+  | 'privacy'
 
 interface TabSpec {
   id: SettingsTabId
@@ -52,6 +54,7 @@ const TABS: TabSpec[] = [
   { id: 'speech', label: 'Text-to-Speech' },
   { id: 'analyser', label: 'Conversation Analyser' },
   { id: 'persona', label: 'Persona' },
+  { id: 'privacy', label: 'Privacy & Data' },
 ]
 
 interface SettingsProps {
@@ -620,6 +623,7 @@ const TabContent: React.FC<TabContentProps> = ({ tabId, state }) => (
     <div hidden={tabId !== 'speech'}><SpeechTab state={state} /></div>
     <div hidden={tabId !== 'analyser'}><AnalyserTab state={state} /></div>
     <div hidden={tabId !== 'persona'}><PersonaTab state={state} /></div>
+    <div hidden={tabId !== 'privacy'}><PrivacyTab /></div>
   </>
 )
 

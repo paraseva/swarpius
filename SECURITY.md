@@ -200,17 +200,28 @@ and analysis. These contain **user-identifiable content** including:
   per-request trace.
 - `logs/server/<date>/<cNN>/<request-id>/server.yaml`: Roon API
   browse/action detail.
-- `messages.db`: chat history persisted across restarts when
-  `--keep-history` is set (the default in the provided compose file).
+- `messages.db`: the chat transcript and diagnostics, **plus the persisted
+  runtime state** that lets a restart resume where you left off — the
+  assistant's working memory (recent conversation turns, cached search
+  results), the Roon references built during the conversation, the
+  conversation-tracker state, the default zone, and a **listening-history**
+  record of recently played tracks. This is retained across restarts **by
+  default** (the previous `--keep-history` flag has been removed).
 
-**Retention.** `LOG_RETENTION_DAYS` (default `7`) controls how long
-per-request logs are kept; cleanup runs on agent startup. The minimum
-practical value is `1` (setting `0` is silently treated as `1`).
-There is no built-in toggle to disable logging entirely.
+**Retention.** `LOG_RETENTION_DAYS` (default `7`) controls how long per-request
+and server logs under `logs/` are kept; cleanup runs on agent startup (minimum
+practical value `1`; `0` is treated as `1`). Persisted state in `messages.db` is
+pruned on its own startup schedule, with independent windows:
+`CHAT_HISTORY_RETENTION_DAYS` (chat transcript + working memory, default `90`),
+`DIAGNOSTICS_RETENTION_DAYS` (agent/tool/LLM event records, default `30`), and
+`LISTENING_HISTORY_RETENTION_DAYS` (default `365`). Set any to `0` to keep that
+data indefinitely. There is no built-in toggle to disable logging entirely.
 
-**Disabling chat history persistence.** Remove `--keep-history` from
-the agent command in `docker-compose.yml`. The session DB is then
-cleared on each container restart.
+**Deleting chat history.** Open Settings → **Privacy & Data**. *Clear
+conversation history* deletes the transcript, the assistant's working memory,
+and the conversation's cached search references in one action; *Clear listening
+history* deletes the played-track record separately (your saved zones and other
+settings are kept). These are the supported ways to wipe locally-stored data.
 
 **`.gitignore` coverage.** All log paths under `agent/data/` are
 git-ignored; they will not be accidentally committed. The provided
@@ -317,7 +328,10 @@ accepted as residuals:
   filtering that could blunt legitimate tool error/recovery
   guidance.
 - **Local logs contain user-identifiable content.** Documented in
-  [*Local logs and privacy*](#local-logs-and-privacy) above; retention defaults to 7 days.
+  [*Local logs and privacy*](#local-logs-and-privacy) above; `logs/` retention
+  defaults to 7 days. Chat history + working memory in `messages.db` persist
+  across restarts by default and are not age-pruned yet — clear them from
+  Settings → Privacy & Data.
 - **No built-in pre-commit secret scanning.** Plain `git add .` is
   prevented by the `.gitignore` rules from picking up `.env`, but
   `git add -f agent/.env` could commit it. Operators wanting an

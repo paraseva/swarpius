@@ -125,6 +125,21 @@ class RoonEventsMixin:
             self._queue_ref_maps[zone_id] = ref_map
         return ref_map
 
+    def capture_queue_reference_maps(self) -> Dict[str, Any]:
+        """Snapshot every zone's queue-reference map for persistence."""
+        return {
+            zone_id: ref_map.capture_state()
+            for zone_id, ref_map in self._queue_ref_maps.items()
+        }
+
+    def restore_queue_reference_maps(self, data: Dict[str, Any]) -> None:
+        """Rebuild the per-zone maps from a snapshot. Must run before the
+        queue subscription's first ``reconcile_full_list`` so items still in
+        the queue keep their original hex references rather than being
+        re-minted."""
+        for zone_id, map_data in data.items():
+            self._get_or_create_ref_map(zone_id).restore_state(map_data)
+
     def get_queue_references(self, zone: Optional[str] = None) -> Optional[QueueReferenceMap]:
         """Get the queue reference map for a zone (by display name or zone_id)."""
         if zone is None:

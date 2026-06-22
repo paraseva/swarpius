@@ -524,6 +524,69 @@ body {
   gap: 0.4rem;
 }
 
+.history-date-picker {
+  position: relative;
+  display: inline-flex;
+}
+
+.history-date-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  padding: 0.15rem;
+  border-radius: var(--radius-sm, 4px);
+  color: var(--text-muted, #9a9a9a);
+  cursor: pointer;
+}
+
+.history-date-button:hover {
+  color: var(--text, #e6e6e6);
+}
+
+/* Kept in layout (not display:none) so showPicker() works; visually hidden. */
+.history-date-input {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Brief ring flash on the item a request-id click scrolled into view. */
+@keyframes request-focus-flash {
+  0% { box-shadow: 0 0 0 2px var(--color-accent, #3b82f6); }
+  100% { box-shadow: 0 0 0 2px transparent; }
+}
+
+.request-focus-flash {
+  animation: request-focus-flash 1.2s ease-out;
+  border-radius: var(--radius-md);
+}
+
+.message-day-separator {
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 0.3rem 0;
+  color: var(--text-muted, #8a8a8a);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.message-day-separator::before,
+.message-day-separator::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border-subtle, rgba(255, 255, 255, 0.08));
+}
+
 .message {
   max-width: 100%;
   min-width: 0;
@@ -550,33 +613,6 @@ body {
 [data-theme='light'] .message-inbound {
   background-color: var(--color-bg-alt-row);
   border-color: var(--color-border-subtle);
-}
-
-.message-previous-session {
-  opacity: 0.45;
-}
-
-/* Boundary between a replayed previous session (above) and the live
-   session (below): everything above is not in the assistant's memory. */
-.message-session-divider {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  margin: 0.5rem 0;
-  font-size: 0.78rem;
-  color: var(--color-text-muted);
-  text-align: center;
-}
-
-.message-session-divider::before,
-.message-session-divider::after {
-  content: '';
-  flex: 1;
-  border-top: 1px solid var(--color-border);
-}
-
-[data-theme='light'] .message-previous-session {
-  opacity: 0.6;
 }
 
 .message-directive {

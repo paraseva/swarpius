@@ -32,6 +32,11 @@ export const SessionSummaryBar: React.FC<SessionSummaryBarProps> = ({ messages }
 
     for (const message of messages) {
       if (message.direction !== 'inbound') continue
+      // The bar summarises the live server session. Replayed messages from a
+      // previous session carry that dead session's cumulative totals, so they
+      // must not be counted (or the bar would show stale numbers until the
+      // first new request).
+      if (message.meta?.previous_session === true) continue
 
       if (message.channel === 'agent-outputs') {
         const event = parseJson<RequestCompletePayload & { total_duration_ms?: number }>(message.payload ?? message.body)

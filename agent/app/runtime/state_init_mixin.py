@@ -224,19 +224,30 @@ class _StateInitMixin:
             )
 
         roon_connection = _state.RoonConnection(
-            default_zone=settings.default_roon_zone,
+            # No env-configured default zone — RoonConnection seeds the first
+            # discovered zone, and any persisted runtime choice is restored by
+            # attach_roon_persistence below.
+            default_zone=None,
             roon_core_host=roon_core_host,
             roon_core_port=roon_core_port,
             profile=settings.roon_profile_name,
             lifecycle_callback=self.roon_lifecycle_callback,
         )
         self.roon_connection = roon_connection
+        # Restore Roon-scoped persisted state (browse-session ref pool, queue
+        # references) now that the connection — and its session manager —
+        # exist. No-op when persistence is not wired (e.g. tests).
+        if self._persistence_manager is not None:
+            self.attach_roon_persistence(self._persistence_manager)
         self._load_zone_aliases()
         self._zone_cache = self._build_zone_cache()
 
         roon_connection.register_event_listener(self._forward_roon_live_event)
         roon_connection.register_event_listener(self.play_history.handle_event)
         self.play_history.set_stop_marker_title(settings.stop_marker_title)
+        if self.listening_history is not None:
+            roon_connection.register_event_listener(self.listening_history.handle_event)
+            self.listening_history.set_stop_marker_title(settings.stop_marker_title)
 
         # Stop-marker coordinator: builds + warms cache once Roon is
         # alive. initialise() walks marker → action_list and stores the
@@ -290,7 +301,7 @@ class _StateInitMixin:
             "Swarpius initialised — coordinator=%s  zone=%s  profile=%s  "
             "prompt_caching=%s  diagnostic_agent=%s  web_search=%s",
             coord_model,
-            settings.default_roon_zone or "",
+            (self.roon_connection.get_default_zone() if self.roon_connection else None) or "",
             settings.roon_profile_name or "(default)",
             is_prompt_caching_enabled(),
             is_diagnostic_agent_enabled(),

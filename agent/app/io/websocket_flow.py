@@ -33,10 +33,16 @@ from app.constants import (
     CHANNEL_ANALYSIS_RUN_RESPONSE,
     CHANNEL_ANALYSIS_UPDATE,
     CHANNEL_CHAT,
+    CHANNEL_CLEAR_CONVERSATION_REQUEST,
+    CHANNEL_CLEAR_CONVERSATION_RESPONSE,
+    CHANNEL_CLEAR_LISTENING_HISTORY_REQUEST,
+    CHANNEL_CLEAR_LISTENING_HISTORY_RESPONSE,
     CHANNEL_DEFAULT_ZONE_UPDATE,
     CHANNEL_ERRORS,
     CHANNEL_FEATURE_AVAILABILITY,
     CHANNEL_FEATURE_VERIFY_REQUEST,
+    CHANNEL_HISTORY_CURSOR,
+    CHANNEL_HISTORY_REQUEST,
     CHANNEL_IMAGE_REQUEST,
     CHANNEL_IMAGE_RESPONSE,
     CHANNEL_LLM_DIAGNOSTICS,
@@ -381,12 +387,63 @@ async def _background_rerun(
 # {ok: false, error: <str>} shape.
 
 
+async def _send_history_batch(
+    websocket: ServerConnection, result: dict, server_start_ms: int,
+) -> None:
+    """Send a load_day result to the client: each stored message on its own
+    channel (tagged historical, with its stable id + created_at so the FE can
+    sort-insert and dedup), then a passive history-cursor signal carrying
+    whether older history exists. Fire-and-forget — there is no request/response
+    correlation; the FE's passive receive places whatever arrives."""
+    for msg in result["messages"]:
+        meta = dict(msg.get("meta") or {})
+        meta["replay"] = True
+        meta["historical"] = True
+        meta["created_at"] = msg["created_at"]
+        meta["message_id"] = msg["id"]
+        if msg["created_at"] < server_start_ms:
+            meta["previous_session"] = True
+        await _ws_send_to_client(websocket, msg["channel"], msg["payload"], meta=meta)
+    await _ws_send_to_client(
+        websocket, CHANNEL_HISTORY_CURSOR, {"has_older": result["has_older"]},
+    )
+
+
 async def _handle_session_control(payload: dict, runtime: Any) -> dict:
     action = str(payload.get("action") or "").strip().lower()
     if action != "retry_now":
         raise UnsupportedActionError(f"Unsupported session control action '{action}'")
     runtime.rate_limit_override_event.set()
     return {"ok": True, "action": action}
+
+
+async def _handle_clear_conversation(
+    payload: dict, runtime: Any, state: "WebsocketSessionState",
+) -> dict:
+    """Delete the persisted conversation: transcript, the model's working
+    memory, and the conversation's Roon references. Refused while a request
+    is in flight so a clear can't race the commit that finalises it (the UI
+    also disables the control during a request)."""
+    _ = payload
+    if state.active_task is not None:
+        return {
+            "ok": False,
+            "reason": "A request is in progress — try again once it finishes.",
+        }
+    await asyncio.to_thread(runtime.clear_conversation_state)
+    return {"ok": True}
+
+
+async def _handle_clear_listening_history(payload: dict, runtime: Any) -> dict:
+    """Delete the listening-history record. Independent of the conversation,
+    so it is not gated on an in-flight request — the store's clear is atomic
+    with concurrent play-event writes (both serialise on the state-DB lock)."""
+    _ = payload
+    store = getattr(runtime, "listening_history", None)
+    if store is None:
+        return {"ok": True}
+    await asyncio.to_thread(store.clear)
+    return {"ok": True}
 
 
 async def _handle_image_request(
@@ -756,7 +813,10 @@ async def websocket_handler(
         session_id,
     )
     state = WebsocketSessionState()
-    id_generator = RequestIdGenerator()
+    # Process-level generator (shared across connections so a reconnect
+    # continues the conversation); fall back to a transient one if
+    # persistence wasn't wired.
+    id_generator = getattr(runtime, "request_id_generator", None) or RequestIdGenerator()
     loop = asyncio.get_running_loop()
 
     async def _start_next_if_idle() -> None:
@@ -848,29 +908,16 @@ async def websocket_handler(
         for queue_event in initial_queue_events:
             await _ws_send_to_client(websocket, CHANNEL_QUEUE_UPDATES, queue_event)
 
-        # Replay persisted messages — tag any from before this server session.
-        # Bound the replay window so a long-lived --keep-history store
-        # doesn't dump days of chat + diagnostics into every fresh
-        # connection. Older entries stay on disk; they're just not
-        # surfaced to the browser.
+        # Eager history: the most recent non-empty day (load_day at now).
+        # Older days are lazy-loaded on scroll-back via the history-request
+        # channel. Keeps the initial payload small against a long-retained
+        # store and gives one mechanism for connect + scroll-back.
         from agent import get_server_start_ms
-        from app.constants import REPLAY_HISTORY_MS
         from app.io.message_store import get_message_store
-        server_start_ms = get_server_start_ms()
-        replay_cutoff_ms = int(time.time() * 1000) - REPLAY_HISTORY_MS
-
-        for msg in get_message_store().get_all(since_ms=replay_cutoff_ms):
-            replay_meta = dict(msg.get("meta") or {})
-            replay_meta["replay"] = True
-            replay_meta["created_at"] = msg.get("created_at")
-            if msg.get("created_at", 0) < server_start_ms:
-                replay_meta["previous_session"] = True
-            await _ws_send_to_client(
-                websocket,
-                msg["channel"],
-                msg["payload"],
-                meta=replay_meta,
-            )
+        result = await loop.run_in_executor(
+            None, get_message_store().load_day, int(time.time() * 1000),
+        )
+        await _send_history_batch(websocket, result, get_server_start_ms())
 
         async for raw in websocket:
             try:
@@ -887,32 +934,52 @@ async def websocket_handler(
                 raw_client_msg_id if isinstance(raw_client_msg_id, str) and raw_client_msg_id else None
             )
 
-            # Persist user chat messages for replay on browser refresh.
-            # `direction` here uses the frontend's client-centric convention
-            # (see `WebSocketProvider.tsx:182` + `ChatPanel.tsx:238`):
-            # "outbound" means "user bubble" (sent OUT of the browser), not
-            # the server-centric networking meaning. Flipping to "inbound"
-            # would make refresh-replayed user messages render as Swarpius's
-            # replies. Leave as "outbound".
-            #
-            # client_msg_id is persisted so the FE can re-pair badges
-            # and directive pills on replay; the replayed outbound is
-            # assigned a fresh local id otherwise.
-            if channel == CHANNEL_CHAT:
-                chat_meta: dict[str, Any] = {"direction": "outbound"}
-                if client_msg_id is not None:
-                    chat_meta["client_msg_id"] = client_msg_id
-                get_message_store().append(
-                    "chat",
-                    {"channel": "chat", "body": body},
-                    meta=chat_meta,
-                )
+            # User chat is persisted at request completion (request_flow's
+            # _persist_user_chat), grouped with that request — so a restart
+            # dropping the in-flight request leaves no orphaned message.
 
             if channel == CHANNEL_SESSION_CONTROL_REQUEST:
                 await _handle_json_request(
                     websocket, body, CHANNEL_SESSION_CONTROL_RESPONSE,
                     lambda p: _handle_session_control(p, runtime),
                 )
+                continue
+            if channel == CHANNEL_CLEAR_CONVERSATION_REQUEST:
+                await _handle_json_request(
+                    websocket, body, CHANNEL_CLEAR_CONVERSATION_RESPONSE,
+                    lambda p: _handle_clear_conversation(p, runtime, state),
+                )
+                continue
+            if channel == CHANNEL_CLEAR_LISTENING_HISTORY_REQUEST:
+                await _handle_json_request(
+                    websocket, body, CHANNEL_CLEAR_LISTENING_HISTORY_RESPONSE,
+                    lambda p: _handle_clear_listening_history(p, runtime),
+                )
+                continue
+            if channel == CHANNEL_HISTORY_REQUEST:
+                # Fire-and-forget: send the requested messages on their normal
+                # channels (the FE's passive receive places them). No response
+                # envelope. Either a single day (before_ms) or a contiguous
+                # range (start_ms/end_ms — a date jump fills the gap so loaded
+                # history stays contiguous).
+                try:
+                    req = json.loads(body)
+                except (ValueError, TypeError):
+                    continue
+                from agent import get_server_start_ms
+                from app.io.message_store import get_message_store
+                store = get_message_store()
+                if "start_ms" in req and "end_ms" in req:
+                    result = await loop.run_in_executor(
+                        None, store.load_range, int(req["start_ms"]), int(req["end_ms"]),
+                    )
+                elif "before_ms" in req:
+                    result = await loop.run_in_executor(
+                        None, store.load_day, int(req["before_ms"]),
+                    )
+                else:
+                    continue
+                await _send_history_batch(websocket, result, get_server_start_ms())
                 continue
             if channel == CHANNEL_IMAGE_REQUEST:
                 await _handle_json_request(

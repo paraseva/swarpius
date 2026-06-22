@@ -135,9 +135,9 @@ Cross-request context is maintained through providers in the system prompt: exec
 | `app/coordinator/context_providers.py` | Dynamic context providers (date, time, conversation history, text-based) |
 | `app/io/core.py` | `AppIO`: WebSocket broadcast, chat emission, TTS routing |
 | `app/io/websocket_flow.py` | Per-connection session state, interrupt arbitration, task queue |
-| `app/runtime/conversation_tracker.py` | Conversation thread management: timeout and diagnostic-agent-driven assignment |
+| `app/runtime/conversation_tracker.py` | Conversation thread management: timeout and diagnostic-agent-driven assignment. Wall-clock timestamps + capture/restore so grouping survives a restart |
 | `app/llm/diagnostic_agent.py` | Lightweight LLM agent for semantic conversation classification |
-| `app/runtime/request_logger.py` | Per-request structured logging, `RequestIdGenerator`, conversation grouping |
+| `app/runtime/request_logger.py` | Per-request structured logging, `RequestIdGenerator` (process-level on `RuntimeState`, shared by WS + CLI; a persistence participant), conversation grouping |
 | `app/runtime/server_logger.py` | Server-side YAML logger for detailed browse/action traces |
 | `app/coordinator/skill_loader.py` | Per-tool SKILL.md loader; frontmatter validation; critical-directive extraction |
 | `app/coordinator/trace.py` | Execution-trace serialisation + context compaction |
@@ -146,6 +146,14 @@ Cross-request context is maintained through providers in the system prompt: exec
 | `app/runtime/cancellation.py` | Cooperative request cancellation helpers |
 | `app/runtime/url_parse.py` | Host:port parsing for Roon Core URLs |
 | `app/io/redact.py` | Secret redaction for logs / WS error payloads |
+| `app/io/state_db.py` | `StateDb`: owns the single SQLite connection + lock behind `messages.db`; `transaction()` context manager |
+| `app/io/db_schema.py` | `messages.db` schema, `PRAGMA user_version` versioning, chained N→N+1 migrations, corrupt/future-DB backup-and-reset |
+| `app/io/message_store.py` | `SqliteMessageStore`: persisted WS messages for replay + the `load_day` / `load_range` history-browsing queries |
+| `app/io/history_retention.py` | Startup prune of `ws_messages` (chat vs diagnostics windows) + listening history by age |
+| `app/runtime/persistence.py` | `PersistenceManager` + `PersistentState` protocol: read-all-once-at-startup, register participants, commit in one transaction |
+| `app/runtime/working_memory_persistence.py` | `WorkingMemoryState` participant: capture/restore conversation turns, execution trace, search results (drops turns older than chat retention) |
+| `app/runtime/roon_persistence.py` | `QueueRefsState` + `DefaultZoneState` participants for Roon reference + default-zone persistence |
+| `app/roon/listening_history.py` | `ListeningHistoryStore`: per-zone track detection from zone events, recorded to `messages.db`; queried by date/zone |
 | `app/roon/tag_expansion.py` | `<list ref="…"/>` and `<queue zone="…"/>` chat-tag expansion |
 | `app/roon/zone_formatting.py` | Compact zone / playback status formatting for LLM context |
 | `app/schemas.py` | `InterruptArbiterOutputSchema` |
@@ -191,6 +199,7 @@ Cross-request context is maintained through providers in the system prompt: exec
 | `roon_config` | `RoonConfigTool` | Zone alias and config management |
 | `web_search` | provider-neutral base + `BraveSearchTool` / `TavilySearchTool` / `SearXNGSearchTool` | Web search via configurable backend (Brave, Tavily, or self-hosted SearXNG) |
 | `result_fetch` | `ResultFetchTool` | Paginate/retrieve cached search results |
+| `listening_history` | `ListeningHistoryTool` | Query recently played tracks ("what did I listen to") with optional date-range / zone filters |
 
 ### WebSocket channels
 
@@ -244,9 +253,11 @@ React 19 app using Vite (rolldown-vite). `WebSocketProvider` (`WebSocketProvider
 | `PromptBudgetPanel` | Rolling 60-second and session-wide token aggregation by provider |
 | `RequestSummaryPanel` | Per-request summary cards with timing and step counts |
 | `SessionSummaryBar` | Session-level usage summary bar |
-| `HistoryWindow` | Scrollable session message history across all diagnostic channels |
+| `HistoryWindow` | Scrollable diagnostic-channel history (per channel); lazy-loads older days on scroll-up and syncs to a focused request |
 | `FormattedMessageBody` | Renders message bodies: source labels, JSON prettification, plan extraction |
-| `RequestIdBadge` | Clickable request ID badge with copy-to-clipboard |
+| `RequestIdBadge` | Request ID badge: copies to clipboard; when on a request-aware surface (`syncKey`), the id focuses that request across all open panels |
+| `HistoryDatePicker` | Calendar icon in the chat header; opens the native date picker to jump to a day |
+| `Settings/PrivacyTab` | "Privacy & Data" settings tab: clear conversation history / clear listening history |
 | `TtsToggle` | Auto-TTS on/off toggle |
 
 ### Supporting modules
@@ -256,6 +267,11 @@ React 19 app using Vite (rolldown-vite). `WebSocketProvider` (`WebSocketProvider
 | `tts.tsx` | TTS WebSocket client for streaming audio from the F5 TTS server |
 | `utils/formatMessageBody.ts` | Parses raw WS message bodies: extracts source labels, sanitises chat leaks, combines chat + details |
 | `hooks/useDiagnostics.ts` | Shared hook for diagnostics state across panels |
+| `hooks/useHistoryScrollback.ts` | Lazy-loads older days on scroll-up (skip-empty), anchors the viewport on prepend; auto-fill optional |
+| `hooks/useRequestFocusSync.ts` | Scrolls a panel to (and flashes) the focused request; `scrollRequestIntoView` helper shared with the date jump |
+| `RequestFocusProvider.tsx` / `requestFocusContext.ts` | Holds the focused request (id + source); `useRequestFocus()` for badges/panels |
+| `utils/insertMessage.ts` | Passive sorted-insert + dedup of incoming messages by server id (live, replay, lazy-load all flow through it) |
+| `utils/dayLabel.ts` | Day-separator label ("Today"/"Yesterday"/date) + same-day comparison |
 | `components/zoneStatusModel.ts` / `zoneStatusUtils.ts` | Zone state model and artwork/seek helpers for `ZoneStatusPanel` |
 
 TTS playback opens a WS connection to the agent's `/tts` path on the same port as chat — the agent proxies bytes to F5-TTS over TCP. The URL is derived from the chat WS URL at runtime; nothing build-time to configure.
@@ -274,9 +290,9 @@ Web search backend (optional but strongly recommended — coordinator can't answ
 - `SEARXNG_URL`: self-hosted [SearXNG](https://github.com/searxng/searxng), bundled in the Docker compose stack under `--profile search`
 - `WEB_SEARCH_PROVIDER`: required to enable web search. Values: `brave`, `tavily`, `searxng`, or `none` (or unset → disabled). Each provider also requires its own credential — `BRAVE_API_KEY`, `TAVILY_API_KEY`, or `SEARXNG_URL` respectively. For Docker compose users with `--profile search`, `SEARXNG_URL` is injected automatically by compose; users running from source must set it explicitly.
 
-Roon (all optional — auto-discovery fills the gaps):
-
-- `DEFAULT_ROON_ZONE`: default zone name (otherwise picks the first zone the Core reports)
+Roon (all optional — auto-discovery fills the gaps): the default zone is chosen
+automatically (first zone the Core reports) and persisted once changed via the
+web client — there is no `DEFAULT_ROON_ZONE` env var.
 
 Agent optional — per-agent model overrides for the lightweight sub-agents (default to `LLM_MODEL`). The coordinator always uses `LLM_MODEL` directly. Include provider prefix if different from the default:
 
@@ -302,7 +318,10 @@ Agent optional — storage, connection, logging, TTS:
 - `ROON_CORE_NAME`: when multiple Cores are on the network, the friendly name of the Core to pair with (matches Roon's Settings > General > Name, case-insensitive). Ignored when only one Core is discovered
 - `ROON_PROFILE_NAME`: Roon profile to authenticate as
 - `LOG_FILE`: path to a server log file (e.g. `logs/swarpius.log`). Rotates at 10MB, keeps 3 backups. **Default**: when unset, every mode (CLI, WS source, WS bundle, Docker) writes to `<SWARPIUS_DATA_DIR>/logs/swarpius.log`. Set this to override the path. CLI / bundle modes additionally silence stderr; WS source / Docker keep stderr alongside the file.
-- `LOG_RETENTION_DAYS`: request log retention in days (default `7`)
+- `LOG_RETENTION_DAYS`: request/server **log** retention in days (default `7`) — distinct from the persisted-history retention below, which governs `messages.db`
+- `CHAT_HISTORY_RETENTION_DAYS`: persisted chat transcript + working memory retention in days (default `90`; `0` = keep forever)
+- `DIAGNOSTICS_RETENTION_DAYS`: persisted diagnostics (agent/tool/LLM events) retention in days (default `30`; `0` = keep forever)
+- `LISTENING_HISTORY_RETENTION_DAYS`: listening-history retention in days (default `365`; `0` = keep forever)
 - `CONVERSATION_IDLE_TIMEOUT_SECONDS`: idle gap that starts a new conversation group in logs (default `300`)
 - `TTS_URL`: F5-TTS server address as scheme-less `host:port` (TCP). The agent uses it directly for CLI-mode speech AND proxies it to the browser over its own WebSocket (`/tts` path on the agent's main port), so one setting drives both modes. Leave unset to disable.
 

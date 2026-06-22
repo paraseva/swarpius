@@ -4,6 +4,7 @@ import json
 import logging
 import re
 import shutil
+import threading
 import time
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -97,8 +98,16 @@ class RequestIdGenerator:
 
     On construction the generator scans today's log directory to resume
     counters from where the previous session left off, so a restart does
-    not overwrite existing logs.
+    not overwrite existing logs. When state persistence is wired the full
+    tracker state is restored instead (the log scan is the fresh-DB fallback).
+
+    Process-level (one per agent process, on ``RuntimeState``) so conversation
+    grouping is independent of the transport and survives reconnects; a lock
+    guards the mint + persistence snapshot against cross-thread access.
     """
+
+    # Persistence participant key (structurally satisfies PersistentState).
+    state_key = "conversation_tracker"
 
     def __init__(
         self,
@@ -119,6 +128,7 @@ class RequestIdGenerator:
         self._sequence: int = 0
         self._conv_sequences: dict[str, int] = conv_sequences
         self._last_conv_id: str = self._tracker.current_id
+        self._lock = threading.Lock()
 
     @property
     def tracker(self) -> ConversationTracker:
@@ -181,13 +191,34 @@ class RequestIdGenerator:
         # load falls back to the on-disk-resumed value (or 0 for a fresh
         # conversation) only after the save is committed. No stale overwrite
         # path exists in either direction.
-        conv_id = self._tracker.assign_by_timeout()
-        if conv_id != self._last_conv_id:
-            self._conv_sequences[self._last_conv_id] = self._sequence
-            self._sequence = self._conv_sequences.get(conv_id, 0)
-        self._last_conv_id = conv_id
-        self._sequence += 1
-        return f"rq-{conv_id}-{self._sequence:04d}"
+        with self._lock:
+            conv_id = self._tracker.assign_by_timeout()
+            if conv_id != self._last_conv_id:
+                self._conv_sequences[self._last_conv_id] = self._sequence
+                self._sequence = self._conv_sequences.get(conv_id, 0)
+            self._last_conv_id = conv_id
+            self._sequence += 1
+            return f"rq-{conv_id}-{self._sequence:04d}"
+
+    def capture_state(self) -> Dict[str, Any]:
+        """Snapshot the ID counters + the tracker, so conversation grouping
+        and numbering continue after a restart."""
+        with self._lock:
+            return {
+                "sequence": self._sequence,
+                "conv_sequences": dict(self._conv_sequences),
+                "last_conv_id": self._last_conv_id,
+                "tracker": self._tracker.capture_state(),
+            }
+
+    def restore_state(self, data: Dict[str, Any]) -> None:
+        with self._lock:
+            self._sequence = data.get("sequence", 0)
+            self._conv_sequences = dict(data.get("conv_sequences", {}))
+            self._last_conv_id = data.get("last_conv_id") or self._tracker.current_id
+            tracker_data = data.get("tracker")
+            if tracker_data:
+                self._tracker.restore_state(tracker_data)
 
     def new_conversation(self) -> None:
         """Explicitly bump the conversation counter (e.g. on reconnect)."""

@@ -142,7 +142,10 @@ def _write_context_snapshot(
     from app.settings import get_settings
     settings = get_settings()
     persona = settings.llm_persona
-    default_zone = settings.default_roon_zone
+    default_zone = (
+        runtime.roon_connection.get_default_zone()
+        if runtime.roon_connection else None
+    )
 
     resolved = runtime.resolved_profile
     model_profile: Dict[str, Any] = {}
@@ -682,6 +685,34 @@ class _CoordinatorObserver:
         )
 
 
+def _persist_user_chat(
+    user_input: str, client_msg_id: Optional[str], created_at_ms: Optional[int] = None,
+) -> None:
+    """Persist the user's message as the first transcript entry of a request,
+    at a non-restart terminal — grouped with the request rather than written
+    on receipt, so a restart that drops the in-flight request leaves no
+    orphaned message. Skipped when a restart has been requested (the in-flight
+    request is dropped). Direct append (not via the bus) so it is stored for
+    replay without being re-sent to the client, which already shows its own
+    message. ``direction='outbound'`` is the frontend's client-centric
+    convention (a user bubble) — see WebSocketProvider.tsx / ChatPanel.tsx.
+
+    ``created_at_ms`` stamps the message with when it was sent (the request
+    start), not this (later) commit time — so a replay shows the same time the
+    user saw live.
+    """
+    from app.io.message_store import get_message_store
+    from app.runtime.restart_signal import is_restart_requested
+    if is_restart_requested():
+        return
+    meta: dict = {"direction": "outbound"}
+    if client_msg_id is not None:
+        meta["client_msg_id"] = client_msg_id
+    get_message_store().append(
+        "chat", {"channel": "chat", "body": user_input}, meta=meta, created_at=created_at_ms,
+    )
+
+
 def _handle_loop_exception(
     err: Exception,
     *,
@@ -867,6 +898,8 @@ def process_request(
             usage=None,
             coordinator_model=coordinator_model,
         ))
+        _persist_user_chat(user_input, client_msg_id, created_at_ms=request_start_ms)
+        runtime.persist_state()
         return
     except Exception as err:
         _handle_loop_exception(
@@ -879,7 +912,13 @@ def process_request(
         logger.update_conversation_summary(
             topic_summary=assignment.topic_summary if assignment else None,
         )
+        _persist_user_chat(user_input, client_msg_id, created_at_ms=request_start_ms)
+        runtime.persist_state()
         return
+
+    # Persist the user's message first (ordered before the response, which
+    # the bus appends below) now that the request has reached a terminal.
+    _persist_user_chat(user_input, client_msg_id, created_at_ms=request_start_ms)
 
     # ── Extract and emit the response ──
     raw_text = loop_result.text or ""
@@ -948,4 +987,5 @@ def process_request(
         request_id, status, total_steps, total_duration_ms,
     )
 
+    runtime.persist_state()
     clear_request_id()

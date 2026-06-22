@@ -1,9 +1,10 @@
 from __future__ import annotations
 
+import logging
 import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
-from typing import Any, Callable, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional
 
 from app.coordinator.context_providers import (
     CallbackContextProvider,
@@ -39,14 +40,17 @@ from app.llm.model_profiles import (  # noqa: F401 — get_model_profile / load_
 from app.llm.tool_registry import ToolRegistry
 from app.roon.config_action_service import ConfigActionService
 from app.roon.control_service import RoonControlService
+from app.roon.listening_history import ListeningHistoryStore
 from app.roon.play_history import PlayHistoryStore
 from app.roon.stop_marker import StopMarkerCoordinator
 from app.roon.zone_artwork_service import ZoneArtworkCache
 from app.roon.zone_domain import ZoneDomain
 from app.roon.zone_snapshot import ZoneSnapshotBuilder
 from app.runtime.llm_clients import LLMClientsManager
+from app.runtime.request_logger import RequestIdGenerator
 from app.runtime.result_store_manager import ResultStoreManager
 from app.runtime.result_store_types import ResultStoreEntry
+from app.runtime.roon_persistence import DefaultZoneState, QueueRefsState
 from app.runtime.state_helpers import (
     _backend_ok,
     _build_web_search_tool,  # noqa: F401 — imported by tests via app.runtime.state.*
@@ -59,7 +63,11 @@ from app.runtime.state_internals import (
     _locks_zone_state,
 )
 from app.runtime.state_zone_mixin import _StateZoneMixin
+from app.runtime.working_memory_persistence import WorkingMemoryState
 from app.runtime.zones import ZoneSubsystem
+
+if TYPE_CHECKING:
+    from app.runtime.persistence import PersistenceManager, PersistentState
 from roon_core.connection import RoonConnection
 from usage_metrics import UsageTracker
 
@@ -79,6 +87,8 @@ __all__ = [
     "_build_web_search_tool",
     "_BoundedDict",
 ]
+
+logger = logging.getLogger(__name__)
 
 _SOURCE_LABELS = {"roon_search": "Roon", "web_search": "Web"}
 
@@ -138,6 +148,12 @@ class RuntimeState(_StateInitMixin, _StateZoneMixin):
         self.global_step: int = 0
         self.llm_call_count: int = 0
         self.validation_retry_count: int = 0
+        self._persistence_manager: Optional["PersistenceManager"] = None
+        # Process-level conversation tracker / request-ID generator, shared by
+        # the WS handler and the CLI runner (single-session). Created when
+        # persistence attaches so its state can be restored; until then,
+        # process_request falls back to a transient one.
+        self.request_id_generator: Optional[RequestIdGenerator] = None
         self.skills_dir = AGENT_ROOT / "skills"
         # ``stop_marker_title`` is wired in ``_ensure_initialised_locked``
         # via ``set_stop_marker_title`` so ``__init__`` does not snapshot
@@ -146,6 +162,9 @@ class RuntimeState(_StateInitMixin, _StateZoneMixin):
         # ``ensure_initialised``.
         self.play_history = PlayHistoryStore(store_path=play_history_path())
         self.play_history.load()
+        # Queryable listening history ("what did I listen to…"). Created when
+        # persistence attaches (it needs the shared state DB).
+        self.listening_history: Optional[ListeningHistoryStore] = None
         # Zone subsystem bundles the two existing state owners and
         # exposes the artwork-cache mirror handles tests rely on.
         # Property delegations below preserve the legacy runtime.<attr>
@@ -647,3 +666,88 @@ class RuntimeState(_StateInitMixin, _StateZoneMixin):
             if content:
                 sections.append({"title": p.title, "content": content})
         return sections
+
+    def _persistence_participants(self) -> List["PersistentState"]:
+        """The participants whose state this runtime persists. How many
+        there are is an internal detail — callers go through
+        ``attach_persistence``."""
+        return [WorkingMemoryState(self)]
+
+    def attach_persistence(self, manager: "PersistenceManager") -> None:
+        """Apply any state saved by a previous run, then register for future
+        saves. Restoring before registering keeps a fresh start (empty bag) a
+        no-op. The manager is retained so Roon-scoped state can attach once
+        the connection exists and so request completion can commit."""
+        self._persistence_manager = manager
+        self.listening_history = ListeningHistoryStore(manager.state_db)
+        self.request_id_generator = RequestIdGenerator()
+        self._restore_and_register(manager, self.request_id_generator)
+        for participant in self._persistence_participants():
+            self._restore_and_register(manager, participant)
+
+    def attach_roon_persistence(self, manager: "PersistenceManager") -> None:
+        """Attach the Roon-connection-scoped participants (browse-session
+        pool). Called once the Roon connection exists — its construction is
+        later than the runtime's, so it registers separately from
+        ``attach_persistence``. No-op if there is no connection."""
+        if self.roon_connection is None:
+            return
+        self._restore_and_register(manager, self.roon_connection.session_manager)
+        self._restore_and_register(manager, QueueRefsState(self.roon_connection))
+        self._restore_and_register(manager, DefaultZoneState(self.roon_connection))
+
+    @staticmethod
+    def _restore_and_register(
+        manager: "PersistenceManager", participant: "PersistentState",
+    ) -> None:
+        saved = manager.restored_slice(participant.state_key)
+        if saved is not None:
+            participant.restore_state(saved)
+        manager.register(participant)
+
+    def clear_conversation_state(self) -> None:
+        """Wipe the conversation: the model's working memory and the Roon
+        references it built, the persisted snapshot, and the transcript — a
+        genuine fresh start. The runtime default zone is preserved (it's a
+        preference, not conversation content). Callers must ensure no request
+        is in flight (the clear control is disabled during a request)."""
+        # Working memory (group A) — mutate the shared-by-reference
+        # collections in place so tool-captured views stay valid.
+        self.conversation_history_provider.history.clear()
+        self.execution_trace.clear()
+        self.results.entries.clear()
+        self.results.history.clear()
+        self.results.counter = 0
+        self.results.last_handle = None
+        self.global_step = 0
+        self.execution_trace_provider.set_context("")
+        self.search_history_provider.set_context("")
+
+        # The conversation's Roon references (search-result + queue handles).
+        if self.roon_connection is not None:
+            session_manager = self.roon_connection.session_manager
+            session_manager.refs.clear()
+            session_manager._session_current_list.clear()
+            self.roon_connection._queue_ref_maps.clear()
+
+        # Persist the now-empty state, then wipe the transcript.
+        self.persist_state()
+        from app.io.message_store import get_message_store
+        get_message_store().clear()
+
+    def persist_state(self) -> None:
+        """Commit the current state snapshot. Called by the deterministic
+        request-completion plumbing, not the LLM coordinator. Skipped when a
+        restart has been requested, so an in-flight request terminated by the
+        restart is dropped and the restore boundary stays at the last request
+        that completed before it. Never raises — a persistence failure must
+        not break the user's request."""
+        if self._persistence_manager is None:
+            return
+        from app.runtime.restart_signal import is_restart_requested
+        if is_restart_requested():
+            return
+        try:
+            self._persistence_manager.commit()
+        except Exception:  # noqa: BLE001 — persistence must never break a request
+            logger.exception("Failed to persist runtime state")

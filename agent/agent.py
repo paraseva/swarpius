@@ -45,9 +45,12 @@ from app.data_paths import (
     messages_db_path,
 )
 from app.io import AppIO
+from app.io.history_retention import prune_history
 from app.io.message_store import SqliteMessageStore, set_message_store
+from app.io.state_db import StateDb
 from app.io.static_files import resolve_dist_dir, serve_dist
 from app.io.websocket_flow import websocket_handler as _websocket_handler_impl
+from app.runtime.persistence import PersistenceManager
 from app.runtime.request_logger import RequestIdGenerator, cleanup_old_logs, get_retention_days
 from app.runtime.server_logger import cleanup_old_server_logs
 from app.runtime.state import RuntimeState
@@ -173,9 +176,29 @@ runtime.configure_io_callbacks(
     get_ws_event_loop=lambda: ws_event_loop,
 )
 
-# Message persistence for WS mode — cleared by default, retained via --keep-history
-_session_store = SqliteMessageStore(messages_db_path())
+# Shared state DB: StateDb owns the one connection backing both the
+# transcript (message store) and the persisted runtime state. History and
+# state persist across restarts — there is no clear-on-boot.
+_state_db = StateDb(messages_db_path())
+_session_store = SqliteMessageStore(_state_db)
 set_message_store(_session_store)
+
+# Prune persisted history past its retention windows before anything reads it.
+_retention_settings = _get_settings()
+prune_history(
+    _state_db,
+    chat_days=_retention_settings.chat_history_retention_days,
+    diagnostics_days=_retention_settings.diagnostics_retention_days,
+    listening_days=_retention_settings.listening_history_retention_days,
+    now_ms=int(time.time() * 1000),
+)
+
+# Restore working memory now; Roon-scoped state restores once the connection
+# exists (RuntimeState.ensure_initialised). Request completion commits via
+# runtime.persist_state().
+_persistence_manager = PersistenceManager(_state_db)
+runtime.attach_persistence(_persistence_manager)
+
 _server_start_ms = int(time.time() * 1000)
 
 
@@ -804,7 +827,8 @@ def run_cli_loop() -> None:
 
     history_path = cli_history_path()
     cli_history.load_history(history_path)
-    id_generator = RequestIdGenerator()
+    # Use the process-level generator (restored across restarts) when wired.
+    id_generator = runtime.request_id_generator or RequestIdGenerator()
     session_usage = SessionUsageTracker()
 
     # Route CLI-mode TTS disable notices through Rich (yellow one-liner)
@@ -944,31 +968,11 @@ def main() -> None:
         ),
     )
     parser.add_argument(
-        "--keep-history",
-        action="store_true",
-        help=(
-            "WS mode only: retain chat history from the previous session "
-            "(frontend renders it greyed-out so users know the coordinator "
-            "doesn't have that context). Has no effect in CLI mode — use the readline "
-            "history (up-arrow / reverse-i-search) to recall prior input."
-        ),
-    )
-    parser.add_argument(
         "--show-request-ids",
         action="store_true",
         help="CLI mode: show request IDs (rq-cNN-NNNN) on user/agent panels for log lookup.",
     )
     args = parser.parse_args()
-
-    if args.keep_history and not args.ws:
-        parser.error(
-            "--keep-history is only meaningful with --ws (the CLI surface "
-            "doesn't replay previous conversations). Run with --ws or drop "
-            "the flag.",
-        )
-
-    if not args.keep_history:
-        _session_store.clear()
     SHOW_REQUEST_IDS = args.show_request_ids
 
     try:

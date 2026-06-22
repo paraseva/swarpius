@@ -112,12 +112,12 @@ class RoonZoneMixin:
             self._preferred_zone_label = self.target_zone
             if name:
                 _log.warning(
-                    "DEFAULT_ROON_ZONE %r not found; falling back to %r",
+                    "Default zone %r not found; falling back to %r",
                     name, first_name,
                 )
             else:
                 _log.info(
-                    "DEFAULT_ROON_ZONE unset — adopting first reported output %r",
+                    "No default zone set — adopting first reported output %r",
                     first_name,
                 )
             return

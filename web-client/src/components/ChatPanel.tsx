@@ -9,11 +9,14 @@ import { useChatStepLabel } from '../hooks/useChatStepLabel'
 import { useChatBannerManager } from '../hooks/useChatBannerManager'
 import { useChatTtsAutoPlay } from '../hooks/useChatTtsAutoPlay'
 import { useStickyBottomScroll } from '../hooks/useStickyBottomScroll'
+import { useHistoryScrollback } from '../hooks/useHistoryScrollback'
+import { useRequestFocusSync } from '../hooks/useRequestFocusSync'
+import { HistoryDatePicker } from './HistoryDatePicker'
+import { dayLabel, isNewDay } from '../utils/dayLabel'
 import { correlateOutboundRequestIds } from '../utils/correlateOutboundRequestIds'
 import { getDirectiveOutboundIds } from '../utils/getDirectiveOutboundIds'
 import { getFailedOutboundErrors } from '../utils/getFailedOutboundErrors'
 import { outboundClientMsgId } from '../utils/outboundClientMsgId'
-import { lastPreviousSessionIndex } from '../utils/previousSessionDivider'
 import cs from './ChatPanel.module.css'
 
 function formatElapsed(seconds: number): string {
@@ -60,7 +63,10 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
   isAutoTtsEnabled, isDevMode, isMobile,
   ttsHealth = 'healthy', ttsWsUrl,
 }) => {
-  const { status, messages, sendMessage, isLlmActive, trimmedCount } = useWebSocket()
+  const {
+    status, messages, sendMessage, isLlmActive, trimmedCount,
+    requestHistory, requestHistoryRange, reachedBeginning, historyBatchToken,
+  } = useWebSocket()
   const [draft, setDraft] = React.useState('')
   const speech = useSpeechRecognition()
   const scrollContainerRef = React.useRef<HTMLDivElement | null>(null)
@@ -87,12 +93,6 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
   )
 
   const visibleChatMessages = chatMessages
-  // A divider after this index marks where Swarpius's memory starts:
-  // everything above is a replayed previous session, not remembered.
-  const previousSessionDividerIndex = React.useMemo(
-    () => lastPreviousSessionIndex(visibleChatMessages),
-    [visibleChatMessages],
-  )
   const isLlmCallInProgress = isLlmActive
 
   const stepProgress = useChatStepLabel(messages, trimmedCount)
@@ -103,7 +103,48 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
     isAutoTtsEnabled, ttsHealth, ttsWsUrl, addTransientErrorBanner,
   })
 
+  const chatMessagesRef = React.useRef(chatMessages)
+  React.useEffect(() => {
+    chatMessagesRef.current = chatMessages
+  }, [chatMessages])
+
   useStickyBottomScroll(scrollContainerRef, 'chat')
+  useHistoryScrollback(
+    scrollContainerRef, messages, requestHistory, reachedBeginning ?? false, historyBatchToken ?? 0,
+  )
+  useRequestFocusSync(scrollContainerRef, 'chat')
+
+  // Scroll the chat to the first loaded day at/after dayStartMs (its separator
+  // at the top). Returns false if that day isn't loaded yet.
+  const scrollToDay = React.useCallback((dayStartMs: number): boolean => {
+    const target = chatMessagesRef.current.find((m) => m.timestamp >= dayStartMs)
+    if (!target) return false
+    const container = scrollContainerRef.current
+    const el = container?.querySelector(`[data-day-for="${target.id}"]`)
+      ?? container?.querySelector(`[data-message-id="${target.id}"]`)
+    el?.scrollIntoView({ block: 'start' })
+    return true
+  }, [])
+
+  // Date picker. If the day is already loaded, scroll now. Otherwise load every
+  // day from it up to the earliest in memory (keeping history contiguous) and
+  // scroll once that batch has fully arrived — NOT before, or `find` would
+  // match an already-loaded later day.
+  const pendingJumpDayRef = React.useRef<number | null>(null)
+  const handlePickDate = React.useCallback((dayStartMs: number) => {
+    const oldestLoaded = messages.length > 0 ? messages[0].timestamp : Date.now()
+    if (dayStartMs < oldestLoaded) {
+      requestHistoryRange?.(dayStartMs, oldestLoaded)
+      pendingJumpDayRef.current = dayStartMs
+    } else {
+      scrollToDay(dayStartMs)
+    }
+  }, [messages, requestHistoryRange, scrollToDay])
+
+  React.useEffect(() => {
+    if (pendingJumpDayRef.current == null) return
+    if (scrollToDay(pendingJumpDayRef.current)) pendingJumpDayRef.current = null
+  }, [historyBatchToken, scrollToDay])
 
   // Populate textarea from speech recognition results. Syncing from
   // an external system (Web Speech API) is exactly the case where the
@@ -175,6 +216,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
         <span className="panel-heading-group">
           <h2>Chat</h2>
           <GuidanceButton id="chat-basics" />
+          <HistoryDatePicker onPick={handlePickDate} />
         </span>
         <span className={`status status-${status}`}>{status.toUpperCase()}</span>
       </div>
@@ -227,6 +269,8 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
         ) : (
           <ul className="message-list">
             {visibleChatMessages.map((m, idx) => {
+              const prev = idx > 0 ? visibleChatMessages[idx - 1] : undefined
+              const showDaySeparator = !prev || isNewDay(prev.timestamp, m.timestamp)
               const outboundKey = m.direction === 'outbound' ? outboundClientMsgId(m) : undefined
               const isDirective = outboundKey !== undefined && directiveOutboundIds.has(outboundKey)
               const failureError = outboundKey !== undefined ? failedOutboundErrors.get(outboundKey) : undefined
@@ -241,8 +285,15 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
               const failedClass = failureError ? ' message-failed' : ''
               return (
                 <React.Fragment key={m.id}>
+                {showDaySeparator ? (
+                  <li className="message-day-separator" data-day-for={m.id} aria-hidden="true">
+                    <span>{dayLabel(m.timestamp)}</span>
+                  </li>
+                ) : null}
                 <li
-                  className={`message message-${m.direction}${m.meta?.previous_session ? ' message-previous-session' : ''}${directiveClass}${failedClass}`}
+                  className={`message message-${m.direction}${directiveClass}${failedClass}`}
+                  data-message-id={m.id}
+                  data-request-id={typeof msgRequestId === 'string' ? msgRequestId : undefined}
                   data-directive={isDirective ? 'true' : undefined}
                   data-failed={failureError ? 'true' : undefined}
                 >
@@ -250,7 +301,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                     <span className="message-meta-sender">
                       {isDirective ? 'Directive' : m.direction === 'outbound' ? 'You' : 'Swarpius'}
                       {isDevMode && typeof msgRequestId === 'string' && msgRequestId ? (
-                        <>{' '}<RequestIdBadge requestId={msgRequestId} /></>
+                        <>{' '}<RequestIdBadge requestId={msgRequestId} syncKey="chat" /></>
                       ) : null}
                       {ttsStatus?.messageId === m.id ? (
                         <>{' '}<TtsStatusIndicator phase={ttsStatus.phase} /></>
@@ -265,11 +316,6 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                     </span>
                   ) : null}
                 </li>
-                {idx === previousSessionDividerIndex ? (
-                  <li className="message-session-divider">
-                    <span>Earlier session — Swarpius doesn’t remember the messages above</span>
-                  </li>
-                ) : null}
                 </React.Fragment>
               )
             })}

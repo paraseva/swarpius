@@ -3,18 +3,24 @@ import { FormattedMessageBody } from './FormattedMessageBody'
 import { JsonTreeView } from './JsonTreeView'
 import { RequestIdBadge } from './RequestIdBadge'
 import { useStickyBottomScroll } from '../hooks/useStickyBottomScroll'
+import { useHistoryScrollback } from '../hooks/useHistoryScrollback'
+import { useRequestFocusSync } from '../hooks/useRequestFocusSync'
 import { type ChannelId, useWebSocket } from '../websocketContext'
 
 interface HistoryWindowProps {
   title: string
   channel: ChannelId
+  /** When set, this panel participates in the request sync (clicking a badge
+   *  elsewhere scrolls it to that request, and its own badges focus). */
+  syncKey?: string
 }
 
 export const HistoryWindow: React.FC<HistoryWindowProps> = ({
   title,
   channel,
+  syncKey,
 }) => {
-  const { messages } = useWebSocket()
+  const { messages, requestHistory, reachedBeginning, historyBatchToken } = useWebSocket()
   const scrollContainerRef = React.useRef<HTMLDivElement | null>(null)
   const storageKey = `swarpius:history-window:raw:${channel}`
   const [showRawPayload, setShowRawPayload] = React.useState(() => {
@@ -31,6 +37,13 @@ export const HistoryWindow: React.FC<HistoryWindowProps> = ({
   )
 
   useStickyBottomScroll(scrollContainerRef, `history:${channel}`)
+  // Scroll-back loads older days like the chat, but without auto-fill: a sparse
+  // panel (e.g. Errors) would otherwise keep loading to try to fill itself.
+  useHistoryScrollback(
+    scrollContainerRef, messages, requestHistory, reachedBeginning ?? false,
+    historyBatchToken ?? 0, false,
+  )
+  useRequestFocusSync(scrollContainerRef, syncKey)
 
   React.useEffect(() => {
     try {
@@ -132,7 +145,8 @@ export const HistoryWindow: React.FC<HistoryWindowProps> = ({
               return (
               <li
                 key={m.id}
-                className={`message message-${m.direction} ${isToolPairStart ? 'message-tool-pair-start' : ''} ${errorSeverity ? `message-error-severity-${errorSeverity}` : ''}${m.meta?.previous_session ? ' message-previous-session' : ''}`}
+                data-request-id={typeof msgRequestId === 'string' ? msgRequestId : undefined}
+                className={`message message-${m.direction} ${isToolPairStart ? 'message-tool-pair-start' : ''} ${errorSeverity ? `message-error-severity-${errorSeverity}` : ''}`}
               >
                 <span className="message-meta">
                   <span>
@@ -141,7 +155,7 @@ export const HistoryWindow: React.FC<HistoryWindowProps> = ({
                     <span className="message-meta-date">{new Date(m.timestamp).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}</span>
                   </span>
                   {typeof msgRequestId === 'string' && msgRequestId ? (
-                    <RequestIdBadge requestId={msgRequestId} />
+                    <RequestIdBadge requestId={msgRequestId} syncKey={syncKey} />
                   ) : null}
                 </span>
                 {showRawPayload ? (

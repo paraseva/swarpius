@@ -227,6 +227,28 @@ Zones are Roon's concept of an audio output (a speaker, a group of speakers, etc
 
 Roon's browse API is stateful and session-based. Each search creates a new browse session, and navigation (drill-down, pop) changes the cursor position within that session. See `docs/how-roon-browse-works.md` for a detailed reference on the API's behaviour and our stable reference system.
 
+## State persistence
+
+State persists across a restart so the user can continue as though the agent had never stopped. The store is a single SQLite database (`messages.db`) owned by `StateDb` (one connection + lock); the schema is versioned with `PRAGMA user_version` and upgraded through chained N→N+1 migrations (`app/io/db_schema.py`). A corrupt or future-versioned DB is backed up and recreated rather than crashing startup.
+
+**What persists**
+
+- **Chat transcript** — every WS message on the persisted channels, used both for replay on connect and for history browsing.
+- **Working memory** — recent conversation turns, the execution trace, and cached search results / handles, so the model and `<list>`/`<queue>` tags keep resolving.
+- **Roon references** — the browse-session reference pool and queue references, so item keys and handles still resolve after reconnecting to the Core (the `_semantic_recover` rewalk remains the fallback if a key has gone stale).
+- **Default zone** — set once and remembered (replacing the former `DEFAULT_ROON_ZONE` env var).
+- **Conversation tracker** — the process-level `RequestIdGenerator`/`ConversationTracker` (thread state + counters, wall-clock timestamps), so conversation grouping and request-ID numbering continue across a restart.
+- **Listening history** — a record of recently played tracks per zone, queryable by the `listening_history` tool.
+
+**Load / commit model**
+
+- **Read once at startup.** `PersistenceManager` reads the whole saved state into a bag; each participant (a `PersistentState` with `capture_state`/`restore_state`) applies its slice as it is constructed. Restoring everything up front keeps it simple — nothing depends on the WS or Roon connection being established first.
+- **Commit at the request terminal.** After each completed request, the registered participants are captured and written in one transaction — gated on a restart not being in progress, so a request dropped by a restart leaves no half-written state. Working memory drops any restored turn older than the chat-retention cutoff (it can never exceed what the transcript retains).
+
+**Retention.** A startup sweep (`app/io/history_retention.py`) prunes by age with independent windows: `CHAT_HISTORY_RETENTION_DAYS` (chat, default 90), `DIAGNOSTICS_RETENTION_DAYS` (agent/tool/LLM events, default 30), and `LISTENING_HISTORY_RETENTION_DAYS` (default 365). `0` keeps that data indefinitely.
+
+**History browsing (web client).** Only the most recent non-empty day loads on connect; the chat lazy-loads earlier days on scroll-up (skipping empty days) and via a date picker, using one server primitive — "the messages for the day at or before timestamp T". Requests are fire-and-forget; the client's passive receive sorts and de-dupes whatever arrives by a stable server message id, so live messages, replay, and lazy-loaded history all assemble through one path. See `docs/web-client.md`.
+
 ## Model profiles
 
 Per-model tuning is configured in `model_profiles.yaml` and managed by `model_profiles.py`. Profiles are matched by regex against the full `provider/model` string (first match wins); models without a matching profile get the defaults. Prompts, context, and validation are the same for all models — only the loop limits and generation parameters vary.

@@ -52,7 +52,7 @@ services:
     read_only: true
     tmpfs:
       - /tmp
-    command: ["python3", "agent.py", "--ws", "--keep-history"]
+    command: ["python3", "agent.py", "--ws"]
     volumes:
       - type: bind
         source: ./agent/data

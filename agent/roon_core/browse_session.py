@@ -36,8 +36,60 @@ class StableReference:
     last_accessed: float = field(default_factory=time.monotonic)
 
 
+def _dump_identity(identity: ItemIdentity) -> Dict[str, Any]:
+    return {
+        "title": identity.title,
+        "subtitle": identity.subtitle,
+        "hint": identity.hint,
+        "image_key": identity.image_key,
+    }
+
+
+def _load_identity(data: Dict[str, Any]) -> ItemIdentity:
+    return ItemIdentity(
+        title=data["title"],
+        subtitle=data.get("subtitle"),
+        hint=data.get("hint"),
+        image_key=data.get("image_key"),
+    )
+
+
+def _dump_ref(ref: StableReference) -> Dict[str, Any]:
+    return {
+        "ref_id": ref.ref_id,
+        "identity": _dump_identity(ref.identity),
+        "recipe": {
+            "search_string": ref.recipe.search_string,
+            "category": ref.recipe.category,
+            "parent_chain": [_dump_identity(i) for i in ref.recipe.parent_chain],
+        },
+        "cached_item_key": ref.cached_item_key,
+        "roon_session_key": ref.roon_session_key,
+        "item_key_path": list(ref.item_key_path),
+    }
+
+
+def _load_ref(data: Dict[str, Any]) -> StableReference:
+    recipe = data["recipe"]
+    return StableReference(
+        ref_id=data["ref_id"],
+        identity=_load_identity(data["identity"]),
+        recipe=SearchRecipe(
+            search_string=recipe["search_string"],
+            category=recipe.get("category"),
+            parent_chain=[_load_identity(i) for i in recipe.get("parent_chain", [])],
+        ),
+        cached_item_key=data.get("cached_item_key"),
+        roon_session_key=data.get("roon_session_key", ""),
+        item_key_path=list(data.get("item_key_path", [])),
+    )
+
+
 class BrowseSessionManager:
     """Manages Roon browse sessions via multi_session_key and stable references."""
+
+    # Persistence participant key (structurally satisfies PersistentState).
+    state_key = "browse_refs"
 
     def __init__(self, max_refs: int = 500, max_sessions: int = 16) -> None:
         self._session_prefix: str = secrets.token_hex(4)
@@ -188,3 +240,40 @@ class BrowseSessionManager:
         if new_item_key_path is not None:
             ref.item_key_path = list(new_item_key_path)
         ref.last_accessed = time.monotonic()
+
+    # ── Persistence ────────────────────────────────────────────────
+
+    def capture_state(self) -> Dict[str, Any]:
+        """Snapshot the whole pool so a restart resumes exactly where it
+        left off — the slot counter, per-session depth, every reference,
+        and the current-list pagination state. ``last_accessed`` is
+        process-relative (``time.monotonic``) and so is re-stamped on
+        restore rather than persisted."""
+        return {
+            "session_prefix": self._session_prefix,
+            "session_counter": self._session_counter,
+            "session_depth": dict(self._session_depth),
+            "refs": {ref_id: _dump_ref(ref) for ref_id, ref in self.refs.items()},
+            "current_list": {
+                session_key: result.model_dump(mode="json")
+                for session_key, result in self._session_current_list.items()
+                if hasattr(result, "model_dump")
+            },
+        }
+
+    def restore_state(self, data: Dict[str, Any]) -> None:
+        """Replace the pool with a previously captured snapshot."""
+        from roon_core.schemas import RoonCoreResultsSchema
+
+        self._session_prefix = data["session_prefix"]
+        self._session_counter = data["session_counter"]
+        self._session_depth.clear()
+        self._session_depth.update(data.get("session_depth", {}))
+        self.refs.clear()
+        for ref_id, ref_data in data.get("refs", {}).items():
+            self.refs[ref_id] = _load_ref(ref_data)
+        self._session_current_list.clear()
+        for session_key, result_data in data.get("current_list", {}).items():
+            self._session_current_list[session_key] = RoonCoreResultsSchema.model_validate(
+                result_data,
+            )

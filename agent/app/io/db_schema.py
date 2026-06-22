@@ -21,7 +21,7 @@ from typing import Callable, Dict
 
 logger = logging.getLogger(__name__)
 
-CURRENT_SCHEMA_VERSION = 1
+CURRENT_SCHEMA_VERSION = 2
 
 
 class SchemaTooNewError(Exception):
@@ -94,9 +94,33 @@ def _migrate_0_to_1(conn: sqlite3.Connection) -> None:
     )
 
 
+def _migrate_1_to_2(conn: sqlite3.Connection) -> None:
+    """Add the cost ledger: one row per LLM agent invocation, aggregated by the
+    cost dashboard. Never pruned (cost rows are tiny and kept indefinitely)."""
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS cost_ledger (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            ts INTEGER NOT NULL,
+            agent TEXT NOT NULL,
+            model TEXT NOT NULL,
+            request_id TEXT,
+            conversation_id TEXT,
+            input_tokens INTEGER NOT NULL DEFAULT 0,
+            output_tokens INTEGER NOT NULL DEFAULT 0,
+            cache_creation_tokens INTEGER NOT NULL DEFAULT 0,
+            cache_read_tokens INTEGER NOT NULL DEFAULT 0,
+            cost_usd REAL NOT NULL DEFAULT 0
+        )
+        """,
+    )
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_cost_ledger_ts ON cost_ledger(ts)")
+
+
 # from-version -> migration that advances it to from-version + 1.
 _MIGRATIONS: Dict[int, Callable[[sqlite3.Connection], None]] = {
     0: _migrate_0_to_1,
+    1: _migrate_1_to_2,
 }
 
 

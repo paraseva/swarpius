@@ -57,6 +57,7 @@ class TestRunMigrations(unittest.TestCase):
             self.assertIn("ws_messages", tables)
             self.assertIn("agent_state", tables)
             self.assertIn("listening_history", tables)
+            self.assertIn("cost_ledger", tables)
             # Bucket-2 grouping columns present on the transcript table.
             ws_cols = _column_names(conn, "ws_messages")
             self.assertIn("request_id", ws_cols)
@@ -100,6 +101,25 @@ class TestRunMigrations(unittest.TestCase):
             self.assertIn("request_id", _column_names(conn, "ws_messages"))
             self.assertIn("agent_state", _table_names(conn))
             self.assertIn("listening_history", _table_names(conn))
+        finally:
+            conn.close()
+
+    def test_v1_db_gains_cost_ledger_on_upgrade(self):
+        """An existing v1 DB (no cost_ledger) gains it via the 1->2 step."""
+        from app.io.db_schema import _migrate_0_to_1
+        path = self._dir / "state.db"
+        seed = sqlite3.connect(str(path))
+        _migrate_0_to_1(seed)
+        seed.execute("PRAGMA user_version = 1")
+        seed.commit()
+        self.assertNotIn("cost_ledger", _table_names(seed))
+        seed.close()
+
+        conn = sqlite3.connect(str(path))
+        try:
+            run_migrations(conn)
+            self.assertEqual(_user_version(conn), CURRENT_SCHEMA_VERSION)
+            self.assertIn("cost_ledger", _table_names(conn))
         finally:
             conn.close()
 

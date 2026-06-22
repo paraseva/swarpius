@@ -85,11 +85,11 @@ Requests like "play something chill" or "put on some background music" depend en
 
 ### Context window limits
 
-Swarpius maintains context within a conversation (recent searches, actions, and results), but this context is finite. Very long conversations or rapid sequences of complex operations may cause earlier context to be lost. Each application restart starts a fresh context.
+Swarpius maintains context within a conversation (recent searches, actions, and results), but this context is finite. Very long conversations or rapid sequences of complex operations may cause earlier context to be lost. The working set of context persists across a restart (so a restart resumes where you left off), but it is still bounded — older turns age out of the active context regardless of restarts.
 
-### No memory across sessions
+### No learned preferences or habits
 
-Swarpius does not remember preferences, habits, or history across sessions. "Play what I listened to on the first of this month" or "play my usual morning music" are not possible. Each application restart begins a fresh session.
+Chat history, working memory, and a listening-history record persist across restarts, and you can ask about what you played ("what did I listen to last Tuesday?"). But Swarpius does not *learn* preferences or infer habits: "play my usual morning music" is not possible, because nothing builds a model of your routines from past listening.
 
 ## Expansion and Shuffle Limitations
 

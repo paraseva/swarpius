@@ -140,6 +140,18 @@ Primary chat interface. Features:
 - Rate-limit banners with countdown, retry button, and structured `rate-limit` channel support
 - Auto-TTS: speaks inbound messages via `playServerTts()` when enabled, with smart truncation for long/listy output
 - Enter-to-send input with Shift+Enter for newlines
+- History browsing: only the most recent non-empty day loads on connect; scrolling up lazy-loads earlier days one at a time (skipping empty days), with day separators between them. Message timestamps show the real send/receive time.
+- A `HistoryDatePicker` calendar icon in the header jumps to any day (loading the range up to what's in memory so history stays contiguous).
+
+### History browsing & request sync
+
+- **`useHistoryScrollback`** lazy-loads older days when the user nears the top: it fires a fire-and-forget request and anchors the viewport (holds distance-from-bottom) so the read position doesn't jump as a day prepends. One day per scroll-to-top, gated on a batch-complete token. Auto-fill (load until the viewport fills) is on for the chat, off for the sparse diagnostics panels.
+- **Passive receive:** `WebSocketProvider` sorts and de-dupes every incoming message by a stable server message id (`utils/insertMessage`), so live messages, replay, and lazy-loaded history all assemble through one path with no request/response coupling.
+- **Request sync:** clicking a `RequestIdBadge` on a request-aware surface (chat, Agents, Tools, Errors, Session Requests) focuses that request everywhere via `RequestFocusProvider` / `useRequestFocusSync` — every other open panel scrolls to it and flashes; the clicked panel stays put. `HistoryWindow` panels also lazy-load older days like the chat.
+
+### Privacy & Data (Settings → Privacy & Data)
+
+`Settings/PrivacyTab` — an action tab (not part of Save & Validate) with two destructive controls, each behind an inline confirm: **Clear conversation history** (chat transcript + working memory) and **Clear listening history**. Conversation clearing is disabled while a request is in flight.
 
 ### ZoneStatusPanel
 
@@ -199,4 +211,8 @@ The client's `ChannelId` type and the backend's `CHANNEL_*` constants must stay 
 | `default-zone-update` | In | App (DefaultZoneBadge state) |
 | `session-control-request` | Out | ChatPanel (retry_now) |
 | `session-control-response` | In | useChatBannerManager (banners on ChatPanel) |
+| `history-request` | Out | WebSocketProvider (`requestHistory` / `requestHistoryRange`) — fire-and-forget day / range load |
+| `history-cursor` | In | WebSocketProvider (passive: whether older history exists; closes a load batch) |
+| `clear-conversation-request` / `-response` | Both | Settings/PrivacyTab |
+| `clear-listening-history-request` / `-response` | Both | Settings/PrivacyTab |
 | `analysis-*` | Both | AnalysisBrowser (covers `analysis-list-*`, `-detail-*`, `-run-*`, `-metrics-*`, `-update`, `-feedback-*`, `-result-handle-*`, `-request-logs-*`) |

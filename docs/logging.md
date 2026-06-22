@@ -97,6 +97,17 @@ The request_id is injected automatically from contextvars. No need to pass it ex
 
 **Retention:** Same as conversation logs (`LOG_RETENTION_DAYS`). Cleaned up on startup.
 
+## Persisted history vs logs
+
+The `logs/` directory above (conversation + server logs, `LOG_RETENTION_DAYS`,
+default 7) is for **debugging** and is distinct from the **persisted state** in
+`messages.db`, which is what lets a restart resume where you left off (chat
+transcript, working memory, Roon references, listening history). That store has
+its own age-pruning, run on startup, with independent windows:
+`CHAT_HISTORY_RETENTION_DAYS` (default 90), `DIAGNOSTICS_RETENTION_DAYS`
+(default 30), and `LISTENING_HISTORY_RETENTION_DAYS` (default 365); `0` keeps
+that data indefinitely. See `docs/architecture.md` → State persistence.
+
 ## Test behaviour
 
 Tests use `NullServerLogger` (injected via `conftest.py`) and `NullRequestLogger` to prevent any disk writes during test runs.

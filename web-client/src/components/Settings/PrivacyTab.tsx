@@ -1,5 +1,6 @@
 import React from 'react'
 import f from './fields.module.css'
+import p from './PrivacyTab.module.css'
 import {
   useWebSocket,
   type ChannelId,
@@ -78,23 +79,34 @@ const ClearAction: React.FC<ClearActionProps> = ({
   const showButton = phase === 'idle' || phase === 'done' || phase === 'error'
 
   return (
-    <div>
+    <div className={p.action}>
       {showButton ? (
-        <button type="button" onClick={() => setPhase('confirming')} disabled={disabled}>
+        <button
+          type="button"
+          className={`${p.button} ${p.trigger}`}
+          onClick={() => setPhase('confirming')}
+          disabled={disabled}
+        >
           {label}
         </button>
       ) : null}
-      {disabled && disabledHint ? <p>{disabledHint}</p> : null}
+      {disabled && disabledHint ? <p className={p.hint}>{disabledHint}</p> : null}
       {phase === 'confirming' ? (
-        <div role="group" aria-label={label}>
-          <p>{warning}</p>
-          <button type="button" onClick={confirm}>Yes, clear it</button>
-          <button type="button" onClick={() => setPhase('idle')}>Cancel</button>
+        <div className={p.confirm} role="group" aria-label={label}>
+          <p className={p.warning}>{warning}</p>
+          <div className={p.confirmButtons}>
+            <button type="button" className={`${p.button} ${p.danger}`} onClick={confirm}>
+              Yes, clear it
+            </button>
+            <button type="button" className={p.button} onClick={() => setPhase('idle')}>
+              Cancel
+            </button>
+          </div>
         </div>
       ) : null}
-      {phase === 'clearing' ? <p>Clearing…</p> : null}
-      {phase === 'done' ? <p role="status">{doneMessage}</p> : null}
-      {phase === 'error' ? <p role="alert">{error}</p> : null}
+      {phase === 'clearing' ? <p className={p.hint}>Clearing…</p> : null}
+      {phase === 'done' ? <p className={p.status} role="status">{doneMessage}</p> : null}
+      {phase === 'error' ? <p className={p.error} role="alert">{error}</p> : null}
     </div>
   )
 }
@@ -117,6 +129,7 @@ export const PrivacyTab: React.FC = () => {
         listening. Your saved zones and other settings are kept.
       </p>
 
+      <div className={p.actions}>
       <ClearAction
         label="Clear conversation history"
         warning="This permanently deletes your chat history and the assistant's memory of this conversation. It cannot be undone."
@@ -135,6 +148,7 @@ export const PrivacyTab: React.FC = () => {
         requestChannel="clear-listening-history-request"
         responseChannel="clear-listening-history-response"
       />
+      </div>
     </div>
   )
 }

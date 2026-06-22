@@ -3,6 +3,7 @@ import { FormattedMessageBody } from './FormattedMessageBody'
 import { JsonTreeView } from './JsonTreeView'
 import { RequestIdBadge } from './RequestIdBadge'
 import { useStickyBottomScroll } from '../hooks/useStickyBottomScroll'
+import { useHistoryScrollback } from '../hooks/useHistoryScrollback'
 import { useRequestFocusSync } from '../hooks/useRequestFocusSync'
 import { type ChannelId, useWebSocket } from '../websocketContext'
 
@@ -19,7 +20,7 @@ export const HistoryWindow: React.FC<HistoryWindowProps> = ({
   channel,
   syncKey,
 }) => {
-  const { messages } = useWebSocket()
+  const { messages, requestHistory, reachedBeginning, historyBatchToken } = useWebSocket()
   const scrollContainerRef = React.useRef<HTMLDivElement | null>(null)
   const storageKey = `swarpius:history-window:raw:${channel}`
   const [showRawPayload, setShowRawPayload] = React.useState(() => {
@@ -36,6 +37,12 @@ export const HistoryWindow: React.FC<HistoryWindowProps> = ({
   )
 
   useStickyBottomScroll(scrollContainerRef, `history:${channel}`)
+  // Scroll-back loads older days like the chat, but without auto-fill: a sparse
+  // panel (e.g. Errors) would otherwise keep loading to try to fill itself.
+  useHistoryScrollback(
+    scrollContainerRef, messages, requestHistory, reachedBeginning ?? false,
+    historyBatchToken ?? 0, false,
+  )
   useRequestFocusSync(scrollContainerRef, syncKey)
 
   React.useEffect(() => {

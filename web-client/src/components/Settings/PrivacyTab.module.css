@@ -1,0 +1,99 @@
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+}
+
+.action {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* Separate the two clear actions so they don't read as one block. */
+.action + .action {
+  padding-top: 1.1rem;
+  border-top: 1px solid var(--color-border-subtle);
+}
+
+.button {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 1rem;
+  font-size: var(--text-sm);
+  font-weight: 500;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-bg-overlay);
+  color: var(--color-text-primary);
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.button:hover:not(:disabled) {
+  background: var(--color-bg-elevated);
+}
+
+.button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Destructive entry point — outlined so it reads as "careful". */
+.trigger {
+  border-color: var(--color-border-error);
+  color: var(--color-error-text);
+}
+
+/* The confirmation — filled, unmistakably destructive. */
+.danger {
+  background: var(--color-error);
+  border-color: var(--color-error);
+  color: #fff;
+}
+
+.danger:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+
+.confirm {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 0.75rem;
+  border: 1px solid var(--color-border-error);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-overlay);
+}
+
+.confirmButtons {
+  display: flex;
+  gap: 0.55rem;
+}
+
+.warning {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--color-text-primary);
+  line-height: 1.4;
+}
+
+.hint {
+  margin: 0;
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+.status {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--color-success-text);
+}
+
+.error {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--color-error-text);
+}

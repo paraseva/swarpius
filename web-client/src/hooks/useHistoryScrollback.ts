@@ -1,5 +1,6 @@
 import React from 'react'
 import { type SocketMessage } from '../websocketContext'
+import { isSyncScrolling } from './useRequestFocusSync'
 
 const TOP_THRESHOLD_PX = 80
 const AT_BOTTOM_TOLERANCE_PX = 32
@@ -25,6 +26,10 @@ export function useHistoryScrollback<T extends HTMLElement>(
   onLoadMore: ((beforeMs: number) => void) | undefined,
   reachedBeginning: boolean,
   batchToken: number,
+  // Auto-load older days until the viewport fills. Right for the chat (a short
+  // day leaves no scrollbar); wrong for sparse diagnostics panels (Errors would
+  // load all of history trying to fill). Defaults on.
+  autoFill = true,
 ): void {
   const distanceFromBottomRef = React.useRef(0)
   const atBottomRef = React.useRef(true)
@@ -40,6 +45,9 @@ export function useHistoryScrollback<T extends HTMLElement>(
       if (loadingRef.current) return
       atBottomRef.current = el.scrollHeight - el.scrollTop - el.clientHeight <= AT_BOTTOM_TOLERANCE_PX
       distanceFromBottomRef.current = el.scrollHeight - el.scrollTop
+      // A request-focus sync scroll reaching the top is not a user scroll-up —
+      // don't lazy-load (it would pull the previous day in under the sync).
+      if (isSyncScrolling()) return
       if (!reachedBeginning && onLoadMore && messages.length > 0 && el.scrollTop <= TOP_THRESHOLD_PX) {
         loadingRef.current = true
         onLoadMore(messages[0].timestamp - 1)
@@ -68,11 +76,12 @@ export function useHistoryScrollback<T extends HTMLElement>(
   // scroll (no scrollbar otherwise = no way to scroll back). Re-checked after
   // each batch; stops once the viewport overflows or history is exhausted.
   React.useEffect(() => {
+    if (!autoFill) return
     const el = scrollRef.current
     if (!el || loadingRef.current || reachedBeginning || !onLoadMore || messages.length === 0) return
     if (el.scrollHeight <= el.clientHeight + AT_BOTTOM_TOLERANCE_PX) {
       loadingRef.current = true
       onLoadMore(messages[0].timestamp - 1)
     }
-  }, [batchToken, messages, reachedBeginning, onLoadMore, scrollRef])
+  }, [autoFill, batchToken, messages, reachedBeginning, onLoadMore, scrollRef])
 }

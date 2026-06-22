@@ -1,6 +1,17 @@
 import React from 'react'
 import { useRequestFocus } from '../requestFocusContext'
 
+// A request-focus sync drives programmatic scrolls in several panels at once.
+// While that's happening, scroll-back must not treat a panel reaching its top as
+// a user scroll-up and lazy-load the previous day (which would yank everything
+// to the newly-loaded day). This flag marks the brief sync-scroll window.
+let syncScrolling = false
+let syncScrollTimer = 0
+
+export function isSyncScrolling(): boolean {
+  return syncScrolling
+}
+
 /**
  * Smooth-scroll the first item tagged `data-request-id="<id>"` to the top of
  * `container` and briefly flash it. Scrolls only this container (not ancestors),
@@ -14,6 +25,9 @@ export function scrollRequestIntoView(
   if (!container) return false
   const el = container.querySelector<HTMLElement>(`[data-request-id="${requestId}"]`)
   if (!el) return false
+  syncScrolling = true
+  window.clearTimeout(syncScrollTimer)
+  syncScrollTimer = window.setTimeout(() => { syncScrolling = false }, 700)
   const top = container.scrollTop
     + el.getBoundingClientRect().top - container.getBoundingClientRect().top
   container.scrollTo({ top, behavior: 'smooth' })

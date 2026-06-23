@@ -8,11 +8,10 @@ import { useSpeechRecognition } from '../hooks/useSpeechRecognition'
 import { useChatStepLabel } from '../hooks/useChatStepLabel'
 import { useChatBannerManager } from '../hooks/useChatBannerManager'
 import { useChatTtsAutoPlay } from '../hooks/useChatTtsAutoPlay'
-import { useStickyBottomScroll } from '../hooks/useStickyBottomScroll'
-import { useHistoryScrollback } from '../hooks/useHistoryScrollback'
-import { useRequestFocusSync } from '../hooks/useRequestFocusSync'
+import { useChannelHistory } from '../hooks/useChannelHistory'
 import { HistoryDatePicker } from './HistoryDatePicker'
 import { dayKey, dayLabel, isNewDay } from '../utils/dayLabel'
+import { loadDaysThrough } from '../utils/historyJump'
 import { correlateOutboundRequestIds } from '../utils/correlateOutboundRequestIds'
 import { getDirectiveOutboundIds } from '../utils/getDirectiveOutboundIds'
 import { getFailedOutboundErrors } from '../utils/getFailedOutboundErrors'
@@ -65,17 +64,16 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
 }) => {
   const {
     status, messages, sendMessage, isLlmActive, trimmedCount,
-    requestHistory, requestHistoryRange, reachedBeginning, historyBatchToken,
+    requestHistoryRange, historyBatchTokenByChannel,
   } = useWebSocket()
   const [draft, setDraft] = React.useState('')
   const speech = useSpeechRecognition()
   const scrollContainerRef = React.useRef<HTMLDivElement | null>(null)
   const textareaRef = React.useRef<HTMLTextAreaElement | null>(null)
 
-  const chatMessages = React.useMemo(
-    () => messages.filter((m) => m.channel === 'chat'),
-    [messages],
-  )
+  // The chat is just the 'chat' channel — same shared per-channel history as
+  // every other panel.
+  const chatMessages = useChannelHistory('chat', scrollContainerRef, 'chat')
 
   const outboundRequestIds = React.useMemo(
     () => correlateOutboundRequestIds(messages),
@@ -108,11 +106,6 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
     chatMessagesRef.current = chatMessages
   }, [chatMessages])
 
-  useStickyBottomScroll(scrollContainerRef, 'chat')
-  useHistoryScrollback(
-    scrollContainerRef, messages, requestHistory, reachedBeginning ?? false, historyBatchToken ?? 0,
-  )
-  useRequestFocusSync(scrollContainerRef, 'chat')
 
   // Scroll the chat to the first loaded day at/after dayStartMs (its separator
   // at the top). Returns false if that day isn't loaded yet.
@@ -132,19 +125,17 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
   // match an already-loaded later day.
   const pendingJumpDayRef = React.useRef<number | null>(null)
   const handlePickDate = React.useCallback((dayStartMs: number) => {
-    const oldestLoaded = messages.length > 0 ? messages[0].timestamp : Date.now()
-    if (dayStartMs < oldestLoaded) {
-      requestHistoryRange?.(dayStartMs, oldestLoaded)
+    if (loadDaysThrough(dayStartMs, chatMessages, (s, e) => requestHistoryRange?.(s, e, 'chat'))) {
       pendingJumpDayRef.current = dayStartMs
     } else {
       scrollToDay(dayStartMs)
     }
-  }, [messages, requestHistoryRange, scrollToDay])
+  }, [chatMessages, requestHistoryRange, scrollToDay])
 
   React.useEffect(() => {
     if (pendingJumpDayRef.current == null) return
     if (scrollToDay(pendingJumpDayRef.current)) pendingJumpDayRef.current = null
-  }, [historyBatchToken, scrollToDay])
+  }, [historyBatchTokenByChannel, scrollToDay])
 
   // Populate textarea from speech recognition results. Syncing from
   // an external system (Web Speech API) is exactly the case where the
@@ -250,6 +241,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
       ) : null}
 
       <div ref={scrollContainerRef} className="panel-body scrollable">
+        <div data-history-top aria-hidden="true" />
         {visibleChatMessages.length === 0 && !isLlmCallInProgress ? (
           <div className={cs.emptyState}>
             <p className={cs.emptyStateHint}>Ask me anything &mdash; try one of these:</p>
@@ -279,7 +271,8 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                 : m.direction === 'inbound' && m.payload && typeof m.payload === 'object' && !Array.isArray(m.payload)
                   ? (m.payload as Record<string, unknown>).request_id ?? (m.meta as Record<string, unknown> | undefined)?.request_id
                   : outboundKey !== undefined
-                    ? outboundRequestIds.get(outboundKey)
+                    // Replay: server-stamped on meta. Live: correlated this session.
+                    ? (m.meta as Record<string, unknown> | undefined)?.request_id ?? outboundRequestIds.get(outboundKey)
                     : undefined
               const directiveClass = isDirective ? ' message-directive' : ''
               const failedClass = failureError ? ' message-failed' : ''

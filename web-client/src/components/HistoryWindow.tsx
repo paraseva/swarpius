@@ -2,11 +2,9 @@ import React from 'react'
 import { FormattedMessageBody } from './FormattedMessageBody'
 import { JsonTreeView } from './JsonTreeView'
 import { RequestIdBadge } from './RequestIdBadge'
-import { useStickyBottomScroll } from '../hooks/useStickyBottomScroll'
-import { useHistoryScrollback } from '../hooks/useHistoryScrollback'
-import { useRequestFocusSync } from '../hooks/useRequestFocusSync'
+import { useChannelHistory } from '../hooks/useChannelHistory'
 import { dayKey } from '../utils/dayLabel'
-import { type ChannelId, useWebSocket } from '../websocketContext'
+import { type ChannelId } from '../websocketContext'
 
 interface HistoryWindowProps {
   title: string
@@ -21,7 +19,6 @@ export const HistoryWindow: React.FC<HistoryWindowProps> = ({
   channel,
   syncKey,
 }) => {
-  const { messages, requestHistory, reachedBeginning, historyBatchToken } = useWebSocket()
   const scrollContainerRef = React.useRef<HTMLDivElement | null>(null)
   const storageKey = `swarpius:history-window:raw:${channel}`
   const [showRawPayload, setShowRawPayload] = React.useState(() => {
@@ -32,19 +29,7 @@ export const HistoryWindow: React.FC<HistoryWindowProps> = ({
     }
   })
 
-  const channelMessages = React.useMemo(
-    () => messages.filter((m) => m.channel === channel),
-    [messages, channel],
-  )
-
-  useStickyBottomScroll(scrollContainerRef, `history:${channel}`)
-  // Scroll-back loads older days like the chat, but without auto-fill: a sparse
-  // panel (e.g. Errors) would otherwise keep loading to try to fill itself.
-  useHistoryScrollback(
-    scrollContainerRef, messages, requestHistory, reachedBeginning ?? false,
-    historyBatchToken ?? 0, false,
-  )
-  useRequestFocusSync(scrollContainerRef, syncKey)
+  const channelMessages = useChannelHistory(channel, scrollContainerRef, syncKey)
 
   React.useEffect(() => {
     try {
@@ -131,6 +116,7 @@ export const HistoryWindow: React.FC<HistoryWindowProps> = ({
       </div>
 
       <div ref={scrollContainerRef} className="panel-body scrollable">
+        <div data-history-top aria-hidden="true" />
         {channelMessages.length === 0 ? (
           <p className="empty-placeholder">No events yet.</p>
         ) : (

@@ -10,12 +10,21 @@ afterEach(() => {
   cleanup()
 })
 
-// JSDOM includes no ResizeObserver; useStickyBottomScroll relies on it.
-// Tests that need to trigger the callback install their own fake;
-// here we just provide a non-functional default so unrelated tests don't
-// crash when their component tree happens to mount the hook.
+// JSDOM includes no ResizeObserver / IntersectionObserver; the scroll hooks
+// rely on them. Tests that need to trigger a callback install their own fake;
+// here we just provide non-functional defaults so unrelated tests don't crash
+// when their component tree happens to mount the hooks.
 if (!('ResizeObserver' in globalThis)) {
   ;(globalThis as unknown as { ResizeObserver: unknown }).ResizeObserver =
+    class {
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    }
+}
+
+if (!('IntersectionObserver' in globalThis)) {
+  ;(globalThis as unknown as { IntersectionObserver: unknown }).IntersectionObserver =
     class {
       observe() {}
       unobserve() {}

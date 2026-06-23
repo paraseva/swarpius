@@ -1,5 +1,7 @@
 import React from 'react'
 import { useRequestFocus } from '../requestFocusContext'
+import { WebSocketContext } from '../websocketContext'
+import { loadDaysThrough } from '../utils/historyJump'
 
 // A request-focus sync drives programmatic scrolls in several panels at once.
 // While that's happening, scroll-back must not treat a panel reaching its top as
@@ -54,12 +56,34 @@ export function scrollRequestIntoView(
 export function useRequestFocusSync<T extends HTMLElement>(
   scrollRef: React.RefObject<T | null>,
   myKey: string | undefined,
+  channel: string,
 ): void {
   const focus = useRequestFocus()
   const focused = focus?.focusedRequest
+  const ws = React.useContext(WebSocketContext)
+  const batchToken = ws?.historyBatchTokenByChannel?.[channel] ?? 0
+  // Latest-ref so the load effect can read current messages/loaders without
+  // taking them as deps (else it would re-run — and re-load — every message).
+  const wsRef = React.useRef(ws)
+  React.useEffect(() => { wsRef.current = ws })
 
+  // On a new focus elsewhere: if the request isn't loaded here, pull its day for
+  // this channel (contiguous, no gap; no-op if already loaded). Fires once per
+  // click — the retry below lands the scroll when the batch arrives.
+  React.useEffect(() => {
+    if (!focused || !myKey || focused.sourceKey === myKey) return
+    if (scrollRequestIntoView(scrollRef.current, focused.requestId, focused.day)) return
+    if (!focused.day) return
+    const w = wsRef.current
+    const dayStartMs = new Date(`${focused.day}T00:00:00`).getTime()
+    const loaded = (w?.messages ?? []).filter((m) => m.channel === channel)
+    loadDaysThrough(dayStartMs, loaded, (s, e) => w?.requestHistoryRange?.(s, e, channel))
+  }, [focused, myKey, scrollRef, channel])
+
+  // Re-try the scroll when this channel's batch lands (the element may have just
+  // arrived).
   React.useEffect(() => {
     if (!focused || !myKey || focused.sourceKey === myKey) return
     scrollRequestIntoView(scrollRef.current, focused.requestId, focused.day)
-  }, [focused, myKey, scrollRef])
+  }, [batchToken, focused, myKey, scrollRef])
 }

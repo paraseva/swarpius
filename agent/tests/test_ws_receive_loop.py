@@ -53,10 +53,10 @@ class _CapturingStore(MessageStore):
     def get_all(self, since_ms=None):
         return []
 
-    def load_day(self, before_ms):
+    def load_day(self, before_ms, channel=None):
         return {"messages": [], "has_older": False}
 
-    def load_range(self, start_ms, end_ms):
+    def load_range(self, start_ms, end_ms, channel=None):
         return {"messages": [], "has_older": False}
 
     def close(self):
@@ -152,8 +152,8 @@ class TestWebsocketReceiveLoop(unittest.TestCase):
                 self._result = result
                 self.requested = []
 
-            def load_day(self, before_ms):
-                self.requested.append(before_ms)
+            def load_day(self, before_ms, channel=None):
+                self.requested.append((before_ms, channel))
                 return self._result
 
         result = {
@@ -170,7 +170,7 @@ class TestWebsocketReceiveLoop(unittest.TestCase):
             [{"channel": "history-request", "body": json.dumps({"before_ms": 5000})}],
             _make_runtime(),
         )
-        self.assertIn(5000, store.requested)
+        self.assertIn((5000, None), store.requested)
         sent = [json.loads(s) for s in ws.sent]
         chat = [m for m in sent if m["channel"] == "chat"]
         cursor = [m for m in sent if m["channel"] == "history-cursor"]

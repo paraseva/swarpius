@@ -391,6 +391,7 @@ async def _background_rerun(
 
 async def _send_history_batch(
     websocket: ServerConnection, result: dict, server_start_ms: int,
+    channel: Optional[str] = None,
 ) -> None:
     """Send a load_day result to the client: each stored message on its own
     channel (tagged historical, with its stable id + created_at so the FE can
@@ -406,9 +407,10 @@ async def _send_history_batch(
         if msg["created_at"] < server_start_ms:
             meta["previous_session"] = True
         await _ws_send_to_client(websocket, msg["channel"], msg["payload"], meta=meta)
-    await _ws_send_to_client(
-        websocket, CHANNEL_HISTORY_CURSOR, {"has_older": result["has_older"]},
-    )
+    cursor: dict[str, Any] = {"has_older": result["has_older"]}
+    if channel:
+        cursor["channel"] = channel
+    await _ws_send_to_client(websocket, CHANNEL_HISTORY_CURSOR, cursor)
 
 
 async def _handle_cost_metrics(payload: dict) -> dict:
@@ -988,17 +990,24 @@ async def websocket_handler(
                 from agent import get_server_start_ms
                 from app.io.message_store import get_message_store
                 store = get_message_store()
+                # A per-channel request (diagnostics panels) loads only that
+                # channel, so a sparse panel finds its own day without dragging
+                # other channels into the shared store; the cursor echoes the
+                # channel so the client updates that channel's "reached beginning".
+                req_channel = req.get("channel") or None
                 if "start_ms" in req and "end_ms" in req:
                     result = await loop.run_in_executor(
-                        None, store.load_range, int(req["start_ms"]), int(req["end_ms"]),
+                        None, store.load_range, int(req["start_ms"]), int(req["end_ms"]), req_channel,
                     )
                 elif "before_ms" in req:
                     result = await loop.run_in_executor(
-                        None, store.load_day, int(req["before_ms"]),
+                        None, store.load_day, int(req["before_ms"]), req_channel,
                     )
                 else:
                     continue
-                await _send_history_batch(websocket, result, get_server_start_ms())
+                await _send_history_batch(
+                    websocket, result, get_server_start_ms(), channel=req_channel,
+                )
                 continue
             if channel == CHANNEL_COST_METRICS_REQUEST:
                 await _handle_json_request(

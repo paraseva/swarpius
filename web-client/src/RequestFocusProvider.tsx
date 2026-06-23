@@ -7,6 +7,8 @@ export const RequestFocusProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const [focusedRequest, setFocusedRequest] = React.useState<FocusedRequest | null>(null)
   const nonceRef = React.useRef(0)
 
+  // Pure broadcast: each request-aware panel loads that request's day for its
+  // own channel and scrolls itself (see useRequestFocusSync) — no shared state.
   const focusRequest = React.useCallback((requestId: string, sourceKey: string, day: string | null = null) => {
     nonceRef.current += 1
     setFocusedRequest({ requestId, day, sourceKey, nonce: nonceRef.current })

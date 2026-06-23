@@ -155,6 +155,41 @@ describe('WebSocketProvider — message routing', () => {
   })
 })
 
+describe('WebSocketProvider — active-call (Thinking) tracking', () => {
+  beforeEach(() => {
+    MockWebSocket.instances = []
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('a live call_started activates and call_completed deactivates', () => {
+    const { socket } = setup()
+
+    act(() => socket.fireMessage({
+      channel: 'llm-diagnostics', payload: { event_type: 'call_started', call_id: 'c1' },
+    }))
+    expect(probeValue!.isLlmActive).toBe(true)
+
+    act(() => socket.fireMessage({
+      channel: 'llm-diagnostics', payload: { event_type: 'call_completed', call_id: 'c1' },
+    }))
+    expect(probeValue!.isLlmActive).toBe(false)
+  })
+
+  it('replayed (historical) call events do not activate — no phantom Thinking bubble', () => {
+    const { socket } = setup()
+
+    act(() => socket.fireMessage({
+      channel: 'llm-diagnostics',
+      payload: { event_type: 'call_started', call_id: 'old1' },
+      meta: { historical: true },
+    }))
+    expect(probeValue!.isLlmActive).toBe(false)
+  })
+})
+
 describe('WebSocketProvider — connection lifecycle', () => {
   beforeEach(() => {
     MockWebSocket.instances = []

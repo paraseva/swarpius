@@ -2,20 +2,29 @@ import React from 'react'
 import { type SocketMessage } from '../websocketContext'
 import { isSyncScrolling } from './useRequestFocusSync'
 
-const TOP_THRESHOLD_PX = 80
 const AT_BOTTOM_TOLERANCE_PX = 32
+// Start the next day's load a little before the very top, so paging up feels
+// seamless rather than stalling at the edge.
+const PRELOAD_PX = 200
+
+// Native scroll anchoring holds the viewport across a prepend during layout
+// (before paint) — flash-free. Safari lacks it, so we keep a JS fallback there.
+const SUPPORTS_OVERFLOW_ANCHOR =
+  typeof CSS !== 'undefined' && !!CSS.supports && CSS.supports('overflow-anchor: auto')
 
 /**
- * Lazy-load older history when the user scrolls near the top, preserving the
- * viewport position as a day prepends.
+ * Lazy-load older history as the user nears the top, holding the viewport
+ * position as a day prepends.
  *
- * A day arrives as many messages over many renders, all inserted above the
- * viewport. We keep the user's *distance from the bottom* constant across the
- * whole batch, so the content being read stays put regardless of how many
- * messages land. Loads are fire-and-forget; `batchToken` (bumped when the
- * server's history-cursor closes a batch) releases the in-flight guard exactly
- * when the requested day is fully delivered — so one scroll-to-top loads one
- * day, not a cascade.
+ * The load is triggered by an IntersectionObserver watching a `data-history-top`
+ * sentinel the panel renders at the top of its scroll content — not a scroll-
+ * position threshold. That fires reliably the instant the top comes into view
+ * (no "scrolled-to-rest-just-short" dead zone) and keeps firing while a short or
+ * sparse panel's sentinel stays visible, so such panels fill themselves; it
+ * stops once there's a scrollbar (sentinel scrolls off) or history is exhausted.
+ * `batchToken` (bumped when the server's history-cursor closes a batch) releases
+ * the in-flight guard exactly when a requested day is fully delivered, so one
+ * trigger loads one day, not a cascade.
  *
  * When the user is at the bottom this hook stays out of the way: the
  * sticky-bottom hook owns that case (following live messages).
@@ -26,62 +35,88 @@ export function useHistoryScrollback<T extends HTMLElement>(
   onLoadMore: ((beforeMs: number) => void) | undefined,
   reachedBeginning: boolean,
   batchToken: number,
-  // Auto-load older days until the viewport fills. Right for the chat (a short
-  // day leaves no scrollbar); wrong for sparse diagnostics panels (Errors would
-  // load all of history trying to fill). Defaults on.
-  autoFill = true,
 ): void {
   const distanceFromBottomRef = React.useRef(0)
   const atBottomRef = React.useRef(true)
   const loadingRef = React.useRef(false)
+  // Latest values for the observer callback, which is created once.
+  const stateRef = React.useRef({ messages, onLoadMore, reachedBeginning })
+  React.useEffect(() => {
+    stateRef.current = { messages, onLoadMore, reachedBeginning }
+  })
 
-  // Capture the user's position + trigger a load near the top. Programmatic
-  // scrolls during a batch (our own anchoring) are ignored so the captured
-  // distance and at-bottom flag reflect the user, not our restores.
+  // Load the previous day if the top sentinel is near the viewport's top and a
+  // load isn't already in flight. Geometry is read fresh (not the observer's
+  // possibly-stale entry) so the post-batch re-check below can't over-load.
+  const maybeLoad = React.useCallback(() => {
+    if (loadingRef.current || isSyncScrolling()) return
+    const { messages: msgs, onLoadMore: load, reachedBeginning: done } = stateRef.current
+    if (done || !load || msgs.length === 0) return
+    const el = scrollRef.current
+    const sentinel = el?.querySelector('[data-history-top]')
+    if (!el || !sentinel) return
+    // A collapsed panel (e.g. a closed diagnostics accordion section is
+    // display:none) has no scrollport, so it can never fill — guarding here
+    // stops the fill loop walking it to the beginning while it's hidden.
+    if (el.clientHeight === 0) return
+    const rootRect = el.getBoundingClientRect()
+    const rect = sentinel.getBoundingClientRect()
+    if (rect.bottom < rootRect.top - PRELOAD_PX || rect.top > rootRect.bottom) return
+    loadingRef.current = true
+    load(msgs[0].timestamp - 1)
+  }, [scrollRef])
+
+  // Trigger loads from the sentinel's visibility (reliable, unlike scroll events).
+  React.useEffect(() => {
+    const el = scrollRef.current
+    const sentinel = el?.querySelector('[data-history-top]')
+    if (!el || !sentinel) return
+    const observer = new IntersectionObserver(() => maybeLoad(), {
+      root: el,
+      rootMargin: `${PRELOAD_PX}px 0px 0px 0px`,
+    })
+    observer.observe(sentinel)
+    return () => observer.disconnect()
+  }, [scrollRef, maybeLoad])
+
+  // Track at-bottom + hand prepend position-holding to the browser while scrolled
+  // up (native anchoring, flash-free; off at the bottom where the sticky-bottom
+  // pin owns scrollTop). Our own anchoring scrolls fire during a load — skip
+  // those so the at-bottom flag reflects the user, not our restores.
   React.useEffect(() => {
     const el = scrollRef.current
     if (!el) return
+    let lastScrollTop = el.scrollTop
     const onScroll = () => {
       if (loadingRef.current) return
-      atBottomRef.current = el.scrollHeight - el.scrollTop - el.clientHeight <= AT_BOTTOM_TOLERANCE_PX
-      distanceFromBottomRef.current = el.scrollHeight - el.scrollTop
-      // A request-focus sync scroll reaching the top is not a user scroll-up —
-      // don't lazy-load (it would pull the previous day in under the sync).
-      if (isSyncScrolling()) return
-      if (!reachedBeginning && onLoadMore && messages.length > 0 && el.scrollTop <= TOP_THRESHOLD_PX) {
-        loadingRef.current = true
-        onLoadMore(messages[0].timestamp - 1)
+      const cur = el.scrollTop
+      const movedUp = cur < lastScrollTop
+      lastScrollTop = cur
+      if (movedUp) atBottomRef.current = false
+      else if (el.scrollHeight - cur - el.clientHeight <= AT_BOTTOM_TOLERANCE_PX) {
+        atBottomRef.current = true
       }
+      el.style.overflowAnchor = atBottomRef.current ? 'none' : 'auto'
+      distanceFromBottomRef.current = el.scrollHeight - cur
     }
     el.addEventListener('scroll', onScroll, { passive: true })
     onScroll()
     return () => el.removeEventListener('scroll', onScroll)
-  }, [scrollRef, messages, reachedBeginning, onLoadMore])
+  }, [scrollRef])
 
-  // Before paint: while scrolled up, hold distance-from-bottom constant so a
-  // prepend doesn't shift the read position. At the bottom, defer to sticky.
+  // Safari fallback: it lacks native scroll anchoring, so while the user is
+  // scrolled up, hold distance-from-bottom by hand across a prepend.
   React.useLayoutEffect(() => {
     const el = scrollRef.current
     if (!el || atBottomRef.current) return
+    if (SUPPORTS_OVERFLOW_ANCHOR) return
     el.scrollTop = el.scrollHeight - distanceFromBottomRef.current
   }, [messages, scrollRef])
 
-  // A batch finished delivering — allow the next load.
+  // A batch finished delivering — allow the next load, then re-check: a still-
+  // short/sparse panel keeps its sentinel visible and pulls the next day.
   React.useEffect(() => {
     loadingRef.current = false
-  }, [batchToken])
-
-  // Auto-fill: if the loaded content doesn't fill the viewport and older
-  // history exists, pull the previous day so there's always something to
-  // scroll (no scrollbar otherwise = no way to scroll back). Re-checked after
-  // each batch; stops once the viewport overflows or history is exhausted.
-  React.useEffect(() => {
-    if (!autoFill) return
-    const el = scrollRef.current
-    if (!el || loadingRef.current || reachedBeginning || !onLoadMore || messages.length === 0) return
-    if (el.scrollHeight <= el.clientHeight + AT_BOTTOM_TOLERANCE_PX) {
-      loadingRef.current = true
-      onLoadMore(messages[0].timestamp - 1)
-    }
-  }, [autoFill, batchToken, messages, reachedBeginning, onLoadMore, scrollRef])
+    maybeLoad()
+  }, [batchToken, maybeLoad])
 }

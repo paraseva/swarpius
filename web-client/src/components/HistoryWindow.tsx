@@ -5,6 +5,7 @@ import { RequestIdBadge } from './RequestIdBadge'
 import { useStickyBottomScroll } from '../hooks/useStickyBottomScroll'
 import { useHistoryScrollback } from '../hooks/useHistoryScrollback'
 import { useRequestFocusSync } from '../hooks/useRequestFocusSync'
+import { dayKey } from '../utils/dayLabel'
 import { type ChannelId, useWebSocket } from '../websocketContext'
 
 interface HistoryWindowProps {
@@ -146,6 +147,7 @@ export const HistoryWindow: React.FC<HistoryWindowProps> = ({
               <li
                 key={m.id}
                 data-request-id={typeof msgRequestId === 'string' ? msgRequestId : undefined}
+                data-request-day={typeof msgRequestId === 'string' ? dayKey(m.timestamp) : undefined}
                 className={`message message-${m.direction} ${isToolPairStart ? 'message-tool-pair-start' : ''} ${errorSeverity ? `message-error-severity-${errorSeverity}` : ''}`}
               >
                 <span className="message-meta">
@@ -155,7 +157,7 @@ export const HistoryWindow: React.FC<HistoryWindowProps> = ({
                     <span className="message-meta-date">{new Date(m.timestamp).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}</span>
                   </span>
                   {typeof msgRequestId === 'string' && msgRequestId ? (
-                    <RequestIdBadge requestId={msgRequestId} syncKey={syncKey} />
+                    <RequestIdBadge requestId={msgRequestId} syncKey={syncKey} day={dayKey(m.timestamp)} />
                   ) : null}
                 </span>
                 {showRawPayload ? (

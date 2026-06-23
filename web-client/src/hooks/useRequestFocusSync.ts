@@ -13,17 +13,25 @@ export function isSyncScrolling(): boolean {
 }
 
 /**
- * Smooth-scroll the first item tagged `data-request-id="<id>"` to the top of
+ * Smooth-scroll the item tagged `data-request-id="<id>"` to the top of
  * `container` and briefly flash it. Scrolls only this container (not ancestors),
  * so the diagnostics drawer layout isn't disturbed. Returns false if the item
  * isn't present (e.g. inside a still-collapsed group).
+ *
+ * `day` disambiguates duplicate request ids: conversation ids reset each day,
+ * so the same `rq-cNN-NNNN` can appear on several days. When given, only the
+ * item whose `data-request-day` also matches is targeted.
  */
 export function scrollRequestIntoView(
   container: HTMLElement | null,
   requestId: string,
+  day?: string | null,
 ): boolean {
   if (!container) return false
-  const el = container.querySelector<HTMLElement>(`[data-request-id="${requestId}"]`)
+  const selector = day
+    ? `[data-request-id="${requestId}"][data-request-day="${day}"]`
+    : `[data-request-id="${requestId}"]`
+  const el = container.querySelector<HTMLElement>(selector)
   if (!el) return false
   syncScrolling = true
   window.clearTimeout(syncScrollTimer)
@@ -52,6 +60,6 @@ export function useRequestFocusSync<T extends HTMLElement>(
 
   React.useEffect(() => {
     if (!focused || !myKey || focused.sourceKey === myKey) return
-    scrollRequestIntoView(scrollRef.current, focused.requestId)
+    scrollRequestIntoView(scrollRef.current, focused.requestId, focused.day)
   }, [focused, myKey, scrollRef])
 }

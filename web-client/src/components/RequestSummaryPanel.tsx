@@ -4,6 +4,7 @@ import { parseJson } from '../utils/parseJson'
 import { useWebSocket } from '../websocketContext'
 import { scrollRequestIntoView } from '../hooks/useRequestFocusSync'
 import { useRequestFocus } from '../requestFocusContext'
+import { dayKey } from '../utils/dayLabel'
 import s from './RequestSummaryPanel.module.css'
 
 interface RequestCompleteEvent {
@@ -280,7 +281,7 @@ export const RequestSummaryPanel: React.FC = () => {
   // every message.
   const focus = useRequestFocus()
   const focused = focus?.focusedRequest
-  const pendingScrollRef = React.useRef<string | null>(null)
+  const pendingScrollRef = React.useRef<{ requestId: string; day: string | null } | null>(null)
   const conversationsRef = React.useRef(conversations)
   React.useEffect(() => {
     conversationsRef.current = conversations
@@ -288,18 +289,21 @@ export const RequestSummaryPanel: React.FC = () => {
 
   React.useEffect(() => {
     if (!focused || focused.sourceKey === 'requests') return
-    const conv = conversationsRef.current.find(
-      (c) => c.requests.some((r) => r.requestId === focused.requestId),
-    )
+    // Match the day too: conversation ids reset daily, so the same request id
+    // can appear in more than one conversation group.
+    const matches = (r: { requestId: string; timestampMs: number }) =>
+      r.requestId === focused.requestId && (!focused.day || dayKey(r.timestampMs) === focused.day)
+    const conv = conversationsRef.current.find((c) => c.requests.some(matches))
     if (!conv) return
-    pendingScrollRef.current = focused.requestId
+    pendingScrollRef.current = { requestId: focused.requestId, day: focused.day }
     setExpandedConversations((prev) =>
       prev.has(conv.conversationId) ? prev : new Set(prev).add(conv.conversationId))
   }, [focused])
 
   React.useEffect(() => {
-    if (pendingScrollRef.current
-        && scrollRequestIntoView(scrollContainerRef.current, pendingScrollRef.current)) {
+    const pending = pendingScrollRef.current
+    if (pending
+        && scrollRequestIntoView(scrollContainerRef.current, pending.requestId, pending.day)) {
       pendingScrollRef.current = null
     }
   }, [focused, expandedConversations])
@@ -367,6 +371,7 @@ export const RequestSummaryPanel: React.FC = () => {
                           <li
                             key={req.requestId}
                             data-request-id={req.requestId}
+                            data-request-day={dayKey(req.timestampMs)}
                             className={`${s.requestItem} ${req.status !== 'completed' ? s.requestStatusError : ''}`}
                           >
                             <button
@@ -382,7 +387,7 @@ export const RequestSummaryPanel: React.FC = () => {
                               aria-label={req.requestId}
                             >
                               <span className={s.requestId}>
-                                <RequestIdBadge requestId={req.requestId} syncKey="requests" />
+                                <RequestIdBadge requestId={req.requestId} syncKey="requests" day={dayKey(req.timestampMs)} />
                               </span>
                               <span className={s.requestTime}>
                                 {new Date(req.timestampMs).toLocaleTimeString()}

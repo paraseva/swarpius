@@ -12,7 +12,7 @@ import { useStickyBottomScroll } from '../hooks/useStickyBottomScroll'
 import { useHistoryScrollback } from '../hooks/useHistoryScrollback'
 import { useRequestFocusSync } from '../hooks/useRequestFocusSync'
 import { HistoryDatePicker } from './HistoryDatePicker'
-import { dayLabel, isNewDay } from '../utils/dayLabel'
+import { dayKey, dayLabel, isNewDay } from '../utils/dayLabel'
 import { correlateOutboundRequestIds } from '../utils/correlateOutboundRequestIds'
 import { getDirectiveOutboundIds } from '../utils/getDirectiveOutboundIds'
 import { getFailedOutboundErrors } from '../utils/getFailedOutboundErrors'
@@ -294,6 +294,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                   className={`message message-${m.direction}${directiveClass}${failedClass}`}
                   data-message-id={m.id}
                   data-request-id={typeof msgRequestId === 'string' ? msgRequestId : undefined}
+                  data-request-day={typeof msgRequestId === 'string' ? dayKey(m.timestamp) : undefined}
                   data-directive={isDirective ? 'true' : undefined}
                   data-failed={failureError ? 'true' : undefined}
                 >
@@ -301,7 +302,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                     <span className="message-meta-sender">
                       {isDirective ? 'Directive' : m.direction === 'outbound' ? 'You' : 'Swarpius'}
                       {isDevMode && typeof msgRequestId === 'string' && msgRequestId ? (
-                        <>{' '}<RequestIdBadge requestId={msgRequestId} syncKey="chat" /></>
+                        <>{' '}<RequestIdBadge requestId={msgRequestId} syncKey="chat" day={dayKey(m.timestamp)} /></>
                       ) : null}
                       {ttsStatus?.messageId === m.id ? (
                         <>{' '}<TtsStatusIndicator phase={ttsStatus.phase} /></>

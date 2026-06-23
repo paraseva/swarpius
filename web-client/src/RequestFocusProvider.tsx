@@ -7,9 +7,9 @@ export const RequestFocusProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const [focusedRequest, setFocusedRequest] = React.useState<FocusedRequest | null>(null)
   const nonceRef = React.useRef(0)
 
-  const focusRequest = React.useCallback((requestId: string, sourceKey: string) => {
+  const focusRequest = React.useCallback((requestId: string, sourceKey: string, day: string | null = null) => {
     nonceRef.current += 1
-    setFocusedRequest({ requestId, sourceKey, nonce: nonceRef.current })
+    setFocusedRequest({ requestId, day, sourceKey, nonce: nonceRef.current })
   }, [])
 
   const value = React.useMemo(

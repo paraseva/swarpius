@@ -1,10 +1,10 @@
 import React from 'react'
 import { RequestIdBadge } from './RequestIdBadge'
 import { parseJson } from '../utils/parseJson'
-import { useWebSocket } from '../websocketContext'
+import { useChannelHistory } from '../hooks/useChannelHistory'
 import { scrollRequestIntoView } from '../hooks/useRequestFocusSync'
 import { useRequestFocus } from '../requestFocusContext'
-import { dayKey } from '../utils/dayLabel'
+import { dayKey, dayLabel } from '../utils/dayLabel'
 import s from './RequestSummaryPanel.module.css'
 
 interface RequestCompleteEvent {
@@ -13,6 +13,7 @@ interface RequestCompleteEvent {
   total_steps?: number
   total_duration_ms?: number
   status?: string
+  error?: string
   flags?: string[]
   conversation_id?: string
 }
@@ -22,32 +23,17 @@ interface RequestStartEvent {
   source?: string
   request_id?: string
   text?: string
-}
-
-interface LlmPayload {
-  event_type?: string
-  agent_name?: string
-  call_id?: string
-  request_id?: string
-  prompt_tokens?: number
-  output_tokens?: number
-  cache_read_input_tokens?: number
-  duration_ms?: number
-  error?: string
-  timestamp_ms?: number
+  user_input?: string
 }
 
 interface StepEvent {
-  type: 'step' | 'llm_fail'
   timestampMs: number
   label: string
-  detail?: string
   durationMs?: number
   promptTokens?: number
   outputTokens?: number
   cacheReadTokens?: number
   costUsd?: number
-  failed?: boolean
 }
 
 interface RequestSummary {
@@ -64,9 +50,11 @@ interface RequestSummary {
   totalCacheReadTokens: number
   totalCostUsd: number
   events: StepEvent[]
+  error?: string
 }
 
 interface ConversationGroup {
+  groupKey: string
   conversationId: string
   requests: RequestSummary[]
   totalSteps: number
@@ -113,13 +101,16 @@ const STATUS_LABELS: Record<string, string> = {
 }
 
 export const RequestSummaryPanel: React.FC = () => {
-  const { messages } = useWebSocket()
   const scrollContainerRef = React.useRef<HTMLDivElement | null>(null)
+  // Load this panel's data directly (agent-outputs — where the request lifecycle
+  // lives) via the same shared hook every panel uses, rather than deriving from
+  // whatever other panels happen to have loaded.
+  const agentMessages = useChannelHistory('agent-outputs', scrollContainerRef)
   const [expandedConversations, setExpandedConversations] = React.useState<Set<string>>(new Set())
   const [expandedRequests, setExpandedRequests] = React.useState<Set<string>>(new Set())
 
   const conversations = React.useMemo(() => {
-    const requestInputs = new Map<string, { input: string; timestampMs: number }>()
+    const requestInputs = new Map<string, string>()
     const requestEvents = new Map<string, StepEvent[]>()
     const requestTokens = new Map<string, { prompt: number; output: number; cacheRead: number; cost: number }>()
     const summaries: RequestSummary[] = []
@@ -132,116 +123,76 @@ export const RequestSummaryPanel: React.FC = () => {
       if (!requestTokens.has(rid)) requestTokens.set(rid, { prompt: 0, output: 0, cacheRead: 0, cost: 0 })
     }
 
-    for (const message of messages) {
-      if (message.direction !== 'inbound') continue
+    for (const message of agentMessages) {
+      const event = parseJson<RequestStartEvent & RequestCompleteEvent & AgentOutputPayload>(message.payload ?? message.body)
+      if (!event || !event.request_id) continue
+      const rid = event.request_id
       const ts = message.timestamp
+      ensureEvents(rid)
+      ensureTokens(rid)
 
-      if (message.channel === 'agent-outputs') {
-        const event = parseJson<RequestStartEvent & RequestCompleteEvent & AgentOutputPayload>(message.payload ?? message.body)
-        if (!event || !event.request_id) continue
-        const rid = event.request_id
-        ensureEvents(rid)
-        ensureTokens(rid)
-
-        if (event.source === '[Request]' && event.text) {
-          requestInputs.set(rid, { input: '', timestampMs: ts })
-        }
-
-        if (event.event_type === 'coordinator_step') {
-          const skill = event.selected_skill ?? (event.has_chat_response ? 'chat_response' : 'none')
-          const done = event.done ? ' (done)' : ''
-          const u = event.usage
-          const promptTokens = u?.input_tokens ?? 0
-          const outputTokens = u?.output_tokens ?? 0
-          const cacheReadTokens = u?.cache_read_input_tokens ?? 0
-          const costUsd = u?.cost_usd ?? 0
-          if (promptTokens > 0 || outputTokens > 0 || costUsd > 0) {
-            const totals = requestTokens.get(rid)!
-            totals.prompt += promptTokens
-            totals.output += outputTokens
-            totals.cacheRead += cacheReadTokens
-            totals.cost += costUsd
-          }
-          requestEvents.get(rid)!.push({
-            type: 'step',
-            timestampMs: ts,
-            label: `Step ${event.step}: ${skill}${done}`,
-            durationMs: event.duration_ms,
-            promptTokens: promptTokens || undefined,
-            outputTokens: outputTokens || undefined,
-            cacheReadTokens: cacheReadTokens || undefined,
-            costUsd: costUsd || undefined,
-          })
-        }
-
-        if (event.event_type === 'request_complete' && !seenRequestIds.has(rid)) {
-          seenRequestIds.add(rid)
-          const tokens = requestTokens.get(rid) ?? { prompt: 0, output: 0, cacheRead: 0, cost: 0 }
-          summaries.push({
-            requestId: rid,
-            input: requestInputs.get(rid)?.input ?? '',
-            steps: event.total_steps ?? 0,
-            durationMs: event.total_duration_ms ?? 0,
-            status: event.status ?? 'unknown',
-            timestampMs: ts,
-            conversationId: event.conversation_id ?? '',
-            coordinatorModel: event.coordinator_model ?? '',
-            totalPromptTokens: tokens.prompt,
-            totalOutputTokens: tokens.output,
-            totalCacheReadTokens: tokens.cacheRead,
-            totalCostUsd: tokens.cost,
-            events: requestEvents.get(rid) ?? [],
-          })
-        }
+      if (event.source === '[Request]' && event.user_input) {
+        requestInputs.set(rid, event.user_input)
       }
 
-      if (message.channel === 'llm-diagnostics') {
-        const event = parseJson<LlmPayload>(message.payload ?? message.body)
-        if (!event?.request_id) continue
-        const rid = event.request_id
-        ensureEvents(rid)
-
-        if (event.event_type === 'call_failed') {
-          requestEvents.get(rid)!.push({
-            type: 'llm_fail',
-            timestampMs: event.timestamp_ms ?? ts,
-            label: `LLM FAIL: ${event.agent_name ?? 'Unknown'}`,
-            detail: event.error,
-            durationMs: event.duration_ms,
-            failed: true,
-          })
+      if (event.event_type === 'coordinator_step') {
+        const skill = event.selected_skill ?? (event.has_chat_response ? 'chat_response' : 'none')
+        const done = event.done ? ' (done)' : ''
+        const u = event.usage
+        const promptTokens = u?.input_tokens ?? 0
+        const outputTokens = u?.output_tokens ?? 0
+        const cacheReadTokens = u?.cache_read_input_tokens ?? 0
+        const costUsd = u?.cost_usd ?? 0
+        if (promptTokens > 0 || outputTokens > 0 || costUsd > 0) {
+          const totals = requestTokens.get(rid)!
+          totals.prompt += promptTokens
+          totals.output += outputTokens
+          totals.cacheRead += cacheReadTokens
+          totals.cost += costUsd
         }
+        requestEvents.get(rid)!.push({
+          timestampMs: ts,
+          label: `Step ${event.step}: ${skill}${done}`,
+          durationMs: event.duration_ms,
+          promptTokens: promptTokens || undefined,
+          outputTokens: outputTokens || undefined,
+          cacheReadTokens: cacheReadTokens || undefined,
+          costUsd: costUsd || undefined,
+        })
       }
-    }
 
-    for (const message of messages) {
-      if (message.direction !== 'outbound' || message.channel !== 'chat') continue
-      const body = typeof message.body === 'string' ? message.body : ''
-      let text = body
-      try {
-        const parsed = JSON.parse(body) as { body?: string }
-        if (parsed.body) text = parsed.body
-      } catch {
-        // Use raw body
-      }
-      if (!text.trim()) continue
-
-      for (const summary of summaries) {
-        if (summary.input) continue
-        const startInfo = requestInputs.get(summary.requestId)
-        if (startInfo && Math.abs(message.timestamp - startInfo.timestampMs) < 5000) {
-          summary.input = text.trim()
-          break
-        }
+      if (event.event_type === 'request_complete' && !seenRequestIds.has(rid)) {
+        seenRequestIds.add(rid)
+        const tokens = requestTokens.get(rid) ?? { prompt: 0, output: 0, cacheRead: 0, cost: 0 }
+        summaries.push({
+          requestId: rid,
+          input: requestInputs.get(rid) ?? '',
+          steps: event.total_steps ?? 0,
+          durationMs: event.total_duration_ms ?? 0,
+          status: event.status ?? 'unknown',
+          timestampMs: ts,
+          conversationId: event.conversation_id ?? '',
+          coordinatorModel: event.coordinator_model ?? '',
+          totalPromptTokens: tokens.prompt,
+          totalOutputTokens: tokens.output,
+          totalCacheReadTokens: tokens.cacheRead,
+          totalCostUsd: tokens.cost,
+          events: requestEvents.get(rid) ?? [],
+          error: event.error,
+        })
       }
     }
 
     const groupMap = new Map<string, ConversationGroup>()
     for (const req of summaries) {
       const cid = req.conversationId || '(none)'
-      let group = groupMap.get(cid)
+      // Conversation ids reset daily, so the same cNN on two days is two
+      // distinct conversations — key by id+day so they don't collapse together.
+      const groupKey = `${cid}|${dayKey(req.timestampMs)}`
+      let group = groupMap.get(groupKey)
       if (!group) {
         group = {
+          groupKey,
           conversationId: cid,
           requests: [],
           totalSteps: 0,
@@ -252,7 +203,7 @@ export const RequestSummaryPanel: React.FC = () => {
           totalCostUsd: 0,
           latestTimestampMs: 0,
         }
-        groupMap.set(cid, group)
+        groupMap.set(groupKey, group)
       }
       group.requests.push(req)
       group.totalSteps += req.steps
@@ -271,7 +222,7 @@ export const RequestSummaryPanel: React.FC = () => {
     return Array.from(groupMap.values())
       .sort((a, b) => b.latestTimestampMs - a.latestTimestampMs)
       .slice(0, 20)
-  }, [messages])
+  }, [agentMessages])
 
   // Requests are grouped under collapsed conversations, so a focused request's
   // card may not be rendered yet. On focus, expand its conversation and mark it
@@ -314,6 +265,7 @@ export const RequestSummaryPanel: React.FC = () => {
         <h3>Session Requests</h3>
       </div>
       <div ref={scrollContainerRef} className="panel-body scrollable">
+        <div data-history-top aria-hidden="true" />
         {conversations.length === 0 ? (
           <p className="empty-placeholder">No completed requests yet.</p>
         ) : (
@@ -321,7 +273,7 @@ export const RequestSummaryPanel: React.FC = () => {
             {conversations.map((conv) => {
               const isConvOpen = expandedConversations.has(conv.conversationId)
               return (
-                <li key={conv.conversationId} className={s.conversationGroup}>
+                <li key={conv.groupKey} className={s.conversationGroup}>
                   <button
                     type="button"
                     className={s.conversationHeader}
@@ -336,6 +288,7 @@ export const RequestSummaryPanel: React.FC = () => {
                     aria-expanded={isConvOpen}
                   >
                     <span className={s.conversationId}>{conv.conversationId}</span>
+                    <span className={s.conversationDate}>{dayLabel(conv.latestTimestampMs)}</span>
                     <span className={s.conversationMiddle}>
                       <span className={s.conversationStats}>
                         {conv.requests.length} req · {conv.totalSteps} steps · {(conv.totalDurationMs / 1000).toFixed(1)}s
@@ -420,15 +373,17 @@ export const RequestSummaryPanel: React.FC = () => {
                               </span>
                             </button>
 
-                            {isReqOpen && req.events.length > 0 ? (
+                            {isReqOpen && (req.error || req.events.length > 0) ? (
                               <ul className={s.stepList}>
+                                {req.error ? (
+                                  <li className={`${s.stepItem} ${s.stepItemFailed}`} title={req.error}>
+                                    <span className={`${s.stepIndicator} ${s.stepIndicatorError}`} />
+                                    <span className={s.stepLabel}>{req.error}</span>
+                                  </li>
+                                ) : null}
                                 {req.events.map((ev, idx) => (
-                                  <li
-                                    key={`${ev.type}-${idx}`}
-                                    className={`${s.stepItem} ${ev.failed ? s.stepItemFailed : ''}`}
-                                    title={ev.detail || undefined}
-                                  >
-                                    <span className={`${s.stepIndicator} ${ev.failed ? s.stepIndicatorError : s.stepIndicatorOk}`} />
+                                  <li key={`step-${idx}`} className={s.stepItem}>
+                                    <span className={`${s.stepIndicator} ${s.stepIndicatorOk}`} />
                                     <span className={s.stepLabel}>{ev.label}</span>
                                     {ev.durationMs != null ? (
                                       <span className={s.stepDuration}>{(ev.durationMs / 1000).toFixed(2)}s</span>

@@ -357,6 +357,23 @@ class WsBroadcaster(Renderer):
                 "request_id": event.request_id,
             })
 
+        # Close the request's lifecycle even on failure, so it still surfaces as
+        # a failed request (e.g. in Session Requests) instead of vanishing for
+        # lack of a completion event — carrying the failure reason so the why
+        # travels with it on the one channel that panel reads.
+        from app.runtime.request_logger import extract_conversation_dir
+        self._send(CHANNEL_AGENT_OUTPUTS, {
+            "source": "[Request Complete]",
+            "event_type": "request_complete",
+            "request_id": event.request_id,
+            "total_steps": 0,
+            "total_duration_ms": 0,
+            "status": "error",
+            "error": event.summary,
+            "coordinator_model": event.coordinator_model,
+            "conversation_id": extract_conversation_dir(event.request_id),
+        })
+
     # ── Helpers ──────────────────────────────────────────────────
 
     def _format_tool_output(self, tool_name: str, result: Any) -> str:

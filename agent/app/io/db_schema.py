@@ -21,7 +21,7 @@ from typing import Callable, Dict
 
 logger = logging.getLogger(__name__)
 
-CURRENT_SCHEMA_VERSION = 3
+CURRENT_SCHEMA_VERSION = 4
 
 
 class SchemaTooNewError(Exception):
@@ -124,11 +124,71 @@ def _migrate_2_to_3(conn: sqlite3.Connection) -> None:
     _add_column_if_missing(conn, "cost_ledger", "steps", "INTEGER")
 
 
+def _migrate_3_to_4(conn: sqlite3.Connection) -> None:
+    """Back-fill a request_complete for past failed requests. Older data
+    predates emitting a completion on failure, so a failed request was recorded
+    only on the errors channel — leaving it without the completion event the UI
+    keys on, so it vanished (e.g. from Session Requests) instead of showing as
+    failed. Add the missing completion (status=error, carrying the reason) for
+    each '[Request]' error lacking one *that day* — ids reset daily, so the same
+    id completed on one day and failed on another are distinct requests."""
+    import json
+    from datetime import datetime
+
+    from app.runtime.request_logger import extract_conversation_dir
+
+    def day_of(created_at_ms: int) -> str:
+        return datetime.fromtimestamp(created_at_ms / 1000).date().isoformat()
+
+    completed: set[tuple[str, str]] = set()
+    for payload_json, created_at in conn.execute(
+        "SELECT payload, created_at FROM ws_messages WHERE channel = 'agent-outputs' "
+        "AND payload LIKE '%request_complete%'",
+    ).fetchall():
+        try:
+            payload = json.loads(payload_json)
+        except (json.JSONDecodeError, TypeError):
+            continue
+        rid = payload.get("request_id")
+        if payload.get("event_type") == "request_complete" and rid:
+            completed.add((rid, day_of(created_at)))
+
+    for payload_json, created_at in conn.execute(
+        "SELECT payload, created_at FROM ws_messages WHERE channel = 'errors' "
+        "AND payload LIKE '%[Request]%'",
+    ).fetchall():
+        try:
+            payload = json.loads(payload_json)
+        except (json.JSONDecodeError, TypeError):
+            continue
+        rid = payload.get("request_id")
+        if payload.get("source") != "[Request]" or not rid:
+            continue
+        key = (rid, day_of(created_at))
+        if key in completed:
+            continue
+        completed.add(key)
+        conn.execute(
+            "INSERT INTO ws_messages (channel, payload, created_at) VALUES (?, ?, ?)",
+            ("agent-outputs", json.dumps({
+                "source": "[Request Complete]",
+                "event_type": "request_complete",
+                "request_id": rid,
+                "total_steps": 0,
+                "total_duration_ms": 0,
+                "status": "error",
+                "error": payload.get("error"),
+                "conversation_id": extract_conversation_dir(rid),
+            }), created_at),
+        )
+
+
 # from-version -> migration that advances it to from-version + 1.
 _MIGRATIONS: Dict[int, Callable[[sqlite3.Connection], None]] = {
     0: _migrate_0_to_1,
     1: _migrate_1_to_2,
     2: _migrate_2_to_3,
+    3: _migrate_3_to_4,
 }
 
 

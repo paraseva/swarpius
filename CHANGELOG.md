@@ -27,6 +27,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The `--keep-history` command-line flag has been removed; history retention is now the default behaviour. Remove the flag from any custom launch command (the bundled Docker Compose file has been updated).
 - The `DEFAULT_ROON_ZONE` environment variable has been removed. The default zone is now chosen automatically (the first zone the Core reports) and remembered across restarts once changed; set it from the web client's zone controls. Remove `DEFAULT_ROON_ZONE` from any custom `.env`.
 
+### Fixed
+
+- Asking the assistant to look at several albums (or other items) at once — for example, drilling into multiple albums to find a particular track — could return the same track list for different albums, and then play or queue the wrong track. Concurrent library browsing now keeps each item's results separate, so both the listings and the chosen track are correct.
+
 ## [1.0.1] - 2026-06-18
 
 ### Fixed

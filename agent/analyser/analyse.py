@@ -134,6 +134,7 @@ def resolve_batch_size(default: int = DEFAULT_BATCH_SIZE) -> int:
 
 
 ANALYSIS_FILENAME = "analysis.yaml"
+SKIPPED_FILENAME = "analysis.skipped.yaml"
 FEEDBACK_FILENAME = "feedback.yaml"
 HISTORY_FILENAME = "analysis-history.yaml"
 ANALYSIS_HISTORY_MAX_ENTRIES = int(os.environ.get("ANALYSIS_HISTORY_MAX_ENTRIES", "20"))
@@ -319,6 +320,54 @@ def _handle_llm_failure(completion: CompletionResult, context: str) -> None:
         )
 
 
+def _mark_skipped(conv_dir: Path, completion: CompletionResult) -> None:
+    """Record that a conversation cannot be analysed and must not be retried.
+
+    Used for failures that will never succeed on a retry (e.g. the conversation
+    is too large for the model). Writes a marker that ``find_eligible_conversations``
+    honours, so one un-analysable conversation neither loops forever nor blocks
+    the rest. Delete the marker to force a re-analysis."""
+    label = f"{conv_dir.parent.name}/{conv_dir.name}"
+    detail = completion.detail or "no detail"
+    log.error(
+        "Skipping %s — cannot be analysed (%s): %s. It will not be retried; "
+        "remove %s to force a re-analysis.",
+        label, completion.error_kind, detail, SKIPPED_FILENAME,
+    )
+    marker = {"skipped": True, "reason": completion.error_kind, "detail": completion.detail}
+    (conv_dir / SKIPPED_FILENAME).write_text(
+        yaml.safe_dump(marker, sort_keys=False), encoding="utf-8",
+    )
+
+
+_sleep = time.sleep  # indirection so tests can patch out the backoff
+_RETRY_ATTEMPTS = 3
+_RETRY_BACKOFF_SECONDS = 2.0
+
+
+def _complete_with_retry(
+    model: str, api_key: str, system: str, user_message: str, max_tokens: int,
+) -> CompletionResult:
+    """``llm_completion`` with bounded backoff on transient errors.
+
+    Transient failures (rate limit, timeout) are retried up to ``_RETRY_ATTEMPTS``
+    times with linear backoff; permanent and input-shape failures return
+    immediately — retrying won't help. After the attempts are exhausted the last
+    (transient) result is returned, leaving the conversation eligible for a later
+    scan rather than marking it skipped."""
+    completion = llm_completion(model, api_key, system, user_message, max_tokens)
+    attempt = 1
+    while (
+        completion.text is None
+        and completion.error_kind == "transient"
+        and attempt < _RETRY_ATTEMPTS
+    ):
+        _sleep(_RETRY_BACKOFF_SECONDS * attempt)
+        completion = llm_completion(model, api_key, system, user_message, max_tokens)
+        attempt += 1
+    return completion
+
+
 def resolve_api_key(model: str) -> str:
     """Resolve API key for the given model's provider.
 
@@ -403,7 +452,7 @@ def find_eligible_conversations(staleness_minutes: int) -> list[Path]:
     yesterday = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
     eligible: list[Path] = []
     considered = 0
-    skipped = {"already_analysed": 0, "no_request_time": 0, "not_stale": 0}
+    skipped = {"already_analysed": 0, "no_request_time": 0, "not_stale": 0, "unanalysable": 0}
 
     for date_str in [today, yesterday]:
         date_dir = LOGS_ROOT / date_str
@@ -415,6 +464,9 @@ def find_eligible_conversations(staleness_minutes: int) -> list[Path]:
             considered += 1
             if (conv_dir / ANALYSIS_FILENAME).exists():
                 skipped["already_analysed"] += 1
+                continue
+            if (conv_dir / SKIPPED_FILENAME).exists():
+                skipped["unanalysable"] += 1
                 continue
             last_time = get_last_request_time(conv_dir)
             if last_time is None:
@@ -437,9 +489,10 @@ def find_eligible_conversations(staleness_minutes: int) -> list[Path]:
 
     log.info(
         "Scan eligibility under %s (today+yesterday): %d eligible of %d conversation(s) "
-        "— skipped %d already-analysed, %d no-request-time, %d not-stale",
+        "— skipped %d already-analysed, %d no-request-time, %d not-stale, %d unanalysable",
         LOGS_ROOT, len(eligible), considered,
         skipped["already_analysed"], skipped["no_request_time"], skipped["not_stale"],
+        skipped["unanalysable"],
     )
     return eligible
 
@@ -615,12 +668,18 @@ No markdown wrapping — output raw JSON only."""
 
     system_prompt = build_analyser_prompt(guide_text, LESSONS_PATH)
 
-    completion = llm_completion(
+    completion = _complete_with_retry(
         model, api_key, system_prompt, user_message,
         max_tokens=4096 * len(conv_dirs),
     )
     if completion.text is None:
-        _handle_llm_failure(completion, ", ".join(labels))
+        _handle_llm_failure(completion, ", ".join(labels))  # halts on permanent
+        # A single conversation that is too large will never succeed — mark it
+        # skipped so it is not retried every scan. In a multi-conversation batch
+        # the size may be the combination, so leave it to the caller to retry
+        # each one alone (where a genuinely-too-large one gets marked here).
+        if completion.error_kind == "input_shape" and len(conv_dirs) == 1:
+            _mark_skipped(conv_dirs[0], completion)
         return [None] * len(conv_dirs)
 
     parsed = parse_json_response(completion.text)
@@ -1517,6 +1576,15 @@ def run_scan(
     for i in range(0, len(eligible), batch_size):
         batch = eligible[i : i + batch_size]
         results = analyse_batch(model, api_key, batch, guide_text, git_ref)
+
+        if len(batch) > 1 and not any(results):
+            # The whole batch failed — retry each conversation alone so one
+            # un-analysable conversation (e.g. too large for the combined call)
+            # doesn't take its batch-mates down with it.
+            results = [
+                analyse_batch(model, api_key, [cd], guide_text, git_ref)[0]
+                for cd in batch
+            ]
 
         for conv_dir, analysis in zip(batch, results):
             if analysis:

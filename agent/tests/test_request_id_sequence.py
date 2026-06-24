@@ -1,5 +1,7 @@
 """Tests for RequestIdGenerator sequence numbering across conversations."""
 
+import os
+import time as _time
 import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -206,3 +208,103 @@ class TestResumeCountersFromDisk(unittest.TestCase):
 
         _, conv_sequences = RequestIdGenerator._resume_counters(logs_root)
         assert conv_sequences == {"c01": 3, "c02": 1}
+
+
+class TestDayBoundary(unittest.TestCase):
+    """Conversations are day-bounded: a new calendar day always starts fresh
+    grouping (c01, sequence 0001) and never continues a previous day's
+    conversation — even across a restart. TZ is pinned so the day derived from
+    the (wall-clock) tracker clock is deterministic regardless of CI timezone."""
+
+    _ONE_DAY = 86400
+
+    def setUp(self):
+        self._old_tz = os.environ.get("TZ")
+        os.environ["TZ"] = "UTC"
+        _time.tzset()
+
+    def tearDown(self):
+        if self._old_tz is None:
+            os.environ.pop("TZ", None)
+        else:
+            os.environ["TZ"] = self._old_tz
+        _time.tzset()
+
+    def _make(self, idle_timeout=300, start=1000.0):
+        clock = MockClock(start)
+        tracker = ConversationTracker(
+            idle_timeout_seconds=idle_timeout,
+            start_conversation_num=1,
+            clock=clock,
+        )
+        tmp = TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        gen = RequestIdGenerator(logs_root=Path(tmp.name), tracker=tracker)
+        return gen, clock
+
+    def _restored_on(self, snapshot, start):
+        clock = MockClock(start)
+        tracker = ConversationTracker(idle_timeout_seconds=300, clock=clock)
+        tmp = TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        gen = RequestIdGenerator(logs_root=Path(tmp.name), tracker=tracker)
+        gen.restore_state(snapshot)
+        return gen
+
+    def test_new_day_resets_to_fresh_conversation(self):
+        gen, clock = self._make()
+        assert gen.next_id() == "rq-c01-0001"
+        clock.advance(10)
+        assert gen.next_id() == "rq-c01-0002"
+        clock.advance(self._ONE_DAY)
+        gen.roll_day()
+        assert gen.next_id() == "rq-c01-0001"
+
+    def test_new_day_after_multiple_conversations_resets_to_c01(self):
+        gen, clock = self._make(idle_timeout=10)
+        assert gen.next_id() == "rq-c01-0001"
+        clock.advance(11)
+        assert gen.next_id() == "rq-c02-0001"  # idle-timeout new conversation
+        clock.advance(self._ONE_DAY)
+        gen.roll_day()
+        assert gen.next_id() == "rq-c01-0001"  # not c03
+
+    def test_same_day_continues_sequence(self):
+        gen, clock = self._make()
+        assert gen.next_id() == "rq-c01-0001"
+        clock.advance(60)
+        gen.roll_day()  # same day → no reset
+        assert gen.next_id() == "rq-c01-0002"
+
+    def test_new_day_clears_active_threads(self):
+        """The diagnostic agent must not see — and so cannot continue —
+        yesterday's conversation on a new day."""
+        gen, clock = self._make()
+        gen.next_id()
+        gen.tracker.update_topic("c01", "yesterday's topic")
+        assert gen.tracker.get_active_threads()  # non-empty same day
+        clock.advance(self._ONE_DAY)
+        gen.roll_day()
+        assert gen.tracker.get_active_threads() == []
+
+    def test_restore_on_a_new_day_starts_fresh(self):
+        gen, clock = self._make()
+        gen.next_id()  # rq-c01-0001
+        clock.advance(60)
+        gen.next_id()  # rq-c01-0002
+        snapshot = gen.capture_state()
+
+        gen2 = self._restored_on(snapshot, start=1000.0 + self._ONE_DAY)
+        gen2.roll_day()
+        assert gen2.next_id() == "rq-c01-0001"  # fresh, not 0003
+
+    def test_restore_same_day_continues(self):
+        gen, clock = self._make()
+        gen.next_id()  # rq-c01-0001
+        clock.advance(60)
+        gen.next_id()  # rq-c01-0002
+        snapshot = gen.capture_state()
+
+        gen2 = self._restored_on(snapshot, start=1000.0 + 120)  # same day
+        gen2.roll_day()
+        assert gen2.next_id() == "rq-c01-0003"  # continues

@@ -73,7 +73,7 @@ Resolved closure of `agent/requirements-server.txt`.
 - **License:** MIT
 - **Source:** https://github.com/jawah/charset_normalizer/blob/master/CHANGELOG.md
 
-### click 8.4.1
+### click 8.4.2
 
 - **License:** BSD-3-Clause
 - **Source:** https://click.palletsprojects.com/page/changes/
@@ -2027,7 +2027,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-### click 8.4.1 (LICENSE.txt)
+### click 8.4.2 (LICENSE.txt)
 
 ```text
 Copyright 2014 Pallets

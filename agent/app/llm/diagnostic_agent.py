@@ -36,21 +36,18 @@ SYSTEM_PROMPT = """\
 You classify user requests into conversation threads for a music assistant.
 
 Given a user message and a list of active conversation threads, decide:
-1. Does this message belong to an existing conversation? → Return that conversation's ID.
-2. Is this a new topic? → Return is_new: true with a brief topic summary.
+1. Does this message look like it's part of an existing conversation? → Return that conversation's ID.
+2. Is this a new topic? → Return is_new: true with a topic summary.
 
 Respond with JSON only:
-{"conversation_id": "c01", "is_new": false, "topic_summary": "Updated summary"}
+{"conversation_id": "c01", "is_new": false, "topic_summary": "Inna session: browsed albums, now playing Amazing"}
 or
-{"is_new": true, "topic_summary": "New topic description"}
+{"is_new": true, "topic_summary": "Queueing Fleetwood Mac's Rumours"}
 
 Rules:
-- Topic summaries should be concise (under 60 characters).
-- Only create a new conversation if the topic is genuinely different.
-- Generic or acknowledgement messages (thanks, ok, great, sure, yes, no, etc.) always belong to the most recently active conversation.
-- Follow-on music requests (playing different tracks, browsing related items, asking about the same or a related artist) within the same listening session are one conversation.
-- When in doubt, prefer the most recently active conversation.
-- Requests about system configuration or debugging are separate from music requests."""
+- Topic summaries should be concise (~60 chars) and describe the conversation as specifically as possible — name artists, tracks, the actual request — to aid future classification.
+- When adding a message to an existing conversation, update its summary to cover the whole conversation, not just the new message.
+- If several conversations are plausible matches, prefer the most recent."""
 
 
 _MAX_SUMMARY_LEN = 120

@@ -788,6 +788,11 @@ def process_request(
     else:
         gen = request_id_generator or RequestIdGenerator()
 
+        # Roll to the current calendar day first, so a new day starts fresh
+        # grouping and the diagnostic agent cannot continue a previous day's
+        # conversation. Conversations are day-bounded.
+        gen.roll_day()
+
         # Run diagnostic agent BEFORE minting request ID so the cXX
         # in the ID and log directory reflects the semantic classification.
         assignment = _run_diagnostic_classification(

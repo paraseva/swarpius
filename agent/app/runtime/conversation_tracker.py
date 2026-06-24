@@ -9,7 +9,14 @@ from __future__ import annotations
 
 import time
 from dataclasses import dataclass
+from datetime import datetime
 from typing import Any, Callable, Dict, List, Optional
+
+
+def day_str(timestamp: float) -> str:
+    """Local calendar day of a wall-clock timestamp, matching the date used for
+    conversation log directories (``request_logger`` uses ``datetime.now()``)."""
+    return datetime.fromtimestamp(timestamp).strftime("%Y-%m-%d")
 
 
 @dataclass
@@ -71,6 +78,24 @@ class ConversationTracker:
     def new_conversation(self) -> str:
         """Explicitly start a new conversation (e.g. on WS reconnect)."""
         return self._mint_new(self._clock())
+
+    def reset(self) -> None:
+        """Drop all conversation state. Used at the calendar-day boundary so a
+        new day starts fresh grouping (c01) rather than continuing the previous
+        day's thread."""
+        self._threads = {}
+        self._current_id = None
+        self._next_num = 1
+        self._last_request_time = 0.0
+
+    @property
+    def current_day(self) -> Optional[str]:
+        """Local calendar day of the last assigned request, or None if none has
+        been assigned. Derived from ``last_request_time`` so it survives a
+        restart with the persisted state — no separate persisted field."""
+        if not self._last_request_time:
+            return None
+        return day_str(self._last_request_time)
 
     def update_topic(self, conversation_id: str, topic_summary: str) -> None:
         """Update a conversation's topic summary."""

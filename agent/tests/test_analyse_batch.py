@@ -73,6 +73,34 @@ class TestAnalyseBatchOrchestration(unittest.TestCase):
                 result = analyse_batch("anthropic/x", "key", dirs, "guide", None)
             self.assertEqual(result, [None])
 
+    def test_input_shape_failure_marks_single_conversation_skipped(self):
+        """A conversation too large to analyse is marked skipped (so it is not
+        re-attempted every scan), not silently nulled and retried forever."""
+        with TemporaryDirectory() as tmp:
+            dirs = _conv_dirs(Path(tmp), [("2026-04-17", "c01")])
+            with patch.object(
+                analyse_mod, "llm_completion",
+                return_value=CompletionResult(
+                    text=None, error_kind="input_shape", detail="ContextLengthExceeded"),
+            ):
+                result = analyse_batch("anthropic/x", "key", dirs, "guide", None)
+            self.assertEqual(result, [None])
+            self.assertTrue((dirs[0] / "analysis.skipped.yaml").exists())
+
+    def test_transient_failure_leaves_conversation_unmarked(self):
+        """A transient failure may succeed on a later scan, so it must NOT be
+        marked skipped — it stays eligible."""
+        with TemporaryDirectory() as tmp:
+            dirs = _conv_dirs(Path(tmp), [("2026-04-17", "c01")])
+            with patch.object(
+                analyse_mod, "llm_completion",
+                return_value=CompletionResult(
+                    text=None, error_kind="transient", detail="429 rate limit"),
+            ), patch.object(analyse_mod, "_sleep"):
+                result = analyse_batch("anthropic/x", "key", dirs, "guide", None)
+            self.assertEqual(result, [None])
+            self.assertFalse((dirs[0] / "analysis.skipped.yaml").exists())
+
 
 if __name__ == "__main__":
     unittest.main()

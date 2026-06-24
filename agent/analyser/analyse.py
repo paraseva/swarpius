@@ -1549,6 +1549,15 @@ def run_scan(
         batch = eligible[i : i + batch_size]
         results = analyse_batch(model, api_key, batch, guide_text, git_ref)
 
+        if len(batch) > 1 and not any(results):
+            # The whole batch failed — retry each conversation alone so one
+            # un-analysable conversation (e.g. too large for the combined call)
+            # doesn't take its batch-mates down with it.
+            results = [
+                analyse_batch(model, api_key, [cd], guide_text, git_ref)[0]
+                for cd in batch
+            ]
+
         for conv_dir, analysis in zip(batch, results):
             if analysis:
                 write_analysis(conv_dir, analysis)

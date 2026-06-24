@@ -34,8 +34,8 @@ def _album(title: str) -> node:
     )
 
 
-def _build_fake() -> StatefulBrowseFake:
-    fake = StatefulBrowseFake()
+def _build_fake(max_sessions: int = 16) -> StatefulBrowseFake:
+    fake = StatefulBrowseFake(max_sessions=max_sessions)
     fake.install_search("artist", [
         node("Artist", "5 Albums", hint="list", children=[
             node("Play Artist", "", hint="action_list"),
@@ -110,5 +110,25 @@ def test_contended_sibling_drill_splits_to_its_own_session_and_stays_correct():
     result = _drill(tool, album_b)
 
     assert result.session_key != parent_session
+    assert "Album B Track 1" in _titles(result)
+    assert "Album A Track 1" not in _titles(result)
+
+
+def test_reference_recovers_after_its_session_is_recycled():
+    """Lifetime decouple: recycling a ref's session slot invalidates its cached
+    binding but keeps the ref, so it re-establishes from its recipe and still
+    drills the right album (it would have been a 'not found' before)."""
+    fake = _build_fake(max_sessions=2)
+    tool = _tool(fake)
+
+    albums, _ = _drill_to_albums(tool)
+    album_b = _ref_for(albums, "Album B")
+
+    # Exhaust the 2-slot pool so the album refs' session slot is recycled.
+    fake.session_manager.new_search_session()
+    fake.session_manager.new_search_session()
+
+    result = _drill(tool, album_b)
+
     assert "Album B Track 1" in _titles(result)
     assert "Album A Track 1" not in _titles(result)

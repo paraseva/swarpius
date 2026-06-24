@@ -41,7 +41,9 @@ class TestNewSearchSession(unittest.TestCase):
 
 
 class TestSessionRecycling(unittest.TestCase):
-    """Session keys cycle through a fixed pool and purge stale refs on reuse."""
+    """Session keys cycle through a fixed pool. Reusing a slot invalidates the
+    bindings of refs on it (their cached key dies) but keeps the refs, so they
+    can be re-established from their recipe rather than lost."""
 
     def test_keys_cycle_after_max_sessions(self):
         mgr = BrowseSessionManager(max_sessions=4)
@@ -51,7 +53,7 @@ class TestSessionRecycling(unittest.TestCase):
         # First 4 should all be distinct
         self.assertEqual(len(set(keys[:4])), 4)
 
-    def test_refs_purged_on_recycle(self):
+    def test_ref_binding_invalidated_not_deleted_on_recycle(self):
         mgr = BrowseSessionManager(max_sessions=2)
         sk1 = mgr.new_search_session()
         ref_id = mgr.mint_ref(
@@ -62,14 +64,19 @@ class TestSessionRecycling(unittest.TestCase):
         )
         self.assertIsNotNone(mgr.get_ref(ref_id))
 
-        # Use up the pool: sk2, then sk1 again
+        # Use up the pool: sk2, then sk1 again (recycles sk1's slot).
         mgr.new_search_session()  # sk2
         mgr.new_search_session()  # recycles sk1
 
-        # Ref pointing to old sk1 should be purged
-        self.assertIsNone(mgr.get_ref(ref_id))
+        # The ref survives (recipe intact, so it can be recovered), but its
+        # session binding is dead so is_key_live no longer trusts the cache.
+        recovered = mgr.get_ref(ref_id)
+        self.assertIsNotNone(recovered)
+        self.assertIsNone(recovered.cached_item_key)
+        self.assertFalse(mgr.is_key_live(recovered))
+        self.assertEqual(recovered.recipe.search_string, "track a")
 
-    def test_refs_on_other_sessions_preserved(self):
+    def test_other_session_bindings_preserved_on_recycle(self):
         mgr = BrowseSessionManager(max_sessions=4)
         sk1 = mgr.new_search_session()
         ref1 = mgr.mint_ref(
@@ -91,9 +98,9 @@ class TestSessionRecycling(unittest.TestCase):
         mgr.new_search_session()  # slot 3
         mgr.new_search_session()  # recycles slot 0 (sk1)
 
-        # ref1 (on sk1) purged, ref2 (on sk2) preserved
-        self.assertIsNone(mgr.get_ref(ref1))
-        self.assertIsNotNone(mgr.get_ref(ref2))
+        # ref1 (on recycled sk1) invalidated; ref2 (on sk2) binding intact.
+        self.assertIsNone(mgr.get_ref(ref1).cached_item_key)
+        self.assertEqual(mgr.get_ref(ref2).cached_item_key, "ik-2")
 
 class TestMintRef(unittest.TestCase):
 

@@ -92,7 +92,7 @@ class BrowseSessionManager:
     # Persistence participant key (structurally satisfies PersistentState).
     state_key = "browse_refs"
 
-    def __init__(self, max_refs: int = 500, max_sessions: int = 16) -> None:
+    def __init__(self, max_refs: int = 500, max_sessions: int = 128) -> None:
         self._session_prefix: str = secrets.token_hex(4)
         self._session_counter: int = 0
         self._max_sessions: int = max_sessions
@@ -126,9 +126,11 @@ class BrowseSessionManager:
         """Mint a multi_session_key for a fresh top-level search.
 
         Keys cycle through a fixed pool of ``max_sessions`` slots (default
-        16) so the Roon Core doesn't accumulate unbounded session state.
-        When a slot is reused, any refs pointing to the old session are
-        purged — they would have stale item_keys.
+        128) so the Roon Core doesn't accumulate unbounded session state.
+        When a slot is reused, refs pointing to the old session have their
+        cached binding invalidated (their item_keys are stale on the Core) but
+        are kept, so they can be re-established from their recipe — ref
+        lifetime (``max_refs`` LRU) is decoupled from session lifetime.
 
         A random prefix unique to this manager instance prevents
         collisions with Roon Core's cached state from a previous process.
@@ -138,10 +140,9 @@ class BrowseSessionManager:
             self._session_counter += 1
             key = f"s-{self._session_prefix}-{slot:x}"
             if key in self._session_depth:
-                self.refs = {
-                    ref_id: ref for ref_id, ref in self.refs.items()
-                    if ref.roon_session_key != key
-                }
+                for ref in self.refs.values():
+                    if ref.roon_session_key == key:
+                        ref.cached_item_key = None
                 self._session_current_list.pop(key, None)
             self._session_depth[key] = 0
             return key

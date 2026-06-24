@@ -680,14 +680,15 @@ class RoonBrowseMixin:
         session_key: Optional[str] = None,
     ) -> bool:
         """Re-search and fuzzy-match to relocate the item, re-establishing it on
-        ``session_key`` (a leased split session) or, by default, the shared
-        recovery session. The latter is a fallback that should not fire in
+        ``session_key`` (a leased split session) or, by default, a freshly
+        leased session. The default path is a fallback that should not fire in
         normal operation — hence the warning; a split is intentional, so it is
-        silent."""
+        silent. Either way the session is private to this call, so concurrent
+        recoveries never share a cursor."""
         if not ref.recipe.search_string:
             return False
 
-        sk = session_key or self.session_manager.recovery_session_key
+        sk = session_key or self.session_manager.new_search_session()
         if session_key is None:
             _log.warning(
                 "Semantic recovery triggered for ref=%s (%s) — "

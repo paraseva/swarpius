@@ -187,3 +187,33 @@ def test_position_first_re_establishes_the_right_identical_metadata_twin():
     titles = _titles(result)
     assert "Twin B Track 1" in titles
     assert "Twin A Track 1" not in titles
+
+
+def test_resolving_a_split_minted_reference_uses_the_fast_path():
+    """A reference minted on a split session must resolve via the fast path
+    (position walk), not fall back to a re-search. The split's re-establish step
+    has to leave the leased session's browse depth consistent — otherwise every
+    such reference silently degrades to semantic recovery on next use."""
+    fake = _build_fake()
+    tool = _tool(fake)
+
+    albums, parent_session = _drill_to_albums(tool)
+    album_b = _ref_for(albums, "Album B")
+
+    # Force the split, then drill album B on its own leased session.
+    fake.session_manager._in_use.add(parent_session)
+    drill = _drill(tool, album_b)
+    track_ref = next(
+        item.reference
+        for group in drill.groups for item in group.items
+        if item.title.startswith("Album B Track")
+    )
+
+    searches_before = fake.search_count()
+    _drill(tool, track_ref)  # resolve the split-minted reference
+
+    assert fake.search_count() == searches_before, (
+        "Resolving a split-minted reference re-searched (fell back to semantic "
+        "recovery) instead of using the fast path — the split session's browse "
+        "depth is inconsistent"
+    )

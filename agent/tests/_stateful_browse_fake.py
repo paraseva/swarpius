@@ -67,6 +67,9 @@ class _StatefulApi:
         # (session_key, op) for every browse_browse/browse_load — lets tests
         # assert which session an operation actually ran on.
         self.calls: List[tuple[str, str]] = []
+        # Count of re-searches (pop_all + input). A ref resolving via the fast
+        # path adds none; one means it fell back to semantic recovery.
+        self.searches = 0
 
     def install_search(self, query: str, roots: List[_Node]) -> None:
         self._assign_keys(roots)
@@ -88,6 +91,7 @@ class _StatefulApi:
         sk = opts.get("multi_session_key", "")
         self.calls.append((sk, "browse"))
         if opts.get("pop_all") and "input" in opts:
+            self.searches += 1
             self._stacks[sk] = [list(self._search.get(opts["input"], []))]
         elif "item_key" in opts:
             stack = self._stacks.setdefault(sk, [[]])
@@ -136,6 +140,11 @@ class StatefulBrowseFake(RoonBrowseMixin):
             if sk not in seen:
                 seen.append(sk)
         return seen
+
+    def search_count(self) -> int:
+        """Number of re-searches so far. A fast-path resolution adds none; a
+        semantic-recovery fallback adds one."""
+        return self.api.searches
 
     def _lookup_output_id(self, zone: Optional[str] = None) -> str:
         return "fake-output"

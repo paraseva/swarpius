@@ -706,6 +706,11 @@ class RoonBrowseMixin:
             )
         except ExternalServiceError:
             return False
+        # Re-search put the cursor at the search root. Track depth from here via
+        # _nav_drill (as drill_down does) so a ref re-established on this session
+        # can later reset to root and walk its path on the fast path, instead of
+        # falling back into recovery again.
+        self.session_manager.set_session_depth(sk, 0)
 
         if ref.recipe.category:
             cat_item = self.find_item_by_field(
@@ -714,11 +719,8 @@ class RoonBrowseMixin:
             if not cat_item:
                 return False
             try:
-                results = self.browse_core(
-                    aux={"item_key": cat_item.item_key},
-                    zone=zone,
-                    session_key=sk,
-                    update_current=False,
+                results = self._nav_drill(
+                    cat_item.item_key, sk, zone, update_current=False,
                 )
             except ExternalServiceError:
                 return False
@@ -734,11 +736,8 @@ class RoonBrowseMixin:
             if pos is not None:
                 position_path.append(pos)
             try:
-                results = self.browse_core(
-                    aux={"item_key": match.item_key},
-                    zone=zone,
-                    session_key=sk,
-                    update_current=False,
+                results = self._nav_drill(
+                    match.item_key, sk, zone, update_current=False,
                 )
             except ExternalServiceError:
                 return False

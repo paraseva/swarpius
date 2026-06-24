@@ -25,7 +25,6 @@ Run with:
 """
 
 import asyncio
-import logging
 import os
 import re
 
@@ -36,8 +35,6 @@ from tools.roon_search import (
     RoonSearchToolConfig,
     RoonSearchToolInputSchema,
 )
-
-_log = logging.getLogger("swarpius.session_split_live")
 
 pytestmark = pytest.mark.live_roon
 

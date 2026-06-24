@@ -243,3 +243,35 @@ class TestPersistence(unittest.TestCase):
         import time
         tracker = ConversationTracker()
         self.assertAlmostEqual(tracker.now, time.time(), delta=2.0)
+
+
+class TestClearActive(unittest.TestCase):
+    """clear_active(): drop active threads + the current pointer, keep the
+    counter — so a conversation-history clear opens a fresh conversation
+    (cNN+1) rather than continuing the cleared one or restarting numbering."""
+
+    def _make(self, idle_timeout=300):
+        clock = MockClock()
+        tracker = ConversationTracker(idle_timeout_seconds=idle_timeout, clock=clock)
+        return tracker, clock
+
+    def test_drops_threads_and_advances_counter(self):
+        tracker, clock = self._make(idle_timeout=10)
+        tracker.assign_by_timeout()  # c01
+        clock.advance(11)
+        tracker.assign_by_timeout()  # c02
+        tracker.update_topic("c02", "playing inna")
+        tracker.clear_active()
+        # Diagnostic agent sees a clean slate.
+        assert tracker.get_active_threads() == []
+        # Next request opens a fresh conversation: counter kept (c03).
+        assert tracker.assign_by_timeout() == "c03"
+
+    def test_within_timeout_after_clear_does_not_crash(self):
+        # Clearing the threads must also null current_id, else assign_by_timeout
+        # KeyErrors on the now-missing current thread within the idle window.
+        tracker, clock = self._make(idle_timeout=300)
+        tracker.assign_by_timeout()  # c01
+        tracker.clear_active()
+        clock.advance(5)  # within the idle timeout
+        assert tracker.assign_by_timeout() == "c02"

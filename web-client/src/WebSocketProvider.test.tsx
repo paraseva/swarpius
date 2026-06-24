@@ -153,6 +153,28 @@ describe('WebSocketProvider — message routing', () => {
     expect(probeValue!.messages.map((m) => m.channel)).toEqual(['chat', 'chat'])
     expect(probeValue!.latestZoneSnapshot).not.toBeNull()
   })
+
+  it('clearMessages wipes conversation content but keeps connection state', () => {
+    // Conversation content (chat + diagnostics) is cleared; connection state the
+    // server only re-sends on (re)connect — feature-availability, roon-core-status
+    // — is kept, so a local clear (no reconnect) doesn't strand overlay state.
+    const { socket } = setup()
+
+    act(() => {
+      socket.fireMessage({ channel: 'feature-availability', payload: { is_bundle: false } })
+      socket.fireMessage({ channel: 'roon-core-status', payload: { state: 'connected' } })
+      socket.fireMessage({ channel: 'chat', body: 'hello' })
+      socket.fireMessage({ channel: 'agent-outputs', body: '{"x":1}' })
+    })
+    expect(probeValue!.messages.map((m) => m.channel)).toEqual(
+      ['feature-availability', 'roon-core-status', 'chat', 'agent-outputs'],
+    )
+
+    act(() => probeValue!.clearMessages?.())
+    expect(probeValue!.messages.map((m) => m.channel)).toEqual(
+      ['feature-availability', 'roon-core-status'],
+    )
+  })
 })
 
 describe('WebSocketProvider — active-call (Thinking) tracking', () => {

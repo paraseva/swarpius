@@ -88,6 +88,17 @@ class ConversationTracker:
         self._next_num = 1
         self._last_request_time = 0.0
 
+    def clear_active(self) -> None:
+        """Drop the active threads and the current pointer but keep the counter,
+        so the next request opens a fresh conversation (cNN+1) rather than
+        continuing the cleared one or restarting numbering. Used when the user
+        clears conversation history: the emptied threads also give the diagnostic
+        agent a clean slate, and nulling current_id avoids a KeyError in
+        ``assign_by_timeout`` on the now-missing current thread."""
+        self._threads = {}
+        self._current_id = None
+        self._last_request_time = 0.0
+
     @property
     def current_day(self) -> Optional[str]:
         """Local calendar day of the last assigned request, or None if none has

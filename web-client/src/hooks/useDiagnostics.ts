@@ -2,7 +2,7 @@ import React from 'react'
 import { parseJson } from '../utils/parseJson'
 import { type SocketMessage } from '../websocketContext'
 
-const DIAGNOSTIC_CHANNELS = [
+export const DIAGNOSTIC_CHANNELS = [
   'agent-outputs',
   'tool-outputs',
   'errors',

@@ -8,6 +8,7 @@ import React, {
 import { APP_WS_URL } from './config'
 import { createUuid } from './utils/uuid'
 import { insertMessage } from './utils/insertMessage'
+import { DIAGNOSTIC_CHANNELS } from './hooks/useDiagnostics'
 import {
   type ChannelId,
   type ConnectionStatus,
@@ -49,6 +50,16 @@ const getOrCreateSessionId = (): string => {
 
 /** Channels that the backend sends but no client component consumes. */
 const IGNORED_CHANNELS = new Set<string>([])
+
+/** Conversation content a "clear conversation history" wipes: the chat
+ *  transcript, the per-request diagnostics streams, and rate-limit banners.
+ *  Everything else is kept — connection state (feature-availability,
+ *  roon-core-status) and control/response channels the server only re-sends on
+ *  (re)connect, which a local clear doesn't trigger; wiping them would strand
+ *  derived overlay state until a refresh. */
+const CONVERSATION_CHANNELS = new Set<ChannelId>([
+  'chat', 'rate-limit', ...DIAGNOSTIC_CHANNELS,
+])
 
 interface LlmCallEvent {
   event_type?: string
@@ -313,7 +324,10 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
   const markRestarting = useCallback(() => setIsRestarting(true), [])
 
   const clearMessages = useCallback(() => {
-    setMessageState({ messages: [], trimmedCount: 0 })
+    setMessageState((prev) => ({
+      messages: prev.messages.filter((m) => !CONVERSATION_CHANNELS.has(m.channel)),
+      trimmedCount: 0,
+    }))
   }, [])
 
   // Fire-and-forget: ask the server for the most recent non-empty day at or

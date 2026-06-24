@@ -155,6 +155,101 @@ describe('WebSocketProvider — message routing', () => {
   })
 })
 
+describe('WebSocketProvider — active-call (Thinking) tracking', () => {
+  beforeEach(() => {
+    MockWebSocket.instances = []
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('a live call_started activates and call_completed deactivates', () => {
+    const { socket } = setup()
+
+    act(() => socket.fireMessage({
+      channel: 'llm-diagnostics', payload: { event_type: 'call_started', call_id: 'c1' },
+    }))
+    expect(probeValue!.isLlmActive).toBe(true)
+
+    act(() => socket.fireMessage({
+      channel: 'llm-diagnostics', payload: { event_type: 'call_completed', call_id: 'c1' },
+    }))
+    expect(probeValue!.isLlmActive).toBe(false)
+  })
+
+  it('replayed (historical) call events do not activate — no phantom Thinking bubble', () => {
+    const { socket } = setup()
+
+    act(() => socket.fireMessage({
+      channel: 'llm-diagnostics',
+      payload: { event_type: 'call_started', call_id: 'old1' },
+      meta: { historical: true },
+    }))
+    expect(probeValue!.isLlmActive).toBe(false)
+  })
+})
+
+describe('WebSocketProvider — history-cursor batch signalling', () => {
+  beforeEach(() => {
+    MockWebSocket.instances = []
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('records reached-beginning and bumps the batch token per channel', () => {
+    const { socket } = setup()
+
+    act(() => socket.fireMessage({
+      channel: 'history-cursor', payload: { channel: 'chat', has_older: false },
+    }))
+    expect(probeValue!.reachedBeginningByChannel?.get('chat')).toBe(true)
+    expect(probeValue!.historyBatchTokenByChannel?.get('chat')).toBe(1)
+
+    // Next batch for the same channel: older history still remains, token advances.
+    act(() => socket.fireMessage({
+      channel: 'history-cursor', payload: { channel: 'chat', has_older: true },
+    }))
+    expect(probeValue!.reachedBeginningByChannel?.get('chat')).toBe(false)
+    expect(probeValue!.historyBatchTokenByChannel?.get('chat')).toBe(2)
+  })
+
+  it('tracks channels independently', () => {
+    const { socket } = setup()
+
+    act(() => {
+      socket.fireMessage({ channel: 'history-cursor', payload: { channel: 'chat', has_older: true } })
+      socket.fireMessage({ channel: 'history-cursor', payload: { channel: 'agent-outputs', has_older: false } })
+    })
+
+    expect(probeValue!.reachedBeginningByChannel?.get('chat')).toBe(false)
+    expect(probeValue!.reachedBeginningByChannel?.get('agent-outputs')).toBe(true)
+    expect(probeValue!.historyBatchTokenByChannel?.get('chat')).toBe(1)
+    expect(probeValue!.historyBatchTokenByChannel?.get('agent-outputs')).toBe(1)
+  })
+
+  it('ignores a channel-less cursor (the connect replay sends one)', () => {
+    const { socket } = setup()
+
+    act(() => socket.fireMessage({
+      channel: 'history-cursor', payload: { has_older: false },
+    }))
+    expect(probeValue!.reachedBeginningByChannel?.get('chat')).toBeUndefined()
+  })
+
+  it('a malicious cursor channel name does not pollute Object.prototype', () => {
+    const { socket } = setup()
+
+    act(() => socket.fireMessage({
+      channel: 'history-cursor', payload: { channel: '__proto__', has_older: false },
+    }))
+    expect(Object.getPrototypeOf({})).toBe(Object.prototype)
+    expect(Object.keys(Object.prototype)).toEqual([])
+  })
+})
+
 describe('WebSocketProvider — connection lifecycle', () => {
   beforeEach(() => {
     MockWebSocket.instances = []

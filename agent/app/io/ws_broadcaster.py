@@ -37,6 +37,7 @@ from app.coordinator.events import (
 )
 from app.coordinator.renderer import Renderer, ignore_event
 from app.coordinator.trace import pretty_json as _pretty_json
+from app.io.cost_ledger import record_cost_from_usage
 from app.llm.rate_limit import emit_rate_limit_banner as _emit_rate_limit_banner
 
 
@@ -325,6 +326,16 @@ class WsBroadcaster(Renderer):
         )
         self._send(CHANNEL_USAGE_METRICS, usage_payload)
 
+        record_cost_from_usage(
+            agent="Coordinator",
+            model=event.coordinator_model or "",
+            usage=usage,
+            request_id=event.request_id,
+            conversation_id=extract_conversation_dir(event.request_id),
+            steps=event.total_steps,
+            ts=event.emitted_at_ms,
+        )
+
     def _handle_request_failed(self, event: RequestFailed) -> None:
         self._send(CHANNEL_LLM_DIAGNOSTICS, {
             "event_type": "call_failed",
@@ -345,6 +356,23 @@ class WsBroadcaster(Renderer):
                 "error": event.summary,
                 "request_id": event.request_id,
             })
+
+        # Close the request's lifecycle even on failure, so it still surfaces as
+        # a failed request (e.g. in Session Requests) instead of vanishing for
+        # lack of a completion event — carrying the failure reason so the why
+        # travels with it on the one channel that panel reads.
+        from app.runtime.request_logger import extract_conversation_dir
+        self._send(CHANNEL_AGENT_OUTPUTS, {
+            "source": "[Request Complete]",
+            "event_type": "request_complete",
+            "request_id": event.request_id,
+            "total_steps": 0,
+            "total_duration_ms": 0,
+            "status": "error",
+            "error": event.summary,
+            "coordinator_model": event.coordinator_model,
+            "conversation_id": extract_conversation_dir(event.request_id),
+        })
 
     # ── Helpers ──────────────────────────────────────────────────
 

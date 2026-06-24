@@ -46,6 +46,28 @@ class TestLoadDay(unittest.TestCase):
     def _bodies(self, result) -> list:
         return [m["payload"]["body"] for m in result["messages"]]
 
+    def test_load_day_chat_stamps_user_input_request_id(self):
+        # A chat user input carries no request_id of its own — it's on the
+        # agent-outputs assignment event, matched by client_msg_id. A chat-only
+        # load must stamp it back on so the client can correlate without the
+        # agent-outputs rows.
+        cid = "cmid-1"
+        self.db.conn.execute(
+            "INSERT INTO ws_messages (channel, payload, meta, created_at) VALUES (?, ?, ?, ?)",
+            ("chat", '{"channel": "chat", "body": "play jazz"}',
+             f'{{"direction": "outbound", "client_msg_id": "{cid}"}}', _ms(0, 9)),
+        )
+        self.db.conn.execute(
+            "INSERT INTO ws_messages (channel, payload, created_at) VALUES (?, ?, ?)",
+            ("agent-outputs",
+             f'{{"event_type": "request_id_assignment", "client_msg_id": "{cid}", "request_id": "rq-c01-0007"}}',
+             _ms(0, 9) + 1),
+        )
+        self.db.conn.commit()
+        result = self.store.load_day(_ms(0, 23), channel="chat")
+        user_input = next(m for m in result["messages"] if m["payload"].get("body") == "play jazz")
+        self.assertEqual(user_input["meta"]["request_id"], "rq-c01-0007")
+
     def test_load_day_now_returns_today_with_has_older(self):
         result = self.store.load_day(_ms(0, 23))
         self.assertEqual(self._bodies(result), ["today-a", "today-b"])
@@ -59,6 +81,17 @@ class TestLoadDay(unittest.TestCase):
         result = self.store.load_day(_ms(0, 10) - 1)
         self.assertEqual(self._bodies(result), ["twodays"])
         self.assertTrue(result["has_older"])
+
+    def test_load_day_filtered_by_channel(self):
+        # A sparse channel: one 'errors' message, on a day older than the chat
+        # days. Filtering to 'errors' must find that day, skipping the more
+        # recent chat-only days, and report no older errors.
+        self._insert("errors", _ms(6, 10), "err-old")
+        result = self.store.load_day(_ms(0, 23), channel="errors")
+        self.assertEqual(self._bodies(result), ["err-old"])
+        self.assertFalse(result["has_older"])
+        # Unfiltered still returns the most recent (chat) day.
+        self.assertEqual(self._bodies(self.store.load_day(_ms(0, 23))), ["today-a", "today-b"])
 
     def test_oldest_day_reports_no_older(self):
         result = self.store.load_day(_ms(2, 10) - 1)

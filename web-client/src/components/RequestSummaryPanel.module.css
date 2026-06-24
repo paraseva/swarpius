@@ -45,6 +45,14 @@
   transform: translateY(var(--row-text-shift));
 }
 
+.conversationDate {
+  flex-shrink: 0;
+  color: var(--color-text-dim);
+  font-size: 0.6rem;
+  margin-right: 0.35rem;
+  transform: translateY(var(--row-text-shift));
+}
+
 /* Stats + tokens wrap within this column, keeping the ID and dots on the first row. */
 .conversationMiddle {
   flex: 1 1 auto;
@@ -138,6 +146,8 @@
 
 .requestTime {
   flex-shrink: 0;
+  width: 6em;
+  font-variant-numeric: tabular-nums;
   color: var(--color-text-faint);
   font-size: 0.85em;
 }

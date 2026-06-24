@@ -23,7 +23,7 @@ from websockets.http11 import Request, Response
 from app.cli import history as cli_history
 from app.cli import runner as cli_runner
 from app.cli.log_routing import ensure_default_log_file, route_info_logs_to_file
-from app.cli.session_usage import SessionUsageTracker
+from app.cli.session_usage import SessionUsageTracker, format_cost_overview
 from app.cli.startup_banner import collect_banner_facts, copyright_notice, render_banner
 from app.cli.tap_window import is_recent
 from app.cli.validation_summary import format_summary
@@ -45,6 +45,7 @@ from app.data_paths import (
     messages_db_path,
 )
 from app.io import AppIO
+from app.io.cost_ledger import CostLedger, set_cost_ledger
 from app.io.history_retention import prune_history
 from app.io.message_store import SqliteMessageStore, set_message_store
 from app.io.state_db import StateDb
@@ -182,6 +183,9 @@ runtime.configure_io_callbacks(
 _state_db = StateDb(messages_db_path())
 _session_store = SqliteMessageStore(_state_db)
 set_message_store(_session_store)
+
+# Module-level so the ledger records in CLI mode as well as WS.
+set_cost_ledger(CostLedger(_state_db))
 
 # Prune persisted history past its retention windows before anything reads it.
 _retention_settings = _get_settings()
@@ -882,6 +886,9 @@ def run_cli_loop() -> None:
                     console.print(f"[dim]{session_usage.format_detailed()}[/dim]")
                 else:
                     console.print("[dim]No requests yet this session.[/dim]")
+                overview = format_cost_overview()
+                if overview:
+                    console.print(f"[dim]{overview}[/dim]")
                 console.print()
                 continue
 

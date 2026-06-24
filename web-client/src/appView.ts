@@ -1,4 +1,4 @@
-export type AppView = 'assistant' | 'analysis' | 'settings' | 'roon-setup' | 'roon-explorer'
+export type AppView = 'assistant' | 'analysis' | 'settings' | 'roon-setup' | 'roon-explorer' | 'cost'
 
 /**
  * View to land on after a restart initiated from the Settings page: return to

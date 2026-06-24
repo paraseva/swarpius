@@ -689,6 +689,43 @@ class TestProcessRequestEmissions(unittest.TestCase):
         ):
             self.assertIn(key, usage)
 
+    def test_failed_request_emits_request_complete_with_error(self):
+        """A failed request must still close its lifecycle with a
+        request_complete (status=error, carrying the reason), so it surfaces as a
+        failed request — e.g. in Session Requests — rather than vanishing."""
+        from app.coordinator.request_flow import process_request
+
+        runtime = _make_request_runtime()
+
+        async def _failing_completion(messages, tools=None):
+            raise RuntimeError("boom")
+
+        runtime.llm_client = MagicMock()
+        runtime.llm_client.model = "dummy/dummy-model"
+        runtime.llm_client.completion = _failing_completion
+
+        try:
+            from tests._runtime_fixtures import wire_ws_test_bus
+        except ModuleNotFoundError:
+            from _runtime_fixtures import wire_ws_test_bus  # type: ignore[no-redef]
+        capture = WSCapture()
+        bus = wire_ws_test_bus(capture, runtime)
+        process_request(
+            runtime=runtime,
+            user_input="hi",
+            cancel_event=None,
+            event_bus=bus,
+            run_mode_label="ws",
+        )
+
+        agent_events = capture.payloads_on(CHANNEL_AGENT_OUTPUTS)
+        complete = next(
+            (e for e in agent_events if e.get("event_type") == "request_complete"), None,
+        )
+        self.assertIsNotNone(complete, "failed request must still emit request_complete")
+        self.assertEqual(complete["status"], "error")
+        self.assertTrue(complete.get("error"), "request_complete must carry the failure reason")
+
     def test_request_id_assignment_echoes_client_msg_id(self):
         """``request_id_assignment`` echoes ``client_msg_id`` so the
         FE can pair badges by direct lookup."""

@@ -9,6 +9,9 @@ interface RequestIdBadgeProps {
    *  the source panel. Omit on non-sync surfaces (e.g. analysis views) — the
    *  badge is then copy-only. */
   syncKey?: string
+  /** Local day (YYYY-MM-DD) of this request, so the focus targets the right one
+   *  when the same id recurs on other days. */
+  day?: string | null
 }
 
 const fallbackCopy = (text: string): boolean => {
@@ -28,7 +31,7 @@ const fallbackCopy = (text: string): boolean => {
   return ok
 }
 
-export const RequestIdBadge: React.FC<RequestIdBadgeProps> = ({ requestId, syncKey }) => {
+export const RequestIdBadge: React.FC<RequestIdBadgeProps> = ({ requestId, syncKey, day }) => {
   const [copied, setCopied] = React.useState(false)
   const focus = useRequestFocus()
   const canSync = syncKey != null && focus != null
@@ -76,7 +79,7 @@ export const RequestIdBadge: React.FC<RequestIdBadgeProps> = ({ requestId, syncK
   // width and the copy icon stays put).
   const doFocus = (e: React.SyntheticEvent) => {
     e.stopPropagation()
-    focus!.focusRequest(requestId, syncKey!)
+    focus!.focusRequest(requestId, syncKey!, day)
   }
 
   return (

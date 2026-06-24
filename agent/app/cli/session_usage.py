@@ -8,7 +8,8 @@ command's detailed breakdown.
 
 from __future__ import annotations
 
-from typing import Any, Dict
+import time
+from typing import Any, Dict, List
 
 from app.cli.telemetry import _fmt_cost, _fmt_duration
 
@@ -86,3 +87,53 @@ class SessionUsageTracker:
             if avg_parts:
                 lines.append("average: " + " · ".join(avg_parts) + " per request")
         return "\n".join(lines)
+
+
+_WEEK_MS = 7 * 24 * 60 * 60 * 1000
+
+
+def _fmt_tokens(n: int) -> str:
+    if n >= 1_000_000:
+        return f"{n / 1_000_000:.1f}M"
+    if n >= 1000:
+        return f"{n / 1000:.1f}k"
+    return str(n)
+
+
+def _metric_line(total: Dict[str, Any]) -> str:
+    tokens = int(total.get("input_tokens") or 0) + int(total.get("output_tokens") or 0)
+    count = int(total.get("count") or 0)
+    return " · ".join([
+        _fmt_cost(float(total.get("cost_usd") or 0.0)),
+        f"{_fmt_tokens(tokens)} tokens",
+        f"{count} request" if count == 1 else f"{count} requests",
+    ])
+
+
+def _top_breakdown(rows: List[Dict[str, Any]], limit: int = 5) -> str:
+    shown = rows[:limit]
+    parts = [f"{r.get('key') or '—'} {_fmt_cost(float(r.get('cost_usd') or 0.0))}" for r in shown]
+    if len(rows) > limit:
+        parts.append(f"(+{len(rows) - limit} more)")
+    return " · ".join(parts)
+
+
+def format_cost_overview() -> str:
+    """All-time cost overview from the ledger for ``/usage`` — total, by agent,
+    by model, and the last 7 days. Empty string when no cost has been recorded
+    (so the session block stands alone). Spans all sessions, not just this one."""
+    from app.io.cost_ledger import get_cost_ledger
+    ledger = get_cost_ledger()
+    agg = ledger.aggregate()
+    total = agg["total"]
+    if not int(total.get("count") or 0):
+        return ""
+    lines = ["all time: " + _metric_line(total)]
+    if agg.get("by_agent"):
+        lines.append("  by agent: " + _top_breakdown(agg["by_agent"]))
+    if agg.get("by_model"):
+        lines.append("  by model: " + _top_breakdown(agg["by_model"]))
+    week = ledger.aggregate(since_ms=int(time.time() * 1000) - _WEEK_MS)["total"]
+    if int(week.get("count") or 0):
+        lines.append("last 7 days: " + _metric_line(week))
+    return "\n".join(lines)

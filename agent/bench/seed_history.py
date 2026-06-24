@@ -11,8 +11,12 @@ Run against the instance's data dir, e.g.:
     ./dev python bench/seed_history.py            # default spread
     ./dev python bench/seed_history.py --days 0 1 3 8   # active days-ago
 
-Clears ws_messages first, then inserts — re-running gives the same clean set,
-no duplicates. Writes to $SWARPIUS_DATA_DIR/messages.db (default
+Also seeds the cost ledger (Coordinator per request, plus a daily Analyser and
+Diagnostic charge on distinct models) so the cost dashboard has spread across
+agents, models, conversations and days.
+
+Clears ws_messages + cost_ledger first, then inserts — re-running gives the same
+clean set, no duplicates. Writes to $SWARPIUS_DATA_DIR/messages.db (default
 agent/data/messages.db).
 """
 
@@ -26,7 +30,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from app.data_paths import messages_db_path  # noqa: E402
+from app.data_paths import ensure_dirs, messages_db_path  # noqa: E402
 from app.io.state_db import StateDb  # noqa: E402
 from app.settings.env_file import load_env_into_process  # noqa: E402
 
@@ -37,6 +41,9 @@ load_env_into_process()
 _DEFAULT_DAYS_AGO = [0, 1, 4, 9]
 _TURNS_PER_DAY = 4  # the last turn of each day is a failed request
 _MODEL = "anthropic/claude-sonnet-4-6"
+# Distinct models per agent so the cost dashboard's by-model breakdown has spread.
+_ANALYSER_MODEL = "anthropic/claude-opus-4-8"
+_DIAGNOSTIC_MODEL = "anthropic/claude-haiku-4-5"
 _PROMPTS = [
     ("play some miles davis", "Playing Kind of Blue in the Kitchen."),
     ("what's playing", "Kind of Blue — Miles Davis, in the Kitchen."),
@@ -64,8 +71,21 @@ def _insert(conn, channel: str, payload: dict, created_at: int, meta: dict | Non
     )
 
 
+def _insert_cost(conn, *, agent: str, model: str, cost_usd: float,
+                 input_tokens: int, output_tokens: int, ts: int,
+                 request_id: str | None = None, conversation_id: str | None = None,
+                 steps: int | None = None) -> None:
+    conn.execute(
+        "INSERT INTO cost_ledger (ts, agent, model, request_id, conversation_id, steps, "
+        "input_tokens, output_tokens, cache_creation_tokens, cache_read_tokens, cost_usd) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        (ts, agent, model, request_id, conversation_id, steps,
+         input_tokens, output_tokens, 0, 0, round(cost_usd, 4)),
+    )
+
+
 def _seed_request(conn, rid: str, cmid: str, base: int, user_text: str,
-                  agent_text: str, conv_id: str) -> int:
+                  agent_text: str, conv_id: str, steps: int) -> int:
     """A successful request: chat Q+A plus the agent-outputs lifecycle
     (request_id_assignment → coordinator_step → response → request_complete)
     and a tool call. Appears in Chat, Agents, Tools and Session Requests."""
@@ -98,6 +118,10 @@ def _seed_request(conn, rid: str, cmid: str, base: int, user_text: str,
              "request_id": rid, "total_steps": 1, "total_duration_ms": 2500,
              "status": "ok", "coordinator_model": _MODEL, "conversation_id": conv_id},
             base + 2600)
+    _insert_cost(conn, agent="Coordinator", model=_MODEL,
+                 cost_usd=0.005 + steps * 0.004,
+                 input_tokens=2000 + steps * 800, output_tokens=200 + steps * 40,
+                 ts=base + 2600, request_id=rid, conversation_id=conv_id, steps=steps)
     return 7
 
 
@@ -129,12 +153,14 @@ def _seed_failed(conn, rid: str, cmid: str, base: int, user_text: str,
 
 
 def seed(days_ago: list[int]) -> int:
+    ensure_dirs()
     db = StateDb(messages_db_path())
     inserted = 0
     conv = 0
     try:
         with db.transaction() as conn:
             conn.execute("DELETE FROM ws_messages")  # clean slate — no duplicates on re-run
+            conn.execute("DELETE FROM cost_ledger")
             for day in sorted(days_ago, reverse=True):
                 conv += 1
                 conv_id = f"c{conv:02d}"
@@ -147,7 +173,17 @@ def seed(days_ago: list[int]) -> int:
                         inserted += _seed_failed(conn, rid, cmid, base, user_text, error_text)
                     else:
                         user_text, agent_text = _PROMPTS[(conv + turn) % len(_PROMPTS)]
-                        inserted += _seed_request(conn, rid, cmid, base, user_text, agent_text, conv_id)
+                        # Spread step counts across simple/compound/complex buckets.
+                        steps = 1 + ((conv + turn * 2) % 6)
+                        inserted += _seed_request(conn, rid, cmid, base, user_text, agent_text, conv_id, steps)
+                # A daily Analyser + Diagnostic charge on distinct models.
+                day_end = _ts_ms(day, 23)
+                _insert_cost(conn, agent="Analyser", model=_ANALYSER_MODEL,
+                             cost_usd=0.12 + (conv % 3) * 0.06,
+                             input_tokens=42000, output_tokens=1800, ts=day_end)
+                _insert_cost(conn, agent="Diagnostic", model=_DIAGNOSTIC_MODEL,
+                             cost_usd=0.0004, input_tokens=900, output_tokens=40,
+                             ts=day_end + 1000)
     finally:
         db.close()
     return inserted
@@ -163,8 +199,8 @@ def main() -> None:
     path = messages_db_path()
     print(f"Clearing + seeding history in {path} for days-ago {sorted(args.days, reverse=True)} …")
     n = seed(args.days)
-    print(f"Cleared existing messages, inserted {n} across {len(set(args.days))} day(s). "
-          f"Restart/reconnect the agent to see them.")
+    print(f"Cleared existing messages + cost ledger, inserted {n} messages plus cost rows "
+          f"across {len(set(args.days))} day(s). Restart/reconnect the agent to see them.")
 
 
 if __name__ == "__main__":

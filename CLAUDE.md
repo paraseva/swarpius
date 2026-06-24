@@ -165,10 +165,11 @@ Cross-request context is maintained through providers in the system prompt: exec
 | `skills/*/SKILL.md` | Per-tool prompt guidance loaded at startup; frontmatter controls inclusion |
 | `tools/` | Tool implementations with Pydantic input/output schemas and async execute methods |
 | `usage_metrics.py` | Token accounting per call and session-level rollups |
+| `app/io/cost_ledger.py` | `CostLedger`: one row per LLM agent invocation in `messages.db` (agent/model/tokens/cost/steps), `aggregate()` for the cost dashboard; module-level `get/set_cost_ledger` + `record_cost`/`record_cost_from_usage` helpers used by every LLM consumer |
 | `app/cli/history.py` | Readline history persistence for CLI mode (load on entry, save in finally; safe when readline is missing) |
 | `app/cli/runner.py` | Two-tap Ctrl+C cancellation wrapper for CLI requests (`CancelHandler` + daemon-thread runner) |
 | `app/cli/telemetry.py` | Per-request usage one-liner formatter |
-| `app/cli/session_usage.py` | Session-level usage aggregator + `/usage` detailed view |
+| `app/cli/session_usage.py` | Session-level usage aggregator + `/usage` detailed view; `format_cost_overview()` renders the all-time cost block (from the cost ledger) for `/usage` |
 | `app/cli/log_routing.py` | Routes INFO chatter to file (CLI mode + installer bundle); bumps stderr handler to WARNING |
 | `app/cli/startup_banner.py` | Renders the at-a-glance startup banner (Roon Core, models, web search, TTS, etc.) |
 
@@ -208,6 +209,7 @@ Messages are JSON `{"channel": "<name>", "payload": ...}`. Key channels:
 - `chat`: user messages in / agent `chat_response` out
 - `agent-outputs`, `tool-outputs`: diagnostic event streams
 - `usage-metrics`, `llm-diagnostics`, `rate-limit`: telemetry
+- `cost-metrics-request/response`: cost dashboard query (range + agent/model filter) → ledger aggregate
 - `zone-snapshots`: holistic snapshot of every Roon zone, re-emitted on any change
 - `session-control-request/response`: interrupt/cancel controls
 - `roon-control-request/response`: direct Roon control from frontend
@@ -253,6 +255,7 @@ React 19 app using Vite (rolldown-vite). `WebSocketProvider` (`WebSocketProvider
 | `PromptBudgetPanel` | Rolling 60-second and session-wide token aggregation by provider |
 | `RequestSummaryPanel` | Per-request summary cards with timing and step counts |
 | `SessionSummaryBar` | Session-level usage summary bar |
+| `CostDashboard` | Always-available cost view (header `$` icon, not Developer Mode): LLM spend over time, by agent, by model, and mean cost per request by complexity, with date-range + agent/model filters. Requests `cost-metrics` and renders the ledger aggregate; reuses the analysis metrics chart styling |
 | `HistoryWindow` | Scrollable diagnostic-channel history (per channel); lazy-loads older days on scroll-up and syncs to a focused request |
 | `FormattedMessageBody` | Renders message bodies: source labels, JSON prettification, plan extraction |
 | `RequestIdBadge` | Request ID badge: copies to clipboard; when on a request-aware surface (`syncKey`), the id focuses that request across all open panels |

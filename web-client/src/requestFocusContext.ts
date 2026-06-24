@@ -5,6 +5,9 @@ import { createContext, useContext } from 'react'
  *  re-clicking the same request re-fire the sync. */
 export interface FocusedRequest {
   requestId: string
+  /** Local calendar day (YYYY-MM-DD) of the clicked request. Conversation ids
+   *  reset daily, so the request id alone is ambiguous across days. */
+  day: string | null
   /** The surface the click came from — it stays put rather than scrolling. */
   sourceKey: string
   nonce: number
@@ -12,7 +15,7 @@ export interface FocusedRequest {
 
 export interface RequestFocusContextValue {
   focusedRequest: FocusedRequest | null
-  focusRequest: (requestId: string, sourceKey: string) => void
+  focusRequest: (requestId: string, sourceKey: string, day?: string | null) => void
 }
 
 export const RequestFocusContext = createContext<RequestFocusContextValue | undefined>(undefined)

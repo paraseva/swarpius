@@ -209,7 +209,7 @@ After startup, the terminal shows a clean banner with the resolved configuration
 ### Prompt commands and shortcuts
 
 - `/exit`: quit cleanly.
-- `/usage`: print the running session totals plus per-request averages on demand.
+- `/usage`: print the running session totals plus per-request averages, followed by an all-time cost summary (total, by agent, by model, last 7 days) drawn from the cost ledger.
 - **Ctrl+C at the prompt**: first press clears the line and prints `(press Ctrl+C again to exit, or /exit)`; second consecutive press quits cleanly. Any successful command receipt resets the armed state.
 - **Ctrl+C during a request**: first press cancels the in-flight request gracefully via the existing cancel-event infrastructure; second press exits the program. The daemon worker dies with the process.
 - **Ctrl+D (Linux/macOS)** or **Ctrl+Z + Enter (Windows)**: exit cleanly.

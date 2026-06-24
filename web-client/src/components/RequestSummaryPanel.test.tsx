@@ -49,6 +49,7 @@ const buildRequest = (
   opts: {
     conversationId?: string
     status?: string
+    error?: string
     steps?: number
     durationMs?: number
     inputText?: string
@@ -69,15 +70,11 @@ const buildRequest = (
   tsCounter += 10000 // separate requests in time
   const msgs: SocketMessage[] = []
 
-  if (opts.inputText) {
-    msgs.push(makeMsg('chat', { body: opts.inputText }, 'outbound', ts - 100))
-  }
-
   msgs.push(
     makeMsg('agent-outputs', {
       source: '[Request]',
       request_id: requestId,
-      text: `Processing: ${opts.inputText ?? 'test'}`,
+      user_input: opts.inputText,
     }, 'inbound', ts),
   )
 
@@ -111,6 +108,7 @@ const buildRequest = (
       total_steps: opts.steps ?? (calls.length || 2),
       total_duration_ms: opts.durationMs ?? 3500,
       status: opts.status ?? 'completed',
+      error: opts.error,
       conversation_id: opts.conversationId ?? 'c01',
     }, 'inbound', ts),
   )
@@ -317,44 +315,26 @@ describe('RequestSummaryPanel', () => {
     expect(screen.queryByText('roon_search output')).toBeNull()
   })
 
-  it('shows step indicator dots (green for normal, red for failures)', async () => {
+  it('surfaces a failed request with its reason in the timeline', async () => {
     const user = userEvent.setup()
-    const ts = 1711900000000
-    const msgs = [
-      makeMsg('agent-outputs', {
-        source: '[Request]', request_id: 'rq-c01-0001', text: 'test',
-      }, 'inbound', ts),
-      // LLM failure before any step
-      makeMsg('llm-diagnostics', {
-        event_type: 'call_failed', call_id: 'f1', agent_name: 'Coordinator',
-        request_id: 'rq-c01-0001', error: 'Rate limit', duration_ms: 50, timestamp_ms: ts + 5,
-      }, 'inbound', ts + 5),
-      // Then a successful call + step
-      makeMsg('llm-diagnostics', {
-        event_type: 'call_completed', call_id: 'c1', agent_name: 'Coordinator',
-        request_id: 'rq-c01-0001', prompt_tokens: 800, output_tokens: 100,
-        cache_read_input_tokens: 0, duration_ms: 500, timestamp_ms: ts + 20,
-      }, 'inbound', ts + 20),
-      makeMsg('agent-outputs', {
-        event_type: 'coordinator_step', request_id: 'rq-c01-0001',
-        step: 1, selected_skill: 'chat_response', done: true, duration_ms: 550,
-      }, 'inbound', ts + 25),
-      makeMsg('agent-outputs', {
-        event_type: 'request_complete', request_id: 'rq-c01-0001',
-        total_steps: 1, total_duration_ms: 600, status: 'completed', conversation_id: 'c01',
-      }, 'inbound', ts + 50),
-    ]
+    const msgs = buildRequest('rq-c01-0001', {
+      conversationId: 'c01',
+      inputText: 'Play jazz',
+      status: 'error',
+      error: 'Timeout: connection timed out',
+    })
 
     const { container } = renderWithMessages(msgs)
 
+    // A failed request still appears (its lifecycle is closed with status=error).
     const groups = getConversationGroups(container)
     await user.click(getConversationButton(groups[0]))
     const reqButton = getRequestButtons(container)[0]
-    await user.click(reqButton)
+    expect(within(reqButton).getByText('error')).toBeInTheDocument()
 
-    // Should have a failure step and a normal step — verify by text
-    expect(screen.getByText(/LLM FAIL/)).toBeInTheDocument()
-    expect(screen.getByText(/Step 1: chat_response/)).toBeInTheDocument()
+    // Expanding it shows the failure reason.
+    await user.click(reqButton)
+    expect(screen.getByText(/Timeout: connection timed out/)).toBeInTheDocument()
   })
 
   // ── Collapse behaviour ─────────────────────────────────────────

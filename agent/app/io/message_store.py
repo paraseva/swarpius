@@ -50,14 +50,17 @@ class MessageStore(ABC):
         messages with ``created_at >= since_ms`` are returned."""
 
     @abstractmethod
-    def load_day(self, before_ms: int) -> Dict[str, Any]:
+    def load_day(self, before_ms: int, channel: Optional[str] = None) -> Dict[str, Any]:
         """Return the most recent non-empty calendar day at or before
-        ``before_ms``: {"messages": [...], "has_older": bool}."""
+        ``before_ms``: {"messages": [...], "has_older": bool}. With ``channel``,
+        the day is found and loaded for that channel alone (so a sparse panel
+        finds its own previous day of content, independently of other channels)."""
 
     @abstractmethod
-    def load_range(self, start_ms: int, end_ms: int) -> Dict[str, Any]:
+    def load_range(self, start_ms: int, end_ms: int, channel: Optional[str] = None) -> Dict[str, Any]:
         """Return every message in ``[start_ms, end_ms)`` (oldest first):
-        {"messages": [...], "has_older": bool}. Used to fill the gap when
+        {"messages": [...], "has_older": bool}. With ``channel``, scoped to that
+        channel alone. Used to fill the gap when
         jumping to an older date, keeping the loaded history contiguous."""
 
     @abstractmethod
@@ -108,54 +111,109 @@ class SqliteMessageStore(MessageStore):
             rows = cursor.fetchall()
         return [self._row_to_dict(row) for row in rows]
 
-    def load_day(self, before_ms: int) -> Dict[str, Any]:
+    def load_day(self, before_ms: int, channel: Optional[str] = None) -> Dict[str, Any]:
         """The lazy-load primitive: the most recent non-empty calendar day at
         or before ``before_ms`` (skipping empty days), with ``has_older`` set
         when earlier history exists. ``messages`` is empty when there is no
         history at or before the cursor. Day boundaries are local time
-        (matching the date picker's native date input)."""
+        (matching the date picker's native date input). With ``channel``, the
+        find/load/has_older are all scoped to that channel."""
+        # Optional channel filter applied identically to the find, load, and
+        # has_older queries so a per-channel load is self-consistent.
+        ch = " AND channel = ?" if channel else ""
+        ch_arg = (channel,) if channel else ()
         with self._db.lock:
             row = self._db.conn.execute(
-                "SELECT MAX(created_at) FROM ws_messages WHERE created_at <= ?",
-                (before_ms,),
+                f"SELECT MAX(created_at) FROM ws_messages WHERE created_at <= ?{ch}",
+                (before_ms, *ch_arg),
             ).fetchone()
             newest = row[0] if row else None
             if newest is None:
                 return {"messages": [], "has_older": False}
             day_start, day_end = _local_day_bounds(newest)
             rows = self._db.conn.execute(
-                "SELECT id, channel, payload, meta, created_at FROM ws_messages "
-                "WHERE created_at >= ? AND created_at < ? ORDER BY id",
-                (day_start, day_end),
+                f"SELECT id, channel, payload, meta, created_at FROM ws_messages "
+                f"WHERE created_at >= ? AND created_at < ?{ch} ORDER BY id",
+                (day_start, day_end, *ch_arg),
             ).fetchall()
             has_older = bool(
                 self._db.conn.execute(
-                    "SELECT EXISTS(SELECT 1 FROM ws_messages WHERE created_at < ?)",
-                    (day_start,),
+                    f"SELECT EXISTS(SELECT 1 FROM ws_messages WHERE created_at < ?{ch})",
+                    (day_start, *ch_arg),
                 ).fetchone()[0],
             )
+            assignments = self._assignment_map(day_start, day_end) if channel == "chat" else {}
+        messages = [self._row_to_dict(r) for r in rows]
+        self._stamp_request_ids(messages, assignments)
         return {
-            "messages": [self._row_to_dict(r) for r in rows],
+            "messages": messages,
             "has_older": has_older,
         }
 
-    def load_range(self, start_ms: int, end_ms: int) -> Dict[str, Any]:
+    def load_range(self, start_ms: int, end_ms: int, channel: Optional[str] = None) -> Dict[str, Any]:
+        # Optional channel filter applied identically to the load and has_older
+        # queries, so a per-channel range stays self-consistent (mirrors load_day).
+        ch = " AND channel = ?" if channel else ""
+        ch_arg = (channel,) if channel else ()
         with self._db.lock:
             rows = self._db.conn.execute(
-                "SELECT id, channel, payload, meta, created_at FROM ws_messages "
-                "WHERE created_at >= ? AND created_at < ? ORDER BY created_at, id",
-                (start_ms, end_ms),
+                f"SELECT id, channel, payload, meta, created_at FROM ws_messages "
+                f"WHERE created_at >= ? AND created_at < ?{ch} ORDER BY created_at, id",
+                (start_ms, end_ms, *ch_arg),
             ).fetchall()
             has_older = bool(
                 self._db.conn.execute(
-                    "SELECT EXISTS(SELECT 1 FROM ws_messages WHERE created_at < ?)",
-                    (start_ms,),
+                    f"SELECT EXISTS(SELECT 1 FROM ws_messages WHERE created_at < ?{ch})",
+                    (start_ms, *ch_arg),
                 ).fetchone()[0],
             )
+            assignments = self._assignment_map(start_ms, end_ms) if channel == "chat" else {}
+        messages = [self._row_to_dict(r) for r in rows]
+        self._stamp_request_ids(messages, assignments)
         return {
-            "messages": [self._row_to_dict(r) for r in rows],
+            "messages": messages,
             "has_older": has_older,
         }
+
+    def _assignment_map(self, start_ms: int, end_ms: int) -> Dict[str, str]:
+        """``client_msg_id`` → ``request_id`` from request_id_assignment events in
+        ``[start_ms, end_ms)``. A chat-only load uses this to stamp the request_id
+        onto user-input rows, which don't carry one themselves (it lives on the
+        agent-outputs assignment event). Caller holds the DB lock."""
+        rows = self._db.conn.execute(
+            "SELECT payload FROM ws_messages WHERE channel = 'agent-outputs' "
+            "AND created_at >= ? AND created_at < ? AND payload LIKE '%request_id_assignment%'",
+            (start_ms, end_ms),
+        ).fetchall()
+        mapping: Dict[str, str] = {}
+        for (payload_json,) in rows:
+            try:
+                payload = json.loads(payload_json)
+            except (json.JSONDecodeError, TypeError):
+                continue
+            if payload.get("event_type") != "request_id_assignment":
+                continue
+            client_msg_id, request_id = payload.get("client_msg_id"), payload.get("request_id")
+            if isinstance(client_msg_id, str) and isinstance(request_id, str):
+                mapping[client_msg_id] = request_id
+        return mapping
+
+    @staticmethod
+    def _stamp_request_ids(messages: List[Dict[str, Any]], assignments: Dict[str, str]) -> None:
+        """Stamp ``request_id`` into a user input's meta from the assignment map,
+        so the client can correlate a replayed chat without the agent-outputs."""
+        if not assignments:
+            return
+        for message in messages:
+            meta = message.get("meta")
+            payload = message.get("payload")
+            if not isinstance(meta, dict) or "request_id" in meta:
+                continue
+            if isinstance(payload, dict) and payload.get("request_id"):
+                continue
+            request_id = assignments.get(meta.get("client_msg_id"))
+            if request_id:
+                meta["request_id"] = request_id
 
     @staticmethod
     def _row_to_dict(row: Any) -> Dict[str, Any]:
@@ -198,10 +256,10 @@ class NullMessageStore(MessageStore):
     def get_all(self, since_ms: Optional[int] = None) -> List[Dict[str, Any]]:
         return []
 
-    def load_day(self, before_ms: int) -> Dict[str, Any]:
+    def load_day(self, before_ms: int, channel: Optional[str] = None) -> Dict[str, Any]:
         return {"messages": [], "has_older": False}
 
-    def load_range(self, start_ms: int, end_ms: int) -> Dict[str, Any]:
+    def load_range(self, start_ms: int, end_ms: int, channel: Optional[str] = None) -> Dict[str, Any]:
         return {"messages": [], "has_older": False}
 
     def close(self) -> None:

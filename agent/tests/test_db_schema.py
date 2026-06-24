@@ -57,6 +57,8 @@ class TestRunMigrations(unittest.TestCase):
             self.assertIn("ws_messages", tables)
             self.assertIn("agent_state", tables)
             self.assertIn("listening_history", tables)
+            self.assertIn("cost_ledger", tables)
+            self.assertIn("steps", _column_names(conn, "cost_ledger"))
             # Bucket-2 grouping columns present on the transcript table.
             ws_cols = _column_names(conn, "ws_messages")
             self.assertIn("request_id", ws_cols)
@@ -102,6 +104,98 @@ class TestRunMigrations(unittest.TestCase):
             self.assertIn("listening_history", _table_names(conn))
         finally:
             conn.close()
+
+    def test_v1_db_gains_cost_ledger_on_upgrade(self):
+        """An existing v1 DB (no cost_ledger) gains it via the 1->2 step."""
+        from app.io.db_schema import _migrate_0_to_1
+        path = self._dir / "state.db"
+        seed = sqlite3.connect(str(path))
+        _migrate_0_to_1(seed)
+        seed.execute("PRAGMA user_version = 1")
+        seed.commit()
+        self.assertNotIn("cost_ledger", _table_names(seed))
+        seed.close()
+
+        conn = sqlite3.connect(str(path))
+        try:
+            run_migrations(conn)
+            self.assertEqual(_user_version(conn), CURRENT_SCHEMA_VERSION)
+            self.assertIn("cost_ledger", _table_names(conn))
+        finally:
+            conn.close()
+
+    def test_v3_backfills_request_complete_for_past_failures(self):
+        """A past failure recorded only on the errors channel gains a
+        request_complete (status=error, carrying the reason) so it surfaces as
+        a failed request; an already-completed request is not duplicated."""
+        import json
+
+        from app.io.db_schema import _migrate_0_to_1, _migrate_3_to_4
+
+        seed = sqlite3.connect(":memory:")
+        _migrate_0_to_1(seed)
+        seed.execute(
+            "INSERT INTO ws_messages (channel, payload, created_at) VALUES (?, ?, ?)",
+            ("errors", json.dumps(
+                {"source": "[Request]", "error": "Timeout", "request_id": "rq-c01-0015"}), 1000),
+        )
+        seed.execute(
+            "INSERT INTO ws_messages (channel, payload, created_at) VALUES (?, ?, ?)",
+            ("agent-outputs", json.dumps(
+                {"event_type": "request_complete", "request_id": "rq-c01-0001", "status": "completed"}), 2000),
+        )
+
+        _migrate_3_to_4(seed)
+
+        completes = [
+            json.loads(p) for (p,) in seed.execute(
+                "SELECT payload FROM ws_messages WHERE channel = 'agent-outputs' "
+                "AND payload LIKE '%request_complete%'",
+            ).fetchall()
+        ]
+        backfilled = [c for c in completes if c["request_id"] == "rq-c01-0015"]
+        self.assertEqual(len(backfilled), 1)
+        self.assertEqual(backfilled[0]["status"], "error")
+        self.assertEqual(backfilled[0]["error"], "Timeout")
+        self.assertEqual(backfilled[0]["conversation_id"], "c01")
+        # The already-completed request is untouched (no duplicate).
+        self.assertEqual(len([c for c in completes if c["request_id"] == "rq-c01-0001"]), 1)
+        seed.close()
+
+    def test_v3_backfill_is_day_aware(self):
+        """The same request id on two days — completed on day A, failed on
+        day B — back-fills only the failed day (ids reset daily)."""
+        import json
+        from datetime import datetime
+
+        from app.io.db_schema import _migrate_0_to_1, _migrate_3_to_4
+
+        day_a = int(datetime(2026, 6, 10, 12).timestamp() * 1000)
+        day_b = int(datetime(2026, 6, 11, 12).timestamp() * 1000)
+        seed = sqlite3.connect(":memory:")
+        _migrate_0_to_1(seed)
+        seed.execute(
+            "INSERT INTO ws_messages (channel, payload, created_at) VALUES (?, ?, ?)",
+            ("agent-outputs", json.dumps(
+                {"event_type": "request_complete", "request_id": "rq-c04-0001", "status": "completed"}), day_a),
+        )
+        seed.execute(
+            "INSERT INTO ws_messages (channel, payload, created_at) VALUES (?, ?, ?)",
+            ("errors", json.dumps(
+                {"source": "[Request]", "error": "Boom", "request_id": "rq-c04-0001"}), day_b),
+        )
+
+        _migrate_3_to_4(seed)
+
+        c04 = [
+            json.loads(p) for (p,) in seed.execute(
+                "SELECT payload FROM ws_messages WHERE channel = 'agent-outputs' "
+                "AND payload LIKE '%request_complete%'",
+            ).fetchall()
+        ]
+        self.assertEqual(len(c04), 2)
+        self.assertEqual({c["status"] for c in c04}, {"completed", "error"})
+        seed.close()
 
     def test_migration_is_idempotent(self):
         path = self._dir / "state.db"

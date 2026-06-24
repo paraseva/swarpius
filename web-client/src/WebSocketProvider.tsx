@@ -85,8 +85,10 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
   const messages = messageState.messages
   const trimmedCount = messageState.trimmedCount
   const [isLlmActive, setIsLlmActive] = useState(false)
-  const [reachedBeginning, setReachedBeginning] = useState(false)
-  const [historyBatchToken, setHistoryBatchToken] = useState(0)
+  // Per-channel history state — every panel loads its own channel independently,
+  // so one panel's loading never touches another's. No global cursor.
+  const [reachedBeginningByChannel, setReachedBeginningByChannel] = useState<Map<string, boolean>>(new Map())
+  const [historyBatchTokenByChannel, setHistoryBatchTokenByChannel] = useState<Map<string, number>>(new Map())
   const [latestZoneSnapshot, setLatestZoneSnapshot] = useState<unknown>(null)
   const [connectionGeneration, setConnectionGeneration] = useState(0)
   const [isRestarting, setIsRestarting] = useState(false)
@@ -132,7 +134,8 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
         // half-finished dirty-edits, etc.) — the server replays
         // whatever remains relevant.
         setMessageState({ messages: [], trimmedCount: 0 })
-        setReachedBeginning(false)
+        setReachedBeginningByChannel(new Map())
+        setHistoryBatchTokenByChannel(new Map())
         activeCallIdsRef.current.clear()
         setIsLlmActive(false)
         setConnectionGeneration((g) => g + 1)
@@ -199,19 +202,26 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
         // Passive history-cursor signal: not a message, just whether older
         // history exists past what's now loaded. Drives "can I scroll back".
         if (channel === 'history-cursor') {
-          const hasOlder = (payload as { has_older?: boolean } | undefined)?.has_older
-          setReachedBeginning(hasOlder === false)
-          // The cursor closes a history batch (it's sent after the day's
-          // messages). Bumping the token lets scroll-back release its in-flight
-          // guard exactly when the batch is fully delivered.
-          setHistoryBatchToken((t) => t + 1)
+          const cursor = payload as { has_older?: boolean; channel?: string } | undefined
+          const cursorChannel = cursor?.channel
+          // Closes a per-channel history batch (sent after the day's messages):
+          // record whether older history remains and bump the channel's token, so
+          // that channel's scroll-back releases its in-flight guard exactly when
+          // the batch is fully delivered. The connect's channel-less replay sends
+          // no meaningful cursor and is ignored.
+          if (cursorChannel) {
+            setReachedBeginningByChannel((m) => new Map(m).set(cursorChannel, cursor?.has_older === false))
+            setHistoryBatchTokenByChannel((m) => new Map(m).set(cursorChannel, (m.get(cursorChannel) ?? 0) + 1))
+          }
           return
         }
 
         if (IGNORED_CHANNELS.has(channel)) return
 
-        // Incremental active-call tracking.
-        if (channel === 'llm-diagnostics' && payload && typeof payload === 'object' && !Array.isArray(payload)) {
+        // Incremental active-call tracking — live events only. Replayed history
+        // carries old call_started/completed events; counting them would make a
+        // history load briefly flip "LLM active" on (a phantom "Thinking" bubble).
+        if (channel === 'llm-diagnostics' && !meta?.historical && payload && typeof payload === 'object' && !Array.isArray(payload)) {
           const llmEvent = payload as LlmCallEvent
           if (llmEvent.call_id) {
             if (llmEvent.event_type === 'call_started') {
@@ -310,12 +320,12 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
   // before beforeMs. The reply arrives as ordinary messages on their channels
   // (handled by the passive receive above) plus a history-cursor signal — no
   // response correlation here.
-  const requestHistory = useCallback((beforeMs: number) => {
+  const requestHistory = useCallback((beforeMs: number, channel?: string) => {
     const socket = socketRef.current
     if (socket && socket.readyState === WebSocket.OPEN) {
       socket.send(JSON.stringify({
         channel: 'history-request',
-        body: JSON.stringify({ before_ms: beforeMs }),
+        body: JSON.stringify(channel ? { before_ms: beforeMs, channel } : { before_ms: beforeMs }),
       }))
     }
   }, [])
@@ -323,13 +333,12 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
   // Load a contiguous range [startMs, endMs) — used by the date picker to
   // fill the gap between a jumped-to day and what's already loaded, so the
   // history stays contiguous.
-  const requestHistoryRange = useCallback((startMs: number, endMs: number) => {
+  const requestHistoryRange = useCallback((startMs: number, endMs: number, channel?: string) => {
     const socket = socketRef.current
     if (socket && socket.readyState === WebSocket.OPEN) {
-      socket.send(JSON.stringify({
-        channel: 'history-request',
-        body: JSON.stringify({ start_ms: startMs, end_ms: endMs }),
-      }))
+      const body: Record<string, unknown> = { start_ms: startMs, end_ms: endMs }
+      if (channel) body.channel = channel
+      socket.send(JSON.stringify({ channel: 'history-request', body: JSON.stringify(body) }))
     }
   }, [])
 
@@ -341,8 +350,8 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
       clearMessages,
       requestHistory,
       requestHistoryRange,
-      reachedBeginning,
-      historyBatchToken,
+      reachedBeginningByChannel,
+      historyBatchTokenByChannel,
       isLlmActive,
       latestZoneSnapshot,
       trimmedCount,
@@ -352,8 +361,8 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
     }),
     [
       status, messages, sendMessage, clearMessages, requestHistory, requestHistoryRange,
-      reachedBeginning, historyBatchToken, isLlmActive, latestZoneSnapshot,
-      trimmedCount, connectionGeneration, isRestarting, markRestarting,
+      reachedBeginningByChannel, historyBatchTokenByChannel,
+      isLlmActive, latestZoneSnapshot, trimmedCount, connectionGeneration, isRestarting, markRestarting,
     ],
   )
 

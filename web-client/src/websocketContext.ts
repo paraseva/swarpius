@@ -31,6 +31,8 @@ export type ChannelId =
   | 'analysis-run-response'
   | 'analysis-metrics-request'
   | 'analysis-metrics-response'
+  | 'cost-metrics-request'
+  | 'cost-metrics-response'
   | 'settings-read-request'
   | 'settings-read-response'
   | 'settings-save-request'
@@ -64,20 +66,23 @@ export interface WebSocketContextValue {
    *  not supply it; the live provider always does. */
   clearMessages?: () => void
   /** Fire-and-forget request for the most recent non-empty day of history at
-   *  or before `beforeMs`. The reply arrives as ordinary messages (passive
-   *  receive) plus a history-cursor signal — there is no response to await. */
-  requestHistory?: (beforeMs: number) => void
-  /** Fire-and-forget request for a contiguous range [startMs, endMs). Used by
-   *  the date picker to fill the gap to an older day, keeping loaded history
-   *  contiguous. */
-  requestHistoryRange?: (startMs: number, endMs: number) => void
-  /** True once the server has signalled (via history-cursor) that no older
-   *  history exists past what is loaded — i.e. scroll-back is exhausted. */
-  reachedBeginning?: boolean
-  /** Increments each time a history batch finishes delivering (a
-   *  history-cursor is received). Lets scroll-back release its in-flight
-   *  guard exactly when a requested day is fully loaded. */
-  historyBatchToken?: number
+   *  or before `beforeMs`. With `channel`, only that channel is loaded (and its
+   *  cursor echoed) so a diagnostics panel loads independently of the others.
+   *  The reply arrives as ordinary messages (passive receive) plus a
+   *  history-cursor signal — there is no response to await. */
+  requestHistory?: (beforeMs: number, channel?: string) => void
+  /** Fire-and-forget request for a contiguous range [startMs, endMs). With
+   *  `channel`, scoped to that channel (and its cursor echoed). Used to fill the
+   *  gap to an older day, keeping a channel's loaded history contiguous. */
+  requestHistoryRange?: (startMs: number, endMs: number, channel?: string) => void
+  /** Per-channel "scroll-back exhausted" flag (no older history past what's
+   *  loaded), keyed by channel; absent ⇒ not yet known. Every panel loads its
+   *  own channel, so there is no global equivalent. */
+  reachedBeginningByChannel?: Map<string, boolean>
+  /** Per-channel batch token: increments each time that channel's history batch
+   *  finishes delivering (its history-cursor arrives), so scroll-back releases
+   *  its in-flight guard exactly when the requested day is loaded. */
+  historyBatchTokenByChannel?: Map<string, number>
   /** Whether any LLM call is currently in-flight (tracked incrementally). */
   isLlmActive: boolean
   /** Parsed payload of the most recent `zone-snapshots` message, or null

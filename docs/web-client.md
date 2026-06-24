@@ -61,6 +61,7 @@ src/
 │   ├── TtsToggle.tsx           TTS on/off toggle
 │   ├── TtsStatusIndicator.tsx  Per-message TTS sending/playing indicator
 │   ├── FormattedMessageBody.tsx Renders parsed message (source label, JSON, plan blocks)
+│   ├── CostDashboard.tsx       Always-available cost view (cost-metrics channel); reuses AnalysisBrowser chart styles
 │   ├── AnalysisBrowser.tsx     Browse and display conversation analysis results
 │   ├── AnalysisDetailView.tsx  Single-conversation detail view inside AnalysisBrowser
 │   ├── AnalysisHistoryView.tsx History/timeline view inside AnalysisBrowser
@@ -153,6 +154,10 @@ Primary chat interface. Features:
 
 `Settings/PrivacyTab` — an action tab (not part of Save & Validate) with two destructive controls, each behind an inline confirm: **Clear conversation history** (chat transcript + working memory) and **Clear listening history**. Conversation clearing is disabled while a request is in flight.
 
+### Cost dashboard
+
+`CostDashboard` — an always-available top-level view (the `$` header icon, not gated on Developer Mode). On open and whenever a filter changes it sends a `cost-metrics-request` (optional `since_ms`/`until_ms` from After/Before date inputs, plus agent and model filters) and renders the matching `cost-metrics-response` it observes on the message stream, correlated by `request_id`. The aggregate drives summary cards, a cost-and-tokens trend, a by-agent donut, a by-model bar, and a mean-cost-by-complexity chart. It imports `AnalysisBrowser.module.css` so it matches the analysis metrics page; only a small `CostDashboard.module.css` carries the cost-specific tweaks.
+
 ### ZoneStatusPanel
 
 Live Roon zone playback display. Features:
@@ -213,6 +218,8 @@ The client's `ChannelId` type and the backend's `CHANNEL_*` constants must stay 
 | `session-control-response` | In | useChatBannerManager (banners on ChatPanel) |
 | `history-request` | Out | WebSocketProvider (`requestHistory` / `requestHistoryRange`) — fire-and-forget day / range load |
 | `history-cursor` | In | WebSocketProvider (passive: whether older history exists; closes a load batch) |
+| `cost-metrics-request` | Out | CostDashboard (range + agent/model filter) |
+| `cost-metrics-response` | In | CostDashboard (ledger aggregate, correlated by request_id) |
 | `clear-conversation-request` / `-response` | Both | Settings/PrivacyTab |
 | `clear-listening-history-request` / `-response` | Both | Settings/PrivacyTab |
 | `analysis-*` | Both | AnalysisBrowser (covers `analysis-list-*`, `-detail-*`, `-run-*`, `-metrics-*`, `-update`, `-feedback-*`, `-result-handle-*`, `-request-logs-*`) |

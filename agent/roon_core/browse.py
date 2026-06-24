@@ -650,6 +650,29 @@ class RoonBrowseMixin:
             cached_item_key=ref.cached_item_key,
         )
 
+    def _match_level_item(
+        self,
+        items: List[RoonCoreItemSchema],
+        position: Optional[str],
+        identity: ItemIdentity,
+    ) -> Optional[RoonCoreItemSchema]:
+        """Locate an item at a re-searched level. Prefer the item at the
+        recorded ``position`` when its identity still matches — the only way to
+        separate items identical in title/subtitle/image_key — otherwise fall
+        back to the best identity match. ``None`` if neither matches."""
+        if position is not None:
+            at_position = next(
+                (
+                    item
+                    for item in items
+                    if self._item_key_position(item.item_key) == position
+                ),
+                None,
+            )
+            if at_position is not None and fuzzy_find([at_position], identity):
+                return at_position
+        return fuzzy_find(items, identity)
+
     def _semantic_recover(
         self,
         ref: StableReference,
@@ -699,9 +722,11 @@ class RoonBrowseMixin:
             except ExternalServiceError:
                 return False
 
+        path = ref.item_key_path
         position_path: List[str] = []
-        for ancestor in ref.recipe.parent_chain:
-            match = fuzzy_find(results.items, ancestor)
+        for index, ancestor in enumerate(ref.recipe.parent_chain):
+            expected = path[index] if index < len(path) - 1 else None
+            match = self._match_level_item(results.items, expected, ancestor)
             if not match:
                 return False
             pos = self._item_key_position(match.item_key)
@@ -717,7 +742,9 @@ class RoonBrowseMixin:
             except ExternalServiceError:
                 return False
 
-        target = fuzzy_find(results.items, ref.identity)
+        target = self._match_level_item(
+            results.items, path[-1] if path else None, ref.identity,
+        )
         if not target:
             return False
 

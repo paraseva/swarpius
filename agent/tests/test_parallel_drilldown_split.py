@@ -69,6 +69,15 @@ def _ref_for(output, title: str) -> str:
     raise AssertionError(f"no reference for {title!r} in {_titles(output)}")
 
 
+def _refs_for(output, title: str) -> list[str]:
+    return [
+        item.reference
+        for group in output.groups
+        for item in group.items
+        if item.title == title
+    ]
+
+
 def _titles(output) -> list[str]:
     return [item.title for group in output.groups for item in group.items]
 
@@ -132,3 +141,49 @@ def test_reference_recovers_after_its_session_is_recycled():
 
     assert "Album B Track 1" in _titles(result)
     assert "Album A Track 1" not in _titles(result)
+
+
+def _build_twin_fake() -> StatefulBrowseFake:
+    """Two releases identical in title, subtitle and image_key but with
+    different tracklists — separable only by position."""
+    def twin(track_prefix: str) -> node:
+        return node(
+            "Twin", "Dupes", image_key="img-T", hint="list",
+            children=[
+                node("Play Album", "", hint="action_list"),
+                node(f"{track_prefix} 1", "Dupes", hint="action_list"),
+                node(f"{track_prefix} 2", "Dupes", hint="action_list"),
+            ],
+        )
+
+    fake = StatefulBrowseFake()
+    fake.install_search("dupes", [
+        node("Dupes", "2 Albums", hint="list", children=[
+            node("Play Artist", "", hint="action_list"),
+            twin("Twin A Track"),
+            twin("Twin B Track"),
+        ]),
+    ])
+    return fake
+
+
+def test_position_first_re_establishes_the_right_identical_metadata_twin():
+    """When two items share title, subtitle and image_key, only their position
+    distinguishes them. Re-establishment must land on the item at the
+    reference's recorded position, not merely the first identity match."""
+    fake = _build_twin_fake()
+    tool = _tool(fake)
+
+    search = _new_search(tool, "dupes")
+    albums = _drill(tool, _ref_for(search, "Dupes"))
+    parent_session = albums.session_key
+    twin_refs = _refs_for(albums, "Twin")
+    assert len(twin_refs) == 2
+
+    # Force the re-establish path for the *second* twin.
+    fake.session_manager._in_use.add(parent_session)
+    result = _drill(tool, twin_refs[1])
+
+    titles = _titles(result)
+    assert "Twin B Track 1" in titles
+    assert "Twin A Track 1" not in titles

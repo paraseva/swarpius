@@ -80,6 +80,20 @@ class TestClearConversationState(unittest.TestCase):
         # (there's no connection here; the call must be a safe no-op for it).
         self.assertEqual(runtime.conversation_history_provider.get_info(), "")
 
+    def test_clear_advances_to_a_fresh_conversation(self):
+        # A clear opens a fresh conversation for logging/analysis: the counter
+        # keeps incrementing (cNN+1) and the diagnostic agent sees no prior
+        # threads to continue.
+        runtime = self._runtime()
+        gen = runtime.request_id_generator
+        gen.next_id()  # opens c01
+        gen.tracker.update_topic("c01", "playing jazz")
+
+        runtime.clear_conversation_state()
+
+        self.assertEqual(gen.tracker.get_active_threads(), [])
+        self.assertEqual(gen.next_id(), "rq-c02-0001")
+
 
 if __name__ == "__main__":
     unittest.main()

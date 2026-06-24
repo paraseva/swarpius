@@ -730,6 +730,12 @@ class RuntimeState(_StateInitMixin, _StateZoneMixin):
             session_manager._session_current_list.clear()
             self.roon_connection._queue_ref_maps.clear()
 
+        # Open a fresh conversation for the logs/analyser: keep the counter
+        # (cNN+1) and drop the cleared threads so the diagnostic agent has no
+        # prior conversation to continue.
+        if self.request_id_generator is not None:
+            self.request_id_generator.tracker.clear_active()
+
         # Persist the now-empty state, then wipe the transcript.
         self.persist_state()
         from app.io.message_store import get_message_store

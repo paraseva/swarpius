@@ -134,6 +134,7 @@ def resolve_batch_size(default: int = DEFAULT_BATCH_SIZE) -> int:
 
 
 ANALYSIS_FILENAME = "analysis.yaml"
+SKIPPED_FILENAME = "analysis.skipped.yaml"
 FEEDBACK_FILENAME = "feedback.yaml"
 HISTORY_FILENAME = "analysis-history.yaml"
 ANALYSIS_HISTORY_MAX_ENTRIES = int(os.environ.get("ANALYSIS_HISTORY_MAX_ENTRIES", "20"))
@@ -319,6 +320,26 @@ def _handle_llm_failure(completion: CompletionResult, context: str) -> None:
         )
 
 
+def _mark_skipped(conv_dir: Path, completion: CompletionResult) -> None:
+    """Record that a conversation cannot be analysed and must not be retried.
+
+    Used for failures that will never succeed on a retry (e.g. the conversation
+    is too large for the model). Writes a marker that ``find_eligible_conversations``
+    honours, so one un-analysable conversation neither loops forever nor blocks
+    the rest. Delete the marker to force a re-analysis."""
+    label = f"{conv_dir.parent.name}/{conv_dir.name}"
+    detail = completion.detail or "no detail"
+    log.error(
+        "Skipping %s — cannot be analysed (%s): %s. It will not be retried; "
+        "remove %s to force a re-analysis.",
+        label, completion.error_kind, detail, SKIPPED_FILENAME,
+    )
+    marker = {"skipped": True, "reason": completion.error_kind, "detail": completion.detail}
+    (conv_dir / SKIPPED_FILENAME).write_text(
+        yaml.safe_dump(marker, sort_keys=False), encoding="utf-8",
+    )
+
+
 def resolve_api_key(model: str) -> str:
     """Resolve API key for the given model's provider.
 
@@ -403,7 +424,7 @@ def find_eligible_conversations(staleness_minutes: int) -> list[Path]:
     yesterday = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
     eligible: list[Path] = []
     considered = 0
-    skipped = {"already_analysed": 0, "no_request_time": 0, "not_stale": 0}
+    skipped = {"already_analysed": 0, "no_request_time": 0, "not_stale": 0, "unanalysable": 0}
 
     for date_str in [today, yesterday]:
         date_dir = LOGS_ROOT / date_str
@@ -415,6 +436,9 @@ def find_eligible_conversations(staleness_minutes: int) -> list[Path]:
             considered += 1
             if (conv_dir / ANALYSIS_FILENAME).exists():
                 skipped["already_analysed"] += 1
+                continue
+            if (conv_dir / SKIPPED_FILENAME).exists():
+                skipped["unanalysable"] += 1
                 continue
             last_time = get_last_request_time(conv_dir)
             if last_time is None:
@@ -437,9 +461,10 @@ def find_eligible_conversations(staleness_minutes: int) -> list[Path]:
 
     log.info(
         "Scan eligibility under %s (today+yesterday): %d eligible of %d conversation(s) "
-        "— skipped %d already-analysed, %d no-request-time, %d not-stale",
+        "— skipped %d already-analysed, %d no-request-time, %d not-stale, %d unanalysable",
         LOGS_ROOT, len(eligible), considered,
         skipped["already_analysed"], skipped["no_request_time"], skipped["not_stale"],
+        skipped["unanalysable"],
     )
     return eligible
 
@@ -620,7 +645,13 @@ No markdown wrapping — output raw JSON only."""
         max_tokens=4096 * len(conv_dirs),
     )
     if completion.text is None:
-        _handle_llm_failure(completion, ", ".join(labels))
+        _handle_llm_failure(completion, ", ".join(labels))  # halts on permanent
+        # A single conversation that is too large will never succeed — mark it
+        # skipped so it is not retried every scan. In a multi-conversation batch
+        # the size may be the combination, so leave it to the caller to retry
+        # each one alone (where a genuinely-too-large one gets marked here).
+        if completion.error_kind == "input_shape" and len(conv_dirs) == 1:
+            _mark_skipped(conv_dirs[0], completion)
         return [None] * len(conv_dirs)
 
     parsed = parse_json_response(completion.text)

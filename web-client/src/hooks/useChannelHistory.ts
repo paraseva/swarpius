@@ -41,8 +41,8 @@ export function useChannelHistory<T extends HTMLElement>(
   useStickyBottomScroll(scrollRef, `history:${channel}`)
   useHistoryScrollback(
     scrollRef, channelMessages, loadBefore,
-    reachedBeginningByChannel?.[channel] ?? false,
-    historyBatchTokenByChannel?.[channel] ?? 0,
+    reachedBeginningByChannel?.get(channel) ?? false,
+    historyBatchTokenByChannel?.get(channel) ?? 0,
   )
   useRequestFocusSync(scrollRef, syncKey, channel)
 

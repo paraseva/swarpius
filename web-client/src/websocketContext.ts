@@ -78,11 +78,11 @@ export interface WebSocketContextValue {
   /** Per-channel "scroll-back exhausted" flag (no older history past what's
    *  loaded), keyed by channel; absent ⇒ not yet known. Every panel loads its
    *  own channel, so there is no global equivalent. */
-  reachedBeginningByChannel?: Record<string, boolean>
+  reachedBeginningByChannel?: Map<string, boolean>
   /** Per-channel batch token: increments each time that channel's history batch
    *  finishes delivering (its history-cursor arrives), so scroll-back releases
    *  its in-flight guard exactly when the requested day is loaded. */
-  historyBatchTokenByChannel?: Record<string, number>
+  historyBatchTokenByChannel?: Map<string, number>
   /** Whether any LLM call is currently in-flight (tracked incrementally). */
   isLlmActive: boolean
   /** Parsed payload of the most recent `zone-snapshots` message, or null

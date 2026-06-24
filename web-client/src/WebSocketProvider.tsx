@@ -87,8 +87,8 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
   const [isLlmActive, setIsLlmActive] = useState(false)
   // Per-channel history state — every panel loads its own channel independently,
   // so one panel's loading never touches another's. No global cursor.
-  const [reachedBeginningByChannel, setReachedBeginningByChannel] = useState<Record<string, boolean>>({})
-  const [historyBatchTokenByChannel, setHistoryBatchTokenByChannel] = useState<Record<string, number>>({})
+  const [reachedBeginningByChannel, setReachedBeginningByChannel] = useState<Map<string, boolean>>(new Map())
+  const [historyBatchTokenByChannel, setHistoryBatchTokenByChannel] = useState<Map<string, number>>(new Map())
   const [latestZoneSnapshot, setLatestZoneSnapshot] = useState<unknown>(null)
   const [connectionGeneration, setConnectionGeneration] = useState(0)
   const [isRestarting, setIsRestarting] = useState(false)
@@ -134,8 +134,8 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
         // half-finished dirty-edits, etc.) — the server replays
         // whatever remains relevant.
         setMessageState({ messages: [], trimmedCount: 0 })
-        setReachedBeginningByChannel({})
-        setHistoryBatchTokenByChannel({})
+        setReachedBeginningByChannel(new Map())
+        setHistoryBatchTokenByChannel(new Map())
         activeCallIdsRef.current.clear()
         setIsLlmActive(false)
         setConnectionGeneration((g) => g + 1)
@@ -210,8 +210,8 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
           // the batch is fully delivered. The connect's channel-less replay sends
           // no meaningful cursor and is ignored.
           if (cursorChannel) {
-            setReachedBeginningByChannel((m) => ({ ...m, [cursorChannel]: cursor?.has_older === false }))
-            setHistoryBatchTokenByChannel((m) => ({ ...m, [cursorChannel]: (m[cursorChannel] ?? 0) + 1 }))
+            setReachedBeginningByChannel((m) => new Map(m).set(cursorChannel, cursor?.has_older === false))
+            setHistoryBatchTokenByChannel((m) => new Map(m).set(cursorChannel, (m.get(cursorChannel) ?? 0) + 1))
           }
           return
         }

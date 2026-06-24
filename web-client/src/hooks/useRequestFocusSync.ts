@@ -61,7 +61,7 @@ export function useRequestFocusSync<T extends HTMLElement>(
   const focus = useRequestFocus()
   const focused = focus?.focusedRequest
   const ws = React.useContext(WebSocketContext)
-  const batchToken = ws?.historyBatchTokenByChannel?.[channel] ?? 0
+  const batchToken = ws?.historyBatchTokenByChannel?.get(channel) ?? 0
   // Latest-ref so the load effect can read current messages/loaders without
   // taking them as deps (else it would re-run — and re-load — every message).
   const wsRef = React.useRef(ws)

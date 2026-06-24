@@ -96,7 +96,7 @@ class TestAnalyseBatchOrchestration(unittest.TestCase):
                 analyse_mod, "llm_completion",
                 return_value=CompletionResult(
                     text=None, error_kind="transient", detail="429 rate limit"),
-            ):
+            ), patch.object(analyse_mod, "_sleep"):
                 result = analyse_batch("anthropic/x", "key", dirs, "guide", None)
             self.assertEqual(result, [None])
             self.assertFalse((dirs[0] / "analysis.skipped.yaml").exists())

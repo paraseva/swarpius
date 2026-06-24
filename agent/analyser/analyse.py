@@ -340,6 +340,34 @@ def _mark_skipped(conv_dir: Path, completion: CompletionResult) -> None:
     )
 
 
+_sleep = time.sleep  # indirection so tests can patch out the backoff
+_RETRY_ATTEMPTS = 3
+_RETRY_BACKOFF_SECONDS = 2.0
+
+
+def _complete_with_retry(
+    model: str, api_key: str, system: str, user_message: str, max_tokens: int,
+) -> CompletionResult:
+    """``llm_completion`` with bounded backoff on transient errors.
+
+    Transient failures (rate limit, timeout) are retried up to ``_RETRY_ATTEMPTS``
+    times with linear backoff; permanent and input-shape failures return
+    immediately — retrying won't help. After the attempts are exhausted the last
+    (transient) result is returned, leaving the conversation eligible for a later
+    scan rather than marking it skipped."""
+    completion = llm_completion(model, api_key, system, user_message, max_tokens)
+    attempt = 1
+    while (
+        completion.text is None
+        and completion.error_kind == "transient"
+        and attempt < _RETRY_ATTEMPTS
+    ):
+        _sleep(_RETRY_BACKOFF_SECONDS * attempt)
+        completion = llm_completion(model, api_key, system, user_message, max_tokens)
+        attempt += 1
+    return completion
+
+
 def resolve_api_key(model: str) -> str:
     """Resolve API key for the given model's provider.
 
@@ -640,7 +668,7 @@ No markdown wrapping — output raw JSON only."""
 
     system_prompt = build_analyser_prompt(guide_text, LESSONS_PATH)
 
-    completion = llm_completion(
+    completion = _complete_with_retry(
         model, api_key, system_prompt, user_message,
         max_tokens=4096 * len(conv_dirs),
     )

@@ -480,6 +480,7 @@ class RoonBrowseMixin:
         self,
         ref_id: str,
         zone: Optional[str] = None,
+        target_session: Optional[str] = None,
     ) -> Optional[StableReference]:
         """Resolve a reference and position its session at the parent level.
 
@@ -493,6 +494,10 @@ class RoonBrowseMixin:
              parent level.
           2. Semantic recovery — re-search on a dedicated recovery session
              and fuzzy-match to relocate the item.
+
+        ``target_session`` forces a split: the reference's own session is held
+        by a concurrent operation, so re-establish it on the leased session
+        instead (re-search + walk), so the two never share one Roon cursor.
         """
         # Strip S: prefix (search references use this in coordinator output)
         if ref_id.startswith("S:"):
@@ -511,6 +516,16 @@ class RoonBrowseMixin:
             session_key=ref.roon_session_key,
             item_key_path=ref.item_key_path,
         )
+
+        # Split: re-establish on the leased session (a concurrent operation
+        # holds the reference's own session). Re-search + walk, never the
+        # shared cursor.
+        if target_session is not None:
+            if self._semantic_recover(ref, zone, session_key=target_session):
+                slog.log("resolve_ref_done", ref_id=ref_id, tier="split", success=True)
+                return ref
+            slog.log("resolve_ref_done", ref_id=ref_id, tier="split_failed", success=False)
+            return None
 
         # Tier 1: key is live on a known session — reposition non-destructively
         if self.session_manager.is_key_live(ref):
@@ -639,18 +654,24 @@ class RoonBrowseMixin:
         self,
         ref: StableReference,
         zone: Optional[str] = None,
+        session_key: Optional[str] = None,
     ) -> bool:
-        """Re-search and fuzzy-match to find the item on the recovery session."""
-        _log.warning(
-            "Semantic recovery triggered for ref=%s (%s) — "
-            "this indicates a fast-path bug if it happens during normal operation",
-            ref.ref_id,
-            ref.identity.title,
-        )
+        """Re-search and fuzzy-match to relocate the item, re-establishing it on
+        ``session_key`` (a leased split session) or, by default, the shared
+        recovery session. The latter is a fallback that should not fire in
+        normal operation — hence the warning; a split is intentional, so it is
+        silent."""
         if not ref.recipe.search_string:
             return False
 
-        sk = self.session_manager.recovery_session_key
+        sk = session_key or self.session_manager.recovery_session_key
+        if session_key is None:
+            _log.warning(
+                "Semantic recovery triggered for ref=%s (%s) — "
+                "this indicates a fast-path bug if it happens during normal operation",
+                ref.ref_id,
+                ref.identity.title,
+            )
 
         try:
             results = self.browse_core(

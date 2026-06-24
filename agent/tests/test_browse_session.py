@@ -344,5 +344,47 @@ class TestGetRef(unittest.TestCase):
         self.assertGreater(mgr.refs[ref_id].last_accessed, original_time)
 
 
+class TestSessionContention(unittest.TestCase):
+    """`acquire`/`release` — copy-on-contention session leasing.
+
+    The fix for parallel sibling drill-downs: an operation reserves the
+    session it intends to browse on. If that session is free it gets it as-is
+    (the fast path — independent searches and sequential drills are
+    unchanged). If another operation already holds it, the contender is
+    leased a fresh, distinct session instead, so the two never share one
+    Roon browse cursor.
+    """
+
+    def test_acquire_uncontended_returns_same_session(self):
+        mgr = BrowseSessionManager()
+        sk = mgr.new_search_session()
+        self.assertEqual(mgr.acquire(sk), sk)
+
+    def test_acquire_contended_returns_distinct_session(self):
+        mgr = BrowseSessionManager()
+        sk = mgr.new_search_session()
+        first = mgr.acquire(sk)        # op1 holds sk
+        second = mgr.acquire(sk)       # op2 contends on the same session
+        self.assertEqual(first, sk)
+        self.assertNotEqual(second, sk)
+        # The leased session is a real, tracked session positioned at root.
+        self.assertEqual(mgr.get_session_depth(second), 0)
+
+    def test_each_contender_gets_a_distinct_session(self):
+        mgr = BrowseSessionManager()
+        sk = mgr.new_search_session()
+        leased = {mgr.acquire(sk) for _ in range(4)}  # one owner + three contenders
+        # All four reservations are distinct sessions.
+        self.assertEqual(len(leased), 4)
+
+    def test_release_allows_reuse_without_split(self):
+        mgr = BrowseSessionManager()
+        sk = mgr.new_search_session()
+        mgr.acquire(sk)
+        mgr.release(sk)
+        # Freed → a later (sequential) operation reuses it, no split.
+        self.assertEqual(mgr.acquire(sk), sk)
+
+
 if __name__ == "__main__":
     unittest.main()

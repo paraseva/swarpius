@@ -13,7 +13,7 @@ from typing import Any, Dict, List, Optional
 import yaml
 
 from app.data_paths import conversation_logs_dir, feedback_archive_dir
-from app.runtime.conversation_tracker import ConversationTracker
+from app.runtime.conversation_tracker import ConversationTracker, day_str
 from app.settings import get_settings
 
 _log = logging.getLogger("swarpius.request_logger")
@@ -128,6 +128,7 @@ class RequestIdGenerator:
         self._sequence: int = 0
         self._conv_sequences: dict[str, int] = conv_sequences
         self._last_conv_id: str = self._tracker.current_id
+        self._day: str = day_str(self._tracker.now)
         self._lock = threading.Lock()
 
     @property
@@ -192,6 +193,7 @@ class RequestIdGenerator:
         # conversation) only after the save is committed. No stale overwrite
         # path exists in either direction.
         with self._lock:
+            self._roll_day()
             conv_id = self._tracker.assign_by_timeout()
             if conv_id != self._last_conv_id:
                 self._conv_sequences[self._last_conv_id] = self._sequence
@@ -199,6 +201,27 @@ class RequestIdGenerator:
             self._last_conv_id = conv_id
             self._sequence += 1
             return f"rq-{conv_id}-{self._sequence:04d}"
+
+    def roll_day(self) -> None:
+        """Start a fresh conversation grouping if the calendar day has changed.
+
+        Called before conversation classification so the diagnostic agent sees a
+        clean slate on a new day and cannot continue a previous day's thread.
+        ``next_id`` rolls too, so the no-classifier path is covered as well."""
+        with self._lock:
+            self._roll_day()
+
+    def _roll_day(self) -> None:
+        """Reset conversation grouping + the request sequence when the day has
+        changed since the last request. Caller holds ``_lock``. The day is the
+        wall-clock day of the tracker clock, matching the log-directory date."""
+        today = day_str(self._tracker.now)
+        if today != self._day:
+            self._tracker.reset()
+            self._sequence = 0
+            self._conv_sequences = {}
+            self._last_conv_id = self._tracker.current_id
+            self._day = today
 
     def capture_state(self) -> Dict[str, Any]:
         """Snapshot the ID counters + the tracker, so conversation grouping
@@ -219,6 +242,10 @@ class RequestIdGenerator:
             tracker_data = data.get("tracker")
             if tracker_data:
                 self._tracker.restore_state(tracker_data)
+            # Seed the day from the restored state so the next request rolls to a
+            # fresh grouping if it lands on a later calendar day, and continues
+            # otherwise. Derived from the tracker (no separate persisted field).
+            self._day = self._tracker.current_day or day_str(self._tracker.now)
 
     def new_conversation(self) -> None:
         """Explicitly bump the conversation counter (e.g. on reconnect)."""

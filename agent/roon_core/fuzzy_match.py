@@ -66,9 +66,11 @@ def fuzzy_find(
     threshold: int = 75,
 ) -> Optional[RoonCoreItemSchema]:
     """Find the best-matching item by semantic identity (title +
-    subtitle + hint). Scoring weights title 0.7, subtitle 0.3; hint
-    must match exactly when present on both. Returns the highest
-    scorer above *threshold*, or None.
+    subtitle + hint + image_key). Scoring weights title 0.7, subtitle
+    0.3; hint and image_key are exact-match filters when present on both
+    sides (image_key — a stable artwork id — separates same-title,
+    same-subtitle releases). Returns the highest scorer above *threshold*,
+    or None.
 
     Note: the default threshold combined with the 70/30 weighting
     means an identity without subtitle can never score above 70 — a
@@ -87,6 +89,13 @@ def fuzzy_find(
             )
 
         if identity.hint and item.hint and identity.hint != item.hint:
+            continue
+
+        if (
+            identity.image_key
+            and item.image_key
+            and identity.image_key != item.image_key
+        ):
             continue
 
         score = title_score * 0.7 + subtitle_score * 0.3

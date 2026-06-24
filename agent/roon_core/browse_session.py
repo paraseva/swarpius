@@ -1,4 +1,5 @@
 import secrets
+import threading
 import time
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
@@ -91,7 +92,7 @@ class BrowseSessionManager:
     # Persistence participant key (structurally satisfies PersistentState).
     state_key = "browse_refs"
 
-    def __init__(self, max_refs: int = 500, max_sessions: int = 16) -> None:
+    def __init__(self, max_refs: int = 500, max_sessions: int = 128) -> None:
         self._session_prefix: str = secrets.token_hex(4)
         self._session_counter: int = 0
         self._max_sessions: int = max_sessions
@@ -103,6 +104,11 @@ class BrowseSessionManager:
         # each browse session. Keeps drill/compile output isolated when
         # multiple sessions operate concurrently on the same connection.
         self._session_current_list: Dict[str, Any] = {}
+        # Sessions currently reserved by an in-flight operation (see
+        # ``acquire``). Tool calls run on separate threads under
+        # PARALLEL_TOOLS, so reservation must be atomic — hence the lock.
+        self._lock = threading.RLock()
+        self._in_use: set[str] = set()
         # Reserve the stop-marker session up-front so is_key_live works
         # for refs minted on it and so the round-robin slot pool never
         # picks it for an unrelated search.
@@ -120,24 +126,49 @@ class BrowseSessionManager:
         """Mint a multi_session_key for a fresh top-level search.
 
         Keys cycle through a fixed pool of ``max_sessions`` slots (default
-        16) so the Roon Core doesn't accumulate unbounded session state.
-        When a slot is reused, any refs pointing to the old session are
-        purged — they would have stale item_keys.
+        128) so the Roon Core doesn't accumulate unbounded session state.
+        When a slot is reused, refs pointing to the old session have their
+        cached binding invalidated (their item_keys are stale on the Core) but
+        are kept, so they can be re-established from their recipe — ref
+        lifetime (``max_refs`` LRU) is decoupled from session lifetime.
 
         A random prefix unique to this manager instance prevents
         collisions with Roon Core's cached state from a previous process.
         """
-        slot = self._session_counter % self._max_sessions
-        self._session_counter += 1
-        key = f"s-{self._session_prefix}-{slot:x}"
-        if key in self._session_depth:
-            self.refs = {
-                ref_id: ref for ref_id, ref in self.refs.items()
-                if ref.roon_session_key != key
-            }
-            self._session_current_list.pop(key, None)
-        self._session_depth[key] = 0
-        return key
+        with self._lock:
+            slot = self._session_counter % self._max_sessions
+            self._session_counter += 1
+            key = f"s-{self._session_prefix}-{slot:x}"
+            if key in self._session_depth:
+                for ref in self.refs.values():
+                    if ref.roon_session_key == key:
+                        ref.cached_item_key = None
+                self._session_current_list.pop(key, None)
+            self._session_depth[key] = 0
+            return key
+
+    def acquire(self, session_key: str) -> str:
+        """Reserve a session for the duration of one browse operation.
+
+        Free → reserve it and return it unchanged (the fast path:
+        independent searches and sequential drills never contend). Already
+        reserved by a concurrent operation → lease a fresh session and
+        return that instead, so the two never share one Roon browse cursor.
+        The caller re-establishes its context on the returned session when it
+        differs from the one requested.
+        """
+        with self._lock:
+            if session_key not in self._in_use:
+                self._in_use.add(session_key)
+                return session_key
+            fresh = self.new_search_session()
+            self._in_use.add(fresh)
+            return fresh
+
+    def release(self, session_key: str) -> None:
+        """Release a session reserved by :meth:`acquire`."""
+        with self._lock:
+            self._in_use.discard(session_key)
 
     def get_session_depth(self, session_key: str) -> int:
         """Return the current browse depth for a session (0 = search root)."""

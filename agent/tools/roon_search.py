@@ -151,71 +151,96 @@ class RoonSearchTool:
         )
 
     async def run_async(self, params: RoonSearchToolInputSchema) -> RoonSearchToolOutputSchema:
-        operation = params.operation
-        current_list: Optional[RoonCoreResultsSchema] = None
-        description = ""
-        recipe: Optional[SearchRecipe] = None
-        session_key: Optional[str] = None
+        if params.operation == "new_search":
+            return self._new_search(params)
+        if params.operation == "drill_down_reference":
+            return self._drill_down_reference(params)
+        raise UnsupportedActionError(f"Unknown operation '{params.operation}'")
 
-        if operation == "new_search":
-            session_key = self.roon_connection.session_manager.new_search_session()
-            recipe = SearchRecipe(
-                search_string=params.search_string,
-            )
-
-            current_list = self.roon_connection.browse_core(
-                {"pop_all": True, "input": params.search_string},
-                session_key=session_key,
-            )
-            description = f"Search results for '{params.search_string}'."
-
-
-        elif operation == "drill_down_reference":
-            ref = self.roon_connection.resolve_reference(params.reference)
-            if not ref or not ref.cached_item_key:
-                if not self.roon_connection.has_reference(params.reference):
-                    raise LookupError(
-                        f"Reference '{params.reference}' not found — check that it "
-                        "matches a reference from the search results exactly.",
-                    )
-                raise LookupError(
-                    f"Reference '{params.reference}' has expired. "
-                    "Run a fresh search to get new references.",
-                )
-            session_key = ref.roon_session_key
-            recipe = SearchRecipe(
-                search_string=ref.recipe.search_string,
-                category=ref.recipe.category,
-                parent_chain=list(ref.recipe.parent_chain) + [ref.identity],
-            )
-            from roon_core.schemas import RoonCoreItemSchema
-
-            temp_item = RoonCoreItemSchema(
-                title=ref.identity.title,
-                subtitle=ref.identity.subtitle,
-                item_key=ref.cached_item_key,
-                hint=ref.identity.hint,
-                image_key=ref.identity.image_key,
-                item_key_path=list(ref.item_key_path),
-            )
-            current_list = self.roon_connection.drill_down(
-                drilldown_item=temp_item,
-                session_key=session_key,
-            )
-            description = f"Drilled down one level for reference '{params.reference}'."
-
-
-        else:
-            raise UnsupportedActionError(f"Unknown operation '{operation}'")
-
+    def _finish(
+        self,
+        description: str,
+        recipe: Optional[SearchRecipe],
+        session_key: str,
+        current_list: Optional[RoonCoreResultsSchema],
+    ) -> RoonSearchToolOutputSchema:
         if not current_list:
             raise ValueError("No results returned from Roon search operation")
-
         output = self._output(description, recipe=recipe, session_key=session_key)
         output.session_key = session_key
         output.search_attempts = current_list.search_attempts
         output.search_retry_notes = current_list.search_retry_notes
         return output
+
+    def _new_search(self, params: RoonSearchToolInputSchema) -> RoonSearchToolOutputSchema:
+        session_key = self.roon_connection.session_manager.new_search_session()
+        current_list = self.roon_connection.browse_core(
+            {"pop_all": True, "input": params.search_string},
+            session_key=session_key,
+        )
+        return self._finish(
+            f"Search results for '{params.search_string}'.",
+            SearchRecipe(search_string=params.search_string),
+            session_key,
+            current_list,
+        )
+
+    def _drill_down_reference(
+        self, params: RoonSearchToolInputSchema,
+    ) -> RoonSearchToolOutputSchema:
+        conn = self.roon_connection
+        manager = conn.session_manager
+        existing = manager.get_ref(params.reference)
+        if not existing:
+            raise LookupError(
+                f"Reference '{params.reference}' not found — check that it "
+                "matches a reference from the search results exactly.",
+            )
+
+        # Reserve the reference's session for this drill. If a concurrent
+        # operation already holds it, ``acquire`` leases a fresh session and we
+        # re-establish the reference there — so sibling drills never share one
+        # Roon browse cursor. ``release`` in finally returns it to the pool.
+        requested = existing.roon_session_key
+        granted = manager.acquire(requested)
+        try:
+            target_session = None if granted == requested else granted
+            ref = conn.resolve_reference(params.reference, target_session=target_session)
+            if not ref or not ref.cached_item_key:
+                raise LookupError(
+                    f"Reference '{params.reference}' has expired. "
+                    "Run a fresh search to get new references.",
+                )
+            recipe = SearchRecipe(
+                search_string=ref.recipe.search_string,
+                category=ref.recipe.category,
+                parent_chain=list(ref.recipe.parent_chain) + [ref.identity],
+            )
+            current_list = conn.drill_down(
+                drilldown_item=self._temp_item(ref),
+                session_key=ref.roon_session_key,
+            )
+            return self._finish(
+                f"Drilled down one level for reference '{params.reference}'.",
+                recipe,
+                ref.roon_session_key,
+                current_list,
+            )
+        finally:
+            manager.release(granted)
+
+    @staticmethod
+    def _temp_item(ref):
+        from roon_core.schemas import RoonCoreItemSchema
+
+        return RoonCoreItemSchema(
+            title=ref.identity.title,
+            subtitle=ref.identity.subtitle,
+            item_key=ref.cached_item_key,
+            hint=ref.identity.hint,
+            image_key=ref.identity.image_key,
+            item_key_path=list(ref.item_key_path),
+        )
 
     def run(self, params: RoonSearchToolInputSchema) -> RoonSearchToolOutputSchema:
         with ThreadPoolExecutor() as executor:

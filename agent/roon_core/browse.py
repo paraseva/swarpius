@@ -480,6 +480,7 @@ class RoonBrowseMixin:
         self,
         ref_id: str,
         zone: Optional[str] = None,
+        target_session: Optional[str] = None,
     ) -> Optional[StableReference]:
         """Resolve a reference and position its session at the parent level.
 
@@ -493,6 +494,10 @@ class RoonBrowseMixin:
              parent level.
           2. Semantic recovery — re-search on a dedicated recovery session
              and fuzzy-match to relocate the item.
+
+        ``target_session`` forces a split: the reference's own session is held
+        by a concurrent operation, so re-establish it on the leased session
+        instead (re-search + walk), so the two never share one Roon cursor.
         """
         # Strip S: prefix (search references use this in coordinator output)
         if ref_id.startswith("S:"):
@@ -511,6 +516,16 @@ class RoonBrowseMixin:
             session_key=ref.roon_session_key,
             item_key_path=ref.item_key_path,
         )
+
+        # Split: re-establish on the leased session (a concurrent operation
+        # holds the reference's own session). Re-search + walk, never the
+        # shared cursor.
+        if target_session is not None:
+            if self._semantic_recover(ref, zone, session_key=target_session):
+                slog.log("resolve_ref_done", ref_id=ref_id, tier="split", success=True)
+                return ref
+            slog.log("resolve_ref_done", ref_id=ref_id, tier="split_failed", success=False)
+            return None
 
         # Tier 1: key is live on a known session — reposition non-destructively
         if self.session_manager.is_key_live(ref):
@@ -635,22 +650,52 @@ class RoonBrowseMixin:
             cached_item_key=ref.cached_item_key,
         )
 
+    def _match_level_item(
+        self,
+        items: List[RoonCoreItemSchema],
+        position: Optional[str],
+        identity: ItemIdentity,
+    ) -> Optional[RoonCoreItemSchema]:
+        """Locate an item at a re-searched level. Prefer the item at the
+        recorded ``position`` when its identity still matches — the only way to
+        separate items identical in title/subtitle/image_key — otherwise fall
+        back to the best identity match. ``None`` if neither matches."""
+        if position is not None:
+            at_position = next(
+                (
+                    item
+                    for item in items
+                    if self._item_key_position(item.item_key) == position
+                ),
+                None,
+            )
+            if at_position is not None and fuzzy_find([at_position], identity):
+                return at_position
+        return fuzzy_find(items, identity)
+
     def _semantic_recover(
         self,
         ref: StableReference,
         zone: Optional[str] = None,
+        session_key: Optional[str] = None,
     ) -> bool:
-        """Re-search and fuzzy-match to find the item on the recovery session."""
-        _log.warning(
-            "Semantic recovery triggered for ref=%s (%s) — "
-            "this indicates a fast-path bug if it happens during normal operation",
-            ref.ref_id,
-            ref.identity.title,
-        )
+        """Re-search and fuzzy-match to relocate the item, re-establishing it on
+        ``session_key`` (a leased split session) or, by default, a freshly
+        leased session. The default path is a fallback that should not fire in
+        normal operation — hence the warning; a split is intentional, so it is
+        silent. Either way the session is private to this call, so concurrent
+        recoveries never share a cursor."""
         if not ref.recipe.search_string:
             return False
 
-        sk = self.session_manager.recovery_session_key
+        sk = session_key or self.session_manager.new_search_session()
+        if session_key is None:
+            _log.warning(
+                "Semantic recovery triggered for ref=%s (%s) — "
+                "this indicates a fast-path bug if it happens during normal operation",
+                ref.ref_id,
+                ref.identity.title,
+            )
 
         try:
             results = self.browse_core(
@@ -661,6 +706,11 @@ class RoonBrowseMixin:
             )
         except ExternalServiceError:
             return False
+        # Re-search put the cursor at the search root. Track depth from here via
+        # _nav_drill (as drill_down does) so a ref re-established on this session
+        # can later reset to root and walk its path on the fast path, instead of
+        # falling back into recovery again.
+        self.session_manager.set_session_depth(sk, 0)
 
         if ref.recipe.category:
             cat_item = self.find_item_by_field(
@@ -669,34 +719,32 @@ class RoonBrowseMixin:
             if not cat_item:
                 return False
             try:
-                results = self.browse_core(
-                    aux={"item_key": cat_item.item_key},
-                    zone=zone,
-                    session_key=sk,
-                    update_current=False,
+                results = self._nav_drill(
+                    cat_item.item_key, sk, zone, update_current=False,
                 )
             except ExternalServiceError:
                 return False
 
+        path = ref.item_key_path
         position_path: List[str] = []
-        for ancestor in ref.recipe.parent_chain:
-            match = fuzzy_find(results.items, ancestor)
+        for index, ancestor in enumerate(ref.recipe.parent_chain):
+            expected = path[index] if index < len(path) - 1 else None
+            match = self._match_level_item(results.items, expected, ancestor)
             if not match:
                 return False
             pos = self._item_key_position(match.item_key)
             if pos is not None:
                 position_path.append(pos)
             try:
-                results = self.browse_core(
-                    aux={"item_key": match.item_key},
-                    zone=zone,
-                    session_key=sk,
-                    update_current=False,
+                results = self._nav_drill(
+                    match.item_key, sk, zone, update_current=False,
                 )
             except ExternalServiceError:
                 return False
 
-        target = fuzzy_find(results.items, ref.identity)
+        target = self._match_level_item(
+            results.items, path[-1] if path else None, ref.identity,
+        )
         if not target:
             return False
 

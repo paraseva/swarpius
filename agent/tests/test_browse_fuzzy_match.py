@@ -11,8 +11,15 @@ from roon_core.fuzzy_match import fuzzy_find, fuzzy_match_and_sort, normalise_ti
 from roon_core.schemas import RoonCoreItemSchema
 
 
-def _item(title: str, subtitle: str = "", hint: str | None = None) -> RoonCoreItemSchema:
-    return RoonCoreItemSchema(title=title, subtitle=subtitle, hint=hint)
+def _item(
+    title: str,
+    subtitle: str = "",
+    hint: str | None = None,
+    image_key: str | None = None,
+) -> RoonCoreItemSchema:
+    return RoonCoreItemSchema(
+        title=title, subtitle=subtitle, hint=hint, image_key=image_key,
+    )
 
 
 class TestNormaliseTitle(unittest.TestCase):
@@ -149,6 +156,30 @@ class TestFuzzyFind(unittest.TestCase):
         items = [_item("rivers of babylon")]
         identity = ItemIdentity(title="rivers of babylon")
         self.assertIsNone(fuzzy_find(items, identity))
+
+    def test_image_key_disambiguates_same_title_and_subtitle(self):
+        """Two items identical in title and subtitle (e.g. two releases of one
+        album) are separated by image_key — the identity's image_key selects its
+        own item, not whichever happens to come first."""
+        items = [
+            _item("Greatest Hits", subtitle="The Band", image_key="img-1"),
+            _item("Greatest Hits", subtitle="The Band", image_key="img-2"),
+        ]
+        identity = ItemIdentity(
+            title="Greatest Hits", subtitle="The Band", image_key="img-2",
+        )
+        result = fuzzy_find(items, identity)
+        self.assertIsNotNone(result)
+        self.assertEqual(result.image_key, "img-2")
+
+    def test_image_key_ignored_when_absent_on_either_side(self):
+        """image_key only filters when present on both sides — a missing
+        image_key never excludes an otherwise-matching item."""
+        items = [_item("Yesterday", subtitle="The Beatles")]  # no image_key
+        identity = ItemIdentity(
+            title="Yesterday", subtitle="The Beatles", image_key="img-x",
+        )
+        self.assertIsNotNone(fuzzy_find(items, identity))
 
 
 if __name__ == "__main__":

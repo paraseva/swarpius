@@ -61,6 +61,28 @@ describe('PrivacyTab', () => {
     )
   })
 
+  it('clears in an insecure context where crypto.randomUUID is unavailable', async () => {
+    // Served over plain HTTP on a LAN IP, crypto.randomUUID (secure-context
+    // only) is undefined — the clear must still send via the createUuid fallback.
+    // randomUUID is inherited from Crypto.prototype, so shadow it with an own
+    // property and delete that to restore (don't pollute later tests).
+    Object.defineProperty(globalThis.crypto, 'randomUUID', {
+      value: undefined, configurable: true,
+    })
+    try {
+      const sendMessage = vi.fn(() => '')
+      renderTab({ sendMessage })
+      await userEvent.click(screen.getByRole('button', { name: /clear conversation history/i }))
+      await userEvent.click(screen.getByRole('button', { name: /yes, clear it/i }))
+      expect(sendMessage).toHaveBeenCalledWith(
+        'clear-conversation-request',
+        expect.stringContaining('request_id'),
+      )
+    } finally {
+      Reflect.deleteProperty(globalThis.crypto, 'randomUUID')
+    }
+  })
+
   it('clears the local view when the server confirms', async () => {
     // Drive request_id determinism so the response matches.
     vi.spyOn(crypto, 'randomUUID').mockReturnValue('11111111-1111-1111-1111-111111111111')

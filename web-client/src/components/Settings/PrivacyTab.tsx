@@ -6,6 +6,7 @@ import {
   type ChannelId,
   type SocketMessage,
 } from '../../websocketContext'
+import { createUuid } from '../../utils/uuid'
 
 type Phase = 'idle' | 'confirming' | 'clearing' | 'done' | 'error'
 
@@ -69,7 +70,7 @@ const ClearAction: React.FC<ClearActionProps> = ({
   }, [messages, phase, responseChannel, onSuccess])
 
   const confirm = () => {
-    const requestId = crypto.randomUUID()
+    const requestId = createUuid()
     pendingId.current = requestId
     setError('')
     setPhase('clearing')

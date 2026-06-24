@@ -16,6 +16,7 @@ import { correlateOutboundRequestIds } from '../utils/correlateOutboundRequestId
 import { getDirectiveOutboundIds } from '../utils/getDirectiveOutboundIds'
 import { getFailedOutboundErrors } from '../utils/getFailedOutboundErrors'
 import { outboundClientMsgId } from '../utils/outboundClientMsgId'
+import { createUuid } from '../utils/uuid'
 import cs from './ChatPanel.module.css'
 
 function formatElapsed(seconds: number): string {
@@ -184,7 +185,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
     sendMessage(
       'session-control-request',
       JSON.stringify({
-        request_id: crypto.randomUUID(),
+        request_id: createUuid(),
         action: 'retry_now',
       }),
     )

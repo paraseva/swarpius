@@ -103,6 +103,19 @@ def _register_tool(registry: ToolRegistry, tool, name: str, description: str = "
     )
 
 
+def _window(result, name: str) -> tuple:
+    """The (started_at, finished_at) execution window for a delayed mock tool."""
+    for execution in result.tool_executions:
+        if execution.tool_name == name:
+            return execution.result.started_at, execution.result.finished_at
+    raise AssertionError(f"no execution for {name!r}")
+
+
+def _overlaps(w1: tuple, w2: tuple) -> bool:
+    """True if two execution windows ran at the same time."""
+    return w1[0] < w2[1] and w2[0] < w1[1]
+
+
 # ---------------------------------------------------------------------------
 # Fake LLM client — emits pre-scripted responses
 # ---------------------------------------------------------------------------
@@ -363,15 +376,14 @@ class TestNonParallelToolsSequential(unittest.TestCase):
 
 
 class TestMixedStep(unittest.TestCase):
-    """E7: Non-parallel tools run sequentially; parallel tools run concurrently.
-    Wall-clock ≈ max(sequential_group, parallel_group)."""
+    """E7: Parallel-safe tools run concurrently among themselves; a
+    non-parallel-safe tool runs in its own phase, never overlapping the
+    parallel group (it declared itself unsafe to run alongside others)."""
 
     @patch.dict(os.environ, {"PARALLEL_TOOLS": "true"})
     def test_mixed_parallel_and_sequential(self):
-        # parallel tools: fast (0.1s each, concurrent = 0.1s)
         tool_p1 = _make_mock_tool("tool_p1", parallel_safe=True, delay=0.1)
         tool_p2 = _make_mock_tool("tool_p2", parallel_safe=True, delay=0.1)
-        # sequential tool: slower (0.2s)
         tool_s = _make_mock_tool("tool_s", parallel_safe=False, delay=0.2)
 
         registry = ToolRegistry()
@@ -388,16 +400,18 @@ class TestMixedStep(unittest.TestCase):
             "done",
         ])
 
-        messages = [{"role": "user", "content": "test"}]
-        started = time.monotonic()
-        result = asyncio.run(run_tool_loop(client, registry, messages))
-        elapsed = time.monotonic() - started
+        result = asyncio.run(
+            run_tool_loop(client, registry, [{"role": "user", "content": "test"}]),
+        )
 
         self.assertEqual(len(result.tool_executions), 3)
-        # All sequential: 0.1 + 0.2 + 0.1 = 0.4s
-        # Optimal parallel: max(0.2, 0.1) = 0.2s
-        # Must be less than fully sequential
-        self.assertLess(elapsed, 0.4 * 0.7, f"Expected mixed execution but took {elapsed:.2f}s")
+        p1, p2 = _window(result, "tool_p1"), _window(result, "tool_p2")
+        s = _window(result, "tool_s")
+        # Parallel-safe calls overlap each other...
+        self.assertTrue(_overlaps(p1, p2))
+        # ...and the non-parallel-safe call overlaps neither.
+        self.assertFalse(_overlaps(s, p1))
+        self.assertFalse(_overlaps(s, p2))
 
 
 # ---------------------------------------------------------------------------
@@ -598,8 +612,9 @@ class TestBatchingPreservesOrder(unittest.TestCase):
 
 
 class TestBatchingWithMixedTools(unittest.TestCase):
-    """B5: Batching applies to parallel-safe tools; non-parallel-safe tools
-    still form their own sequential group running concurrently with batches."""
+    """B5: Batching applies to parallel-safe tools (concurrent within a batch);
+    a non-parallel-safe tool runs in its own phase, not overlapping the
+    parallel batches."""
 
     @patch.dict(os.environ, {"PARALLEL_TOOLS": "true", "ROON_MAX_PARALLEL": "2"})
     def test_mixed_batched_and_sequential(self):
@@ -622,17 +637,18 @@ class TestBatchingWithMixedTools(unittest.TestCase):
             "done",
         ])
 
-        messages = [{"role": "user", "content": "test"}]
-        started = time.monotonic()
-        result = asyncio.run(run_tool_loop(client, registry, messages))
-        elapsed = time.monotonic() - started
+        result = asyncio.run(
+            run_tool_loop(client, registry, [{"role": "user", "content": "test"}]),
+        )
 
         self.assertEqual(len(result.tool_executions), 4)
-        # Parallel batches: batch1(p0,p1)=0.15s then batch2(p2)=0.15s = 0.3s total
-        # Sequential group: tool_s = 0.15s (runs concurrently with batches)
-        # Wall-clock: max(0.3, 0.15) = ~0.3s
-        # Fully sequential would be 4 * 0.15 = 0.6s
-        self.assertLess(elapsed, 0.6 * 0.7, f"Expected batched+mixed but took {elapsed:.2f}s")
+        s = _window(result, "tool_s")
+        # The non-parallel-safe call overlaps none of the parallel-safe calls...
+        for i in range(3):
+            self.assertFalse(_overlaps(s, _window(result, f"tool_p{i}")))
+        # ...while batching still parallelises within the parallel phase: the
+        # first batch (p0, p1) runs concurrently.
+        self.assertTrue(_overlaps(_window(result, "tool_p0"), _window(result, "tool_p1")))
 
 
 # ---------------------------------------------------------------------------

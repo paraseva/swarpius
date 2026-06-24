@@ -5,7 +5,8 @@ flow.  It handles step limits, loop detection, and soft nudges.
 
 When ``parallel`` is True, parallelisable tool calls within a step are
 dispatched concurrently via ``asyncio.gather`` + ``asyncio.to_thread``.
-Non-parallelisable calls run sequentially.  ``ROON_MAX_PARALLEL`` limits
+Non-parallelisable calls run sequentially, in a separate phase after the
+parallel group (never concurrently with it).  ``ROON_MAX_PARALLEL`` limits
 the number of concurrent operations per batch.
 """
 
@@ -186,7 +187,14 @@ async def _execute_tools_parallel(
         ):
             all_results[item[0].id] = item
 
-    await asyncio.gather(_run_parallel_batches(), _run_sequential_group())
+    # Run the parallel-safe group (each call isolated to its own browse
+    # session) to completion, then the non-parallel-safe group — not the two
+    # concurrently. A non-parallel-safe call (e.g. a library action) declared
+    # itself unsafe to run alongside others, so it must not overlap a
+    # search/drill that may be on the same Roon browse session. The calls in a
+    # step are independent, so phase ordering is safe.
+    await _run_parallel_batches()
+    await _run_sequential_group()
 
     # Return in original tool_call order
     return [all_results[tc.id] for tc in tool_calls]

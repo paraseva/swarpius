@@ -12,10 +12,12 @@
    only the last N versions are kept.
 """
 
+import os
 import sys
 import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from unittest.mock import patch
 
 import yaml
 
@@ -45,19 +47,23 @@ class TestStoreResultHandleBounded(unittest.TestCase):
 
 
     def test_store_result_handle_is_bounded(self):
-        """Calling store_result_handle 100x should not leave 100 entries
-        in result_store — the cap (whatever it is) must be enforced."""
-        rs = self._bare_runtime()
-        for i in range(100):
-            rs.store_result_handle({"i": i})
-        # Post-refactor: result_store respects a cap. Using 50 as the
-        # assertion target — the actual cap can be anywhere reasonable,
-        # the test only requires boundedness.
-        self.assertLess(
-            len(rs.result_store), 100,
-            f"result_store unbounded: {len(rs.result_store)} entries "
-            "after 100 store_result_handle calls",
-        )
+        """Storing more handles than the cap leaves the result_store bounded to
+        the cap, not growing one-per-call.
+
+        Pin the cap to a canonical value so the contract holds regardless of any
+        ``RESULT_STORE_MAX_ENTRIES`` in the ambient environment / ``.env``."""
+        from app.settings import reset_settings_for_tests
+
+        with patch.dict(os.environ, {"RESULT_STORE_MAX_ENTRIES": "50"}, clear=False):
+            reset_settings_for_tests()
+            rs = self._bare_runtime()
+            for i in range(100):
+                rs.store_result_handle({"i": i})
+            self.assertLessEqual(
+                len(rs.result_store), 50,
+                f"result_store not bounded to its cap: {len(rs.result_store)} "
+                "entries after 100 store_result_handle calls with cap 50",
+            )
 
 
 # ------------------------------------------------------------------ #
@@ -84,18 +90,26 @@ class TestImageCachesBounded(unittest.TestCase):
         return rs
 
     def test_image_base64_cache_bounded(self):
-        """Populating image_base64_cache with many distinct keys must
-        respect a cap (oldest / LRU evicted)."""
-        rs = self._bare_runtime()
-        for i in range(500):
-            rs.image_base64_cache[f"img_{i}:200:200"] = {
-                "data": f"fake-base64-{i}",
-                "mime": "image/jpeg",
-            }
-        self.assertLess(
-            len(rs.image_base64_cache), 500,
-            "image_base64_cache is unbounded",
-        )
+        """Populating image_base64_cache past the cap evicts oldest, leaving it
+        bounded to the cap.
+
+        Pin the cap to a canonical value so the contract holds regardless of any
+        ``IMAGE_CACHE_MAX_ENTRIES`` in the ambient environment / ``.env``."""
+        from app.settings import reset_settings_for_tests
+
+        with patch.dict(os.environ, {"IMAGE_CACHE_MAX_ENTRIES": "50"}, clear=False):
+            reset_settings_for_tests()
+            rs = self._bare_runtime()
+            for i in range(200):
+                rs.image_base64_cache[f"img_{i}:200:200"] = {
+                    "data": f"fake-base64-{i}",
+                    "mime": "image/jpeg",
+                }
+            self.assertLessEqual(
+                len(rs.image_base64_cache), 50,
+                f"image_base64_cache not bounded to its cap: "
+                f"{len(rs.image_base64_cache)} entries with cap 50",
+            )
 
 
 # ------------------------------------------------------------------ #
@@ -126,9 +140,13 @@ class TestAnalysisHistoryRotated(unittest.TestCase):
 
 
     def test_history_is_rotated_after_many_analyses(self):
-        """Calling write_analysis N times for the same conversation
-        must not grow analysis-history.yaml to N entries — it rotates
-        at a documented cap."""
+        """Calling write_analysis past the cap rotates analysis-history.yaml,
+        leaving it bounded rather than one entry per call.
+
+        Pin the cap to a canonical value: the analyser reads
+        ``ANALYSIS_HISTORY_MAX_ENTRIES`` into a module constant at import time
+        (not via agent settings), so patch the constant directly to keep the
+        test independent of the ambient environment."""
         from analyser import analyse
 
         # Seed with an initial analysis so each subsequent call snapshots.
@@ -137,15 +155,15 @@ class TestAnalysisHistoryRotated(unittest.TestCase):
             encoding="utf-8",
         )
 
-        # 50 re-analyses
-        for i in range(1, 51):
-            analyse.write_analysis(self.conv_dir, self._sample_analysis(f"v{i}"))
+        with patch.object(analyse, "ANALYSIS_HISTORY_MAX_ENTRIES", 20):
+            for i in range(1, 51):  # 50 re-analyses, well past the cap
+                analyse.write_analysis(self.conv_dir, self._sample_analysis(f"v{i}"))
 
         history_path = self.conv_dir / "analysis-history.yaml"
         history = yaml.safe_load(history_path.read_text(encoding="utf-8"))
-        self.assertLess(
-            len(history), 50,
-            f"analysis-history.yaml has {len(history)} entries — "
+        self.assertLessEqual(
+            len(history), 20,
+            f"analysis-history.yaml has {len(history)} entries with cap 20 — "
             "rotation cap not enforced",
         )
 

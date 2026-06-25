@@ -7,6 +7,7 @@ import {
   type SocketMessage,
 } from '../../websocketContext'
 import { createUuid } from '../../utils/uuid'
+import { useAutoDismiss } from '../../hooks/useAutoDismiss'
 
 type Phase = 'idle' | 'confirming' | 'clearing' | 'done' | 'error'
 
@@ -76,6 +77,11 @@ const ClearAction: React.FC<ClearActionProps> = ({
     setPhase('clearing')
     sendMessage(requestChannel, JSON.stringify({ request_id: requestId }))
   }
+
+  // Let the success note clear itself so it can't linger as stale reassurance;
+  // stable callback so the busy `messages` re-render stream doesn't reset it.
+  const reset = React.useCallback(() => setPhase('idle'), [])
+  useAutoDismiss(phase === 'done', reset)
 
   const showButton = phase === 'idle' || phase === 'done' || phase === 'error'
 

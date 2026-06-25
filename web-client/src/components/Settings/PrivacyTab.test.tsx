@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
@@ -107,5 +107,40 @@ describe('PrivacyTab', () => {
     )
     expect(clearMessages).toHaveBeenCalled()
     expect(screen.getByRole('status')).toHaveTextContent(/cleared/i)
+  })
+
+  it('auto-dismisses the success message and restores the button after the timeout', () => {
+    vi.useFakeTimers()
+    try {
+      vi.spyOn(crypto, 'randomUUID').mockReturnValue('11111111-1111-1111-1111-111111111111')
+      const sendMessage = vi.fn(() => '')
+      const { rerender } = renderTab({ sendMessage, clearMessages: vi.fn() })
+      fireEvent.click(screen.getByRole('button', { name: /clear conversation history/i }))
+      fireEvent.click(screen.getByRole('button', { name: /yes, clear it/i }))
+
+      const response: SocketMessage = {
+        id: 'r1',
+        channel: 'clear-conversation-response',
+        direction: 'inbound',
+        body: '',
+        payload: { request_id: '11111111-1111-1111-1111-111111111111', ok: true },
+        timestamp: 1,
+      }
+      rerender(
+        <WebSocketContext.Provider value={{ ...baseCtx, sendMessage, messages: [response] }}>
+          <PrivacyTab />
+        </WebSocketContext.Provider>,
+      )
+      expect(screen.getByRole('status')).toHaveTextContent(/cleared/i)
+
+      act(() => { vi.advanceTimersByTime(5000) })
+
+      expect(screen.queryByRole('status')).toBeNull()
+      expect(
+        screen.getByRole('button', { name: /clear conversation history/i }),
+      ).toBeInTheDocument()
+    } finally {
+      vi.useRealTimers()
+    }
   })
 })

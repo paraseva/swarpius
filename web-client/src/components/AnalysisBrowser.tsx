@@ -2,9 +2,8 @@ import React from 'react'
 import { useWebSocket } from '../websocketContext'
 import { createUuid } from '../utils/uuid'
 import { parseInboundPayload } from '../utils/parseJson'
-import { GuidanceButton } from './GuidanceButton'
+import { PanelHeader } from './PanelHeader'
 import { AnalysisDetailView } from './AnalysisDetailView'
-import { CloseIcon } from './CloseIcon'
 import { AnalysisMetricsView } from './AnalysisMetricsView'
 import {
   POLL_INTERVAL_MS,
@@ -559,17 +558,13 @@ export const AnalysisBrowser: React.FC<{ onClose?: () => void }> = ({ onClose })
 
   return (
     <div className={s.analysisBrowser}>
-      <div className={s.analysisHeader}>
-        <span className="panel-heading-group">
-          <h3>Conversation Analysis</h3>
-          <GuidanceButton id="conversation-analysis" isDevMode />
-        </span>
-        {onClose && (
-          <button type="button" className="close-button" onClick={onClose} aria-label="Close Conversation Analysis">
-            <CloseIcon />
-          </button>
-        )}
-      </div>
+      <PanelHeader
+        title="Conversation Analysis"
+        guidanceId="conversation-analysis"
+        guidanceDevMode
+        onClose={onClose}
+        closeLabel="Close Conversation Analysis"
+      />
       <div className={s.analysisSubTabBar}>
         <button
           type="button"

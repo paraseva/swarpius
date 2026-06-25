@@ -43,12 +43,11 @@ import { useSettingsState } from './hooks/useSettingsState'
 import { useRoonCommands } from './hooks/useRoonCommands'
 import { useClientTtsHealthOverride } from './hooks/useClientTtsHealthOverride'
 import { GuidanceProvider } from './components/GuidanceProvider'
-import { GuidanceButton } from './components/GuidanceButton'
+import { PanelHeader } from './components/PanelHeader'
 import { GettingStartedModal } from './components/GettingStartedModal'
 import { GettingStartedContext } from './components/gettingStartedContext'
 import { shouldAutoShowWelcome } from './gettingStarted'
 import { SwarpiusLogo } from './components/SwarpiusLogo'
-import { CloseIcon } from './components/CloseIcon'
 import { type AppView, viewAfterRestart } from './appView'
 import { hasSoftSettingsWarning } from './settingsWarning'
 import { wasBundleMode } from './bundleMode'
@@ -644,16 +643,16 @@ const AppShell: React.FC = () => {
         className={`${s.diagnosticsDrawer} ${effectiveDiagnosticsOpen ? s.diagnosticsDrawerOpen : ''}`}
         inert={!effectiveDiagnosticsOpen}
       >
-        <div className={s.diagnosticsHeader}>
-          <span className="panel-heading-group">
-            <div className={s.diagnosticsTitle}>Live Diagnostics</div>
-            <GuidanceButton id="live-diagnostics" isDevMode />
-          </span>
+        <PanelHeader
+          title="Live Diagnostics"
+          guidanceId="live-diagnostics"
+          guidanceDevMode
+          onClose={closeDiagnosticsDrawer}
+          closeLabel="Close Live Diagnostics"
+          wrapOnOwnWidth
+        >
           <SessionSummaryBar messages={messages} />
-          <button type="button" className="close-button" onClick={closeDiagnosticsDrawer} aria-label="Close Live Diagnostics">
-            <CloseIcon />
-          </button>
-        </div>
+        </PanelHeader>
 
         <ErrorBoundary name="Live Diagnostics">
           <div className={s.accordionContainer} role="tablist" aria-label="Live Diagnostics panels">

@@ -1,10 +1,12 @@
 .bar {
   display: flex;
-  flex: 1 1 auto;
+  /* Content-width so the PanelHeader content slot positions it (right-aligned on
+     the first row, centred when it wraps to the second). */
+  flex: 0 1 auto;
   min-width: 0;
   flex-wrap: wrap;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: center;
   gap: 0;
   font-size: 0.7rem;
   color: var(--color-text-faint);

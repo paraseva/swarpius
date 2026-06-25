@@ -19,11 +19,10 @@ import { SpeechTab } from './SpeechTab'
 import { WebSearchTab } from './WebSearchTab'
 import { SettingsFormRegistry, type AggregateFormState } from './SettingsFormRegistry'
 import { FieldsDisabledContext } from './settingsFormContext'
-import { GuidanceButton } from '../GuidanceButton'
+import { PanelHeader } from '../PanelHeader'
 import { useGettingStarted } from '../gettingStartedContext'
 import { useUpdateCheck, useUpdateCheckEnabled, UPDATE_RELEASES_URL } from '../../updateCheck'
 import { useScrollEdges } from '../../hooks/useScrollEdges'
-import { CloseIcon } from '../CloseIcon'
 import { AttributionsModal } from '../AttributionsModal'
 import { stateDirectives, type SaveStatus } from './settingsDirectives'
 import { useWebSocket } from '../../websocketContext'
@@ -208,12 +207,12 @@ export const Settings: React.FC<SettingsProps> = ({ state, forceOpen, onClose, o
     <SettingsFormRegistry onAggregateChange={setAggregate}>
      <FieldsDisabledContext.Provider value={!editable}>
       <section className={s.settings} aria-label="Swarpius Settings">
-        <header className={s.header}>
-          <span className={`panel-heading-group ${s.headerTitle}`}>
-            <h3 className={s.title}>Settings</h3>
-            <GuidanceButton id="settings" />
-          </span>
-          <div className={s.headerActions}>
+        <PanelHeader
+          title="Settings"
+          guidanceId="settings"
+          onClose={forceOpen ? undefined : onClose}
+          closeLabel="Close Settings"
+        >
             <button
               type="button"
               className={s.headerButton}
@@ -272,19 +271,7 @@ export const Settings: React.FC<SettingsProps> = ({ state, forceOpen, onClose, o
                 ? 'Reload failed'
                 : 'Reload .env'}
             </button>
-          </div>
-          {!forceOpen && onClose ? (
-            <button
-              type="button"
-              className={`${s.headerClose} close-button`}
-              onClick={onClose}
-              aria-label="Close Settings"
-              title="Close Settings"
-            >
-              <CloseIcon />
-            </button>
-          ) : null}
-        </header>
+        </PanelHeader>
 
         {!editable && editingDisabledReason ? (
           <div className={s.infoBanner} role="status">

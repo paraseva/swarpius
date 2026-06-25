@@ -8,66 +8,12 @@
   overflow: hidden;
 }
 
-.header {
-  display: grid;
-  grid-template-columns: 1fr auto auto;
-  grid-template-areas: 'title actions close';
-  align-items: center;
-  gap: 0.5rem 1rem;
-  /* Fixed height matching .analysisHeader — without it the taller action
-     buttons stretch this row past the Costs/Analysis headers. */
-  min-height: 2.7rem;
-  padding: 0 1rem;
-  border-bottom: 1px solid var(--color-border);
-  flex: 0 0 auto;
-}
-
-.headerTitle {
-  grid-area: title;
-  min-width: 0;
-}
-
-.title {
-  margin: 0;
-  font-size: var(--text-base);
-  font-weight: 600;
-  color: var(--color-text-primary);
-}
-
-.headerActions {
-  grid-area: actions;
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 0.45rem;
-}
-
-.headerClose {
-  grid-area: close;
-}
-
 /* The .env path button is desktop-only (no local agent on a phone), so hide
    it in tabbed/mobile mode. Compound selector so it wins over .headerButton's
    own `display` regardless of source order. */
 @media (max-width: 720px) {
   .headerButton.copyPathButton {
     display: none;
-  }
-}
-
-/* When the row is too tight for the action buttons, keep title + close on the
-   first row and drop the buttons to a centred second row. */
-@media (max-width: 560px) {
-  .header {
-    grid-template-columns: 1fr auto;
-    grid-template-areas:
-      'title close'
-      'actions actions';
-  }
-
-  .headerActions {
-    flex-wrap: wrap;
-    justify-content: center;
   }
 }
 

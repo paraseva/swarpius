@@ -45,22 +45,6 @@
   }
 }
 
-.analysisHeader {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.7rem 1rem;
-  border-bottom: 1px solid var(--color-border);
-  flex: 0 0 auto;
-}
-
-.analysisHeader h3 {
-  margin: 0;
-  font-size: var(--text-base);
-  font-weight: 600;
-  color: var(--color-text-primary);
-}
-
 .analysisSubTabBar {
   display: flex;
   border-bottom: 1px solid var(--color-border);

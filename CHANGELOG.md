@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.1] - 2026-06-26
+
+### Added
+
+- `SWARPIUS_TIMEZONE` (`agent/.env`): the IANA timezone (e.g. `Europe/London`) used to group conversations and name log directories by day. Defaults to the system local timezone, which is correct for source and installer runs. Docker users should set it, because a container's clock defaults to UTC — without it, requests might be grouped into the wrong day.
+
+### Fixed
+
+- Conversation grouping, day boundaries, and timestamps now use local time, rather than UTC. On systems where local time differs from UTC, this previously caused conversations to be grouped under the wrong day, the per-day conversation numbering not to reset at local midnight, and some timestamps (including listening history) to appear shifted from local time. The local timezone is taken from the system by default; in Docker, set `SWARPIUS_TIMEZONE` (see above). Conversations recorded before this fix are not re-dated automatically. They age out under the retention windows (`CHAT_HISTORY_RETENTION_DAYS`, `LOG_RETENTION_DAYS`), or can be removed immediately with Settings → "Privacy & Data" → "Clear conversation history".
+- "Clear conversation history" (Settings → "Privacy & Data") previously removed only the in-app transcript, leaving the server-side conversation and server log directories (`logs/conversation/` and `logs/server/` under the data directory) on disk — the most detailed record of a conversation, including your inputs, the assistant's responses, prompts, and tool input/output. It now deletes those too. The cost dashboard's usage history and your listening history (cleared separately) are unaffected.
+- In Developer Mode, the Session Requests panel could drop or conflate requests that shared an identifier across different days (request identifiers reset each day). Each request is now tracked per day, so same-numbered requests on different days stay distinct.
+- The header and close button are now consistent across the full-screen views (Costs, Conversation Analysis, Settings, and Live Diagnostics): the close icon is identical everywhere, and the Settings and Live Diagnostics headers expand to a second row when the window is too narrow for their controls, rather than clipping them.
+
 ## [1.1.0] - 2026-06-25
 
 ### Added

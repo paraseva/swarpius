@@ -61,6 +61,14 @@ services:
         source: ./agent/.env
         target: /app/.env
         read_only: true
+      # Inherit the host timezone so conversations group by local day without
+      # extra config. Works on Linux/WSL hosts; Docker Desktop (macOS/Windows)
+      # sees the VM's zone, so set SWARPIUS_TIMEZONE in agent/.env there. Either
+      # way, SWARPIUS_TIMEZONE overrides this.
+      - type: bind
+        source: /etc/localtime
+        target: /etc/localtime
+        read_only: true
     environment:
       # To disable web search and/or TTS completely,
       # add ``WEB_SEARCH_PROVIDER=`` and/or ``TTS_URL=``

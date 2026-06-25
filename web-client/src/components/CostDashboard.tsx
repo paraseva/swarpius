@@ -1,7 +1,7 @@
 import React from 'react'
 import { useWebSocket } from '../websocketContext'
 import { createUuid } from '../utils/uuid'
-import { GuidanceButton } from './GuidanceButton'
+import { PanelHeader } from './PanelHeader'
 import s from './AnalysisBrowser.module.css'
 import c from './CostDashboard.module.css'
 
@@ -331,18 +331,7 @@ export const CostDashboard: React.FC<{ onClose: () => void }> = ({ onClose }) =>
 
   return (
     <div className={s.analysisBrowser}>
-      <div className={s.analysisHeader}>
-        <span className="panel-heading-group">
-          <h3>Costs</h3>
-          <GuidanceButton id="costs" />
-        </span>
-        <button type="button" className="close-button" onClick={onClose} aria-label="Close Costs">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="6" y1="6" x2="18" y2="18" />
-            <line x1="18" y1="6" x2="6" y2="18" />
-          </svg>
-        </button>
-      </div>
+      <PanelHeader title="Costs" guidanceId="costs" onClose={onClose} closeLabel="Close Costs" />
 
       <div className={s.analysisMetrics}>
         <div className={s.metricsHeader}>

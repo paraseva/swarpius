@@ -18,12 +18,13 @@ from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional
 
 from app.io.state_db import StateDb
+from app.time_utils import get_local_timezone
 
 
 def _local_day_bounds(ts_ms: int) -> tuple[int, int]:
     """Local-time [start, end) epoch-ms bounds of the calendar day containing
-    ``ts_ms``."""
-    start = datetime.fromtimestamp(ts_ms / 1000).replace(
+    ``ts_ms``, in the configured timezone."""
+    start = datetime.fromtimestamp(ts_ms / 1000, get_local_timezone()).replace(
         hour=0, minute=0, second=0, microsecond=0,
     )
     return int(start.timestamp() * 1000), int((start + timedelta(days=1)).timestamp() * 1000)

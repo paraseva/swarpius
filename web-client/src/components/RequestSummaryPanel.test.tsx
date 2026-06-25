@@ -158,6 +158,21 @@ describe('RequestSummaryPanel', () => {
     expect(within(groups[1]).getByText('c01')).toBeInTheDocument()
   })
 
+  it('keeps same request id on different days as two distinct requests', () => {
+    // cNN / request ids reset each day, so rq-c01-0001 on two days is two
+    // distinct requests — the later must not be deduped away by the earlier.
+    const DAY = 24 * 60 * 60 * 1000
+    tsCounter = 1711900000000
+    const earlier = buildRequest('rq-c01-0001', { conversationId: 'c01', inputText: 'Monday ask' })
+    tsCounter = 1711900000000 + 2 * DAY
+    const later = buildRequest('rq-c01-0001', { conversationId: 'c01', inputText: 'Wednesday ask' })
+
+    const { container } = renderWithMessages([...earlier, ...later])
+
+    // Two day-groups, both present (the later request isn't dropped).
+    expect(getConversationGroups(container).length).toBe(2)
+  })
+
   it('aggregates token totals at conversation level', () => {
     const msgs = [
       ...buildRequest('rq-c01-0001', {

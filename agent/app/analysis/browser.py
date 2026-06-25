@@ -5,12 +5,13 @@ from __future__ import annotations
 import json
 import logging
 from collections import Counter
-from datetime import datetime, timedelta
+from datetime import timedelta
 from pathlib import Path
 from typing import Any, Callable, Optional
 
 from app.analysis.feedback import FEEDBACK_FILENAME
 from app.coordinator.parse_helpers import safe_parse_yaml, safe_parse_yaml_list
+from app.time_utils import local_now
 
 _log = logging.getLogger("swarpius.analysis_browser")
 
@@ -571,7 +572,7 @@ def _find_unanalysed_conversations(logs_root: Path) -> list[tuple[str, str]]:
     from app.settings import get_settings
     retention_days = get_settings().log_retention_days
 
-    today = datetime.now()
+    today = local_now()
     unanalysed: list[tuple[str, str]] = []
     for day_offset in range(retention_days):
         date_str = (today - timedelta(days=day_offset)).strftime("%Y-%m-%d")

@@ -16,6 +16,7 @@ from datetime import datetime, timedelta
 from typing import Any, Dict, Optional
 
 from app.runtime.state_internals import SearchHistoryEntry
+from app.time_utils import local_now
 
 
 class WorkingMemoryState:
@@ -36,7 +37,7 @@ class WorkingMemoryState:
         days = get_settings().chat_history_retention_days
         if not days or days <= 0:
             return None
-        return datetime.now() - timedelta(days=days)
+        return local_now() - timedelta(days=days)
 
     def capture_state(self) -> Dict[str, Any]:
         rt = self._rt

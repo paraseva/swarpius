@@ -34,11 +34,10 @@ class TestNarrativeFormat(unittest.TestCase):
 
     def test_single_turn_renders_as_user_then_agent(self):
         provider = ConversationHistoryProvider("Conversation History")
-        with patch("app.coordinator.context_providers.datetime") as mock_dt:
-            mock_dt.now.return_value = _at("2026-05-25 14:00")
-            mock_dt.side_effect = datetime
+        with patch("app.coordinator.context_providers.local_now") as mock_now:
+            mock_now.return_value = _at("2026-05-25 14:00")
             provider.add_turn("hi", "hello")
-            mock_dt.now.return_value = _at("2026-05-25 14:00")
+            mock_now.return_value = _at("2026-05-25 14:00")
             out = provider.get_info()
         self.assertIn("User: hi", out)
         self.assertIn("Swarpius: hello", out)
@@ -59,10 +58,10 @@ class TestNarrativeFormat(unittest.TestCase):
 
     def test_turn_carries_relative_and_absolute_timestamp(self):
         provider = ConversationHistoryProvider("Conversation History")
-        with patch("app.coordinator.context_providers.datetime") as mock_dt:
-            mock_dt.now.return_value = _at("2026-05-25 01:35")
+        with patch("app.coordinator.context_providers.local_now") as mock_now:
+            mock_now.return_value = _at("2026-05-25 01:35")
             provider.add_turn("u1", "a1")
-            mock_dt.now.return_value = _at("2026-05-25 13:35")  # 12h later
+            mock_now.return_value = _at("2026-05-25 13:35")  # 12h later
             out = provider.get_info()
         # Absolute timestamp from when the turn happened
         self.assertIn("2026-05-25 01:35", out)
@@ -71,8 +70,8 @@ class TestNarrativeFormat(unittest.TestCase):
 
     def test_recent_turn_renders_just_now(self):
         provider = ConversationHistoryProvider("Conversation History")
-        with patch("app.coordinator.context_providers.datetime") as mock_dt:
-            mock_dt.now.return_value = _at("2026-05-25 14:00")
+        with patch("app.coordinator.context_providers.local_now") as mock_now:
+            mock_now.return_value = _at("2026-05-25 14:00")
             provider.add_turn("u1", "a1")
             # Same "now" → 0 seconds ago
             out = provider.get_info()
@@ -80,10 +79,10 @@ class TestNarrativeFormat(unittest.TestCase):
 
     def test_multiple_turns_separated_oldest_first(self):
         provider = ConversationHistoryProvider("Conversation History")
-        with patch("app.coordinator.context_providers.datetime") as mock_dt:
-            mock_dt.now.return_value = _at("2026-05-25 01:30")
+        with patch("app.coordinator.context_providers.local_now") as mock_now:
+            mock_now.return_value = _at("2026-05-25 01:30")
             provider.add_turn("u1", "a1")
-            mock_dt.now.return_value = _at("2026-05-25 14:00")
+            mock_now.return_value = _at("2026-05-25 14:00")
             provider.add_turn("u2", "a2")
             out = provider.get_info()
         idx1 = out.find("User: u1")
@@ -112,10 +111,10 @@ class TestRelativeTimeBuckets(unittest.TestCase):
 
     def _render(self, age: timedelta) -> str:
         provider = ConversationHistoryProvider("Conversation History")
-        with patch("app.coordinator.context_providers.datetime") as mock_dt:
-            mock_dt.now.return_value = _at("2026-05-25 14:00")
+        with patch("app.coordinator.context_providers.local_now") as mock_now:
+            mock_now.return_value = _at("2026-05-25 14:00")
             provider.add_turn("u", "a")
-            mock_dt.now.return_value = _at("2026-05-25 14:00") + age
+            mock_now.return_value = _at("2026-05-25 14:00") + age
             return provider.get_info()
 
     def test_under_one_minute_is_just_now(self):

@@ -128,11 +128,15 @@ export const RequestSummaryPanel: React.FC = () => {
       if (!event || !event.request_id) continue
       const rid = event.request_id
       const ts = message.timestamp
-      ensureEvents(rid)
-      ensureTokens(rid)
+      // Request ids reset daily, so the same id on two days is two distinct
+      // requests — key per-request state by id + day so one day's request can't
+      // dedupe or contaminate the other's.
+      const key = `${rid}|${dayKey(ts)}`
+      ensureEvents(key)
+      ensureTokens(key)
 
       if (event.source === '[Request]' && event.user_input) {
-        requestInputs.set(rid, event.user_input)
+        requestInputs.set(key, event.user_input)
       }
 
       if (event.event_type === 'coordinator_step') {
@@ -144,13 +148,13 @@ export const RequestSummaryPanel: React.FC = () => {
         const cacheReadTokens = u?.cache_read_input_tokens ?? 0
         const costUsd = u?.cost_usd ?? 0
         if (promptTokens > 0 || outputTokens > 0 || costUsd > 0) {
-          const totals = requestTokens.get(rid)!
+          const totals = requestTokens.get(key)!
           totals.prompt += promptTokens
           totals.output += outputTokens
           totals.cacheRead += cacheReadTokens
           totals.cost += costUsd
         }
-        requestEvents.get(rid)!.push({
+        requestEvents.get(key)!.push({
           timestampMs: ts,
           label: `Step ${event.step}: ${skill}${done}`,
           durationMs: event.duration_ms,
@@ -161,12 +165,12 @@ export const RequestSummaryPanel: React.FC = () => {
         })
       }
 
-      if (event.event_type === 'request_complete' && !seenRequestIds.has(rid)) {
-        seenRequestIds.add(rid)
-        const tokens = requestTokens.get(rid) ?? { prompt: 0, output: 0, cacheRead: 0, cost: 0 }
+      if (event.event_type === 'request_complete' && !seenRequestIds.has(key)) {
+        seenRequestIds.add(key)
+        const tokens = requestTokens.get(key) ?? { prompt: 0, output: 0, cacheRead: 0, cost: 0 }
         summaries.push({
           requestId: rid,
-          input: requestInputs.get(rid) ?? '',
+          input: requestInputs.get(key) ?? '',
           steps: event.total_steps ?? 0,
           durationMs: event.total_duration_ms ?? 0,
           status: event.status ?? 'unknown',
@@ -177,7 +181,7 @@ export const RequestSummaryPanel: React.FC = () => {
           totalOutputTokens: tokens.output,
           totalCacheReadTokens: tokens.cacheRead,
           totalCostUsd: tokens.cost,
-          events: requestEvents.get(rid) ?? [],
+          events: requestEvents.get(key) ?? [],
           error: event.error,
         })
       }

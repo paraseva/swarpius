@@ -7,6 +7,8 @@ from typing import Any, Callable, List, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.time_utils import get_local_timezone, local_strftime
+
 
 class ListeningHistoryToolInputSchema(BaseModel):
     """Input schema for querying the listening history."""
@@ -61,6 +63,11 @@ class ListeningHistoryToolConfig(BaseModel):
 
 def _to_ms(value: str, *, end_of_day: bool) -> int:
     dt = datetime.fromisoformat(value)
+    # A bare date is interpreted in the configured zone, so "the 24th" means the
+    # local 24th, not the process clock's.
+    zone = get_local_timezone()
+    if dt.tzinfo is None and zone is not None:
+        dt = dt.replace(tzinfo=zone)
     # A bare date as an upper bound should cover the whole day.
     if end_of_day and len(value) == 10:
         dt = dt + timedelta(days=1) - timedelta(milliseconds=1)
@@ -68,7 +75,7 @@ def _to_ms(value: str, *, end_of_day: bool) -> int:
 
 
 def _format_when(ts_ms: int) -> str:
-    return datetime.fromtimestamp(ts_ms / 1000).strftime("%Y-%m-%d %H:%M")
+    return local_strftime(ts_ms / 1000, "%Y-%m-%d %H:%M")
 
 
 class ListeningHistoryTool:

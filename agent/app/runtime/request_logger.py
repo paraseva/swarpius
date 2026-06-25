@@ -6,7 +6,7 @@ import re
 import shutil
 import threading
 import time
-from datetime import datetime, timedelta
+from datetime import timedelta
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -15,6 +15,7 @@ import yaml
 from app.data_paths import conversation_logs_dir, feedback_archive_dir
 from app.runtime.conversation_tracker import ConversationTracker, day_str
 from app.settings import get_settings
+from app.time_utils import local_now, local_today
 
 _log = logging.getLogger("swarpius.request_logger")
 
@@ -146,7 +147,7 @@ class RequestIdGenerator:
         its sequence rather than overwriting from 0001.
         """
         root = logs_root or conversation_logs_dir()
-        today_dir = root / datetime.now().strftime("%Y-%m-%d")
+        today_dir = root / local_today()
         if not today_dir.is_dir():
             return 1, {}
 
@@ -266,7 +267,7 @@ class RequestLogger:
     def __init__(self, request_id: str, logs_root: Optional[Path] = None) -> None:
         self.request_id = request_id
         self._logs_root = logs_root or conversation_logs_dir()
-        date_str = datetime.now().strftime("%Y-%m-%d")
+        date_str = local_today()
         conversation_dir = extract_conversation_dir(request_id)
         self._request_dir = self._logs_root / date_str / conversation_dir / request_id
         self._request_dir.mkdir(parents=True, exist_ok=True)
@@ -276,7 +277,7 @@ class RequestLogger:
         self._events_path = self._request_dir / "events.jsonl"
         self._tool_execution_counter = 0
         self._start_time = time.perf_counter()
-        self._start_timestamp = datetime.now().isoformat()
+        self._start_timestamp = local_now().isoformat()
         self._write_warned = False
 
     def _write_json(self, path: Path, data: Any) -> None:
@@ -452,7 +453,7 @@ class RequestLogger:
             "problem_description": problem_description,
             "total_steps": total_steps,
             "total_duration_ms": total_duration_ms or int((time.perf_counter() - self._start_time) * 1000),
-            "timestamp": datetime.now().isoformat(),
+            "timestamp": local_now().isoformat(),
         }
         if coordinator_model is not None:
             outcome_data["coordinator_model"] = coordinator_model
@@ -470,7 +471,7 @@ class RequestLogger:
                 {
                     "request_id": self.request_id,
                     "flags": flags,
-                    "timestamp": datetime.now().isoformat(),
+                    "timestamp": local_now().isoformat(),
                 },
             )
 
@@ -490,7 +491,7 @@ class RequestLogger:
         snapshot_path = conversation_dir / "context_snapshot.json"
         if snapshot_path.exists():
             return False
-        payload = {"timestamp": datetime.now().isoformat(), **data}
+        payload = {"timestamp": local_now().isoformat(), **data}
         self._write_json(snapshot_path, payload)
         return True
 
@@ -523,7 +524,7 @@ class RequestLogger:
             "conversation_id": conversation_id,
             "topic_summary": effective_topic,
             "requests": requests,
-            "updated_at": datetime.now().isoformat(),
+            "updated_at": local_now().isoformat(),
         })
 
     @property
@@ -587,7 +588,7 @@ def cleanup_old_logs(logs_root: Optional[Path] = None, retention_days: int = 7) 
     root = logs_root or conversation_logs_dir()
     if not root.is_dir():
         return 0
-    cutoff = (datetime.now() - timedelta(days=retention_days)).strftime("%Y-%m-%d")
+    cutoff = (local_now() - timedelta(days=retention_days)).strftime("%Y-%m-%d")
     archive_root = feedback_archive_dir()
     removed = 0
     for entry in sorted(root.iterdir()):

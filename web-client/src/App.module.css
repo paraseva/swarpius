@@ -146,40 +146,6 @@
   transform: translateX(0);
 }
 
-.diagnosticsHeader {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.75rem;
-  padding: 0.8rem 1rem;
-  border-bottom: 1px solid var(--color-border);
-  /* Match the 1.2rem close button so the text line boxes align with it. */
-  line-height: 1.2rem;
-}
-
-/* Pin the title + close button to the first line; the stats bar wraps between them. */
-.diagnosticsHeader :global(.panel-heading-group),
-.diagnosticsHeader :global(.close-button) {
-  flex-shrink: 0;
-}
-
-/* Inter sits high — nudge the title group down to the close button's centre. */
-.diagnosticsHeader :global(.panel-heading-group) {
-  transform: translateY(var(--row-text-shift));
-}
-
-.diagnosticsHeader h3 {
-  margin: 0;
-  font-size: 0.9rem;
-}
-
-.diagnosticsTitle {
-  margin: 0;
-  font-size: var(--text-base);
-  font-weight: 600;
-  color: var(--color-text-primary);
-  flex-shrink: 0;
-}
-
 /* ── Drawer tab bar ──────────────────────────────────────────── */
 
 .drawerTabBar {

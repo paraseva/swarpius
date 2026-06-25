@@ -16,13 +16,14 @@ from __future__ import annotations
 import logging
 import shutil
 import threading
-from datetime import datetime, timedelta, timezone
+from datetime import timedelta
 from pathlib import Path
 from typing import Any, Optional
 
 import yaml
 
 from app.data_paths import server_logs_dir
+from app.time_utils import local_now, local_today
 
 _log = logging.getLogger("swarpius.server_logger")
 
@@ -55,7 +56,7 @@ class ServerLogger:
             return
 
         entry = {
-            "ts": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3],
+            "ts": local_now().strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3],
             "request_id": request_id,
             "op": op,
         }
@@ -72,7 +73,7 @@ class ServerLogger:
 
         entry = _stringify(entry)
 
-        target = self._root / datetime.now().strftime("%Y-%m-%d") / conv_dir / request_id / "server.yaml"
+        target = self._root / local_today() / conv_dir / request_id / "server.yaml"
 
         with self._lock:
             if self._current_path != target:
@@ -146,7 +147,7 @@ def cleanup_old_server_logs(retention_days: Optional[int] = None) -> int:
     if not root.is_dir():
         return 0
 
-    cutoff = (datetime.now() - timedelta(days=retention_days)).strftime("%Y-%m-%d")
+    cutoff = (local_now() - timedelta(days=retention_days)).strftime("%Y-%m-%d")
     removed = 0
     for entry in sorted(root.iterdir()):
         if entry.is_dir() and entry.name < cutoff:

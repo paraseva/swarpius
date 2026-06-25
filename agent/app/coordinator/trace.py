@@ -5,7 +5,7 @@ from datetime import datetime
 from typing import Any
 
 from app.constants import CONTEXT_MAX_LIST_ITEMS, CONTEXT_MAX_STRING_LENGTH
-from app.time_utils import format_relative_time
+from app.time_utils import format_relative_time, local_now
 
 
 def pretty_json(data: Any) -> str:
@@ -97,7 +97,7 @@ def build_trace_context(
     When *aggressive* is True (small-model profiles), the trace is reduced
     to single-line summaries much earlier to cut context volume.
     """
-    now = datetime.now()
+    now = local_now()
 
     if aggressive:
         if len(trace) <= 1:

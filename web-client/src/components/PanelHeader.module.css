@@ -1,0 +1,75 @@
+/* Shared header for full-view panels (Costs, Conversation Analysis, Settings,
+   Live Diagnostics). One definition so every view's header — and close button —
+   look identical. */
+
+.header {
+  /* The first-line height. Tune this one value to match the Costs/Analysis
+     header exactly; every view inherits it. */
+  --panel-header-height: 2.8rem;
+
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem 0.75rem;
+  padding: 0 1rem;
+  border-bottom: 1px solid var(--color-border);
+  flex: 0 0 auto;
+}
+
+.titleGroup {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 0;
+  /* Pin the first-line height so the title, ? and close button stay put whether
+     extra content rides the first line or wraps below it. */
+  min-height: var(--panel-header-height);
+}
+
+.title {
+  margin: 0;
+  font-size: var(--text-base);
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+/* Extra content (action buttons, stats bar) rides the first line, right-aligned
+   beside the close button when there's room. */
+.content {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex: 1 1 auto;
+  justify-content: flex-end;
+  min-width: 0;
+}
+
+/* Too narrow for the content beside the title: drop it to a centred second row
+   (the header grows). Default trigger is the viewport, for full-width views
+   like Settings. */
+@media (max-width: 720px) {
+  .content {
+    order: 1;
+    flex: 0 0 100%;
+    justify-content: center;
+    margin-bottom: 0.45rem;
+  }
+}
+
+/* Opt-in (`wrapOnOwnWidth`) for a header whose width is independent of the
+   viewport — the Live Diagnostics drawer — where the viewport trigger never
+   matches. Wraps on the header's own width; tune the threshold to where the
+   content stops fitting. */
+.containerWrap {
+  container-type: inline-size;
+}
+
+@container (max-width: 480px) {
+  .content {
+    order: 1;
+    flex: 0 0 100%;
+    justify-content: center;
+    margin-bottom: 0.45rem;
+  }
+}

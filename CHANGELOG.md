@@ -7,10 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-06-25
+
 ### Added
 
 - Chat history, conversation memory, and Roon reference state now persist across a restart. After the agent restarts, the conversation continues as before: the assistant still remembers what was said, previously found search results and queue items still resolve, and the default-zone choice is retained.
 - Browse your full chat history in the web client: scroll up to load earlier days one at a time, or jump straight to any date with the calendar picker in the chat header. Day separators mark each day, and only the most recent day loads on open so the interface stays fast.
+- A scroll-to-bottom button in the chat and the Agents, Tools, and Errors diagnostics panels: when you scroll up into earlier messages, a button appears to jump back to the latest, and it highlights when new messages arrive while you are scrolled away.
 - The assistant can answer questions about what you have listened to (for example, "what did I play last Tuesday?"), backed by a listening-history record of recently played tracks.
 - A Cost dashboard in the web client (always available, alongside Settings — not behind Developer Mode), tracking LLM spend across every agent: the coordinator, the lightweight sub-agents, and the conversation analyser. It shows a cost-and-tokens trend over time, breakdowns by agent and by model, and mean cost per request by complexity, filterable by date range, agent, and model. Cost history is kept indefinitely (it is not subject to the diagnostics retention window). The command-line `/usage` view gains a matching all-time cost summary.
 - A "Privacy & Data" tab in Settings with controls to clear your conversation history or your listening history.

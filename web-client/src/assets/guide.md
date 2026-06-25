@@ -92,6 +92,16 @@ You can dispute findings and provide feedback; the system will extract lessons f
 
 <!-- end-guidance -->
 
+## Costs {#costs}
+
+Track what Swarpius spends on LLM calls.
+
+The summary cards show total cost, request count, net tokens, and cache hit rate for the selected range. Below them are four views: **Cost over time** (a daily trend of tokens and spend), **Cost by agent** and **Cost by model** (where the spend goes), and **Mean cost per request, by complexity** (simple, compound, and complex requests, so you can see what heavier requests cost).
+
+Use the **After** / **Before** date fields and the **Agent** / **Model** filters to narrow the view. Figures are calculated from each call's recorded token usage and model pricing, so treat them as a close guide rather than an exact invoice.
+
+<!-- end-guidance -->
+
 ## Settings {#settings}
 
 Configure Swarpius from the app instead of editing files by hand. Changes save to disk; click **Restart** to apply them.

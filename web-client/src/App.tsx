@@ -493,7 +493,7 @@ const AppShell: React.FC = () => {
               if (next === 'cost') setIsDiagnosticsOpen(false)
             }}
             aria-pressed={effectiveAppView === 'cost'}
-            title={effectiveAppView === 'cost' ? 'Close Cost dashboard' : 'Open Cost dashboard'}
+            title={effectiveAppView === 'cost' ? 'Close Costs' : 'Open Costs'}
           >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
               <line x1="12" y1="1" x2="12" y2="23" />

@@ -741,6 +741,17 @@ class RuntimeState(_StateInitMixin, _StateZoneMixin):
         from app.io.message_store import get_message_store
         get_message_store().clear()
 
+        # A privacy "clear" wipes the on-disk logs too (the most detailed copy:
+        # inputs, responses, prompts, tool I/O). Usage accounting (cost_ledger)
+        # and listening history (its own control) are kept.
+        import shutil
+
+        from app.data_paths import conversation_logs_dir, server_logs_dir
+        from app.runtime.server_logger import get_server_logger
+        get_server_logger().close()  # release any open handle before removal
+        for log_dir in (conversation_logs_dir(), server_logs_dir()):
+            shutil.rmtree(log_dir, ignore_errors=True)
+
     def persist_state(self) -> None:
         """Commit the current state snapshot. Called by the deterministic
         request-completion plumbing, not the LLM coordinator. Skipped when a

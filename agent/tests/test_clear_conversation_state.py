@@ -9,6 +9,7 @@ import tempfile
 import unittest
 from datetime import datetime
 from pathlib import Path
+from unittest.mock import patch
 
 try:
     from tests.stub_modules import install_common_test_stubs
@@ -79,6 +80,27 @@ class TestClearConversationState(unittest.TestCase):
         # Working memory cleared, but no error and default-zone state intact
         # (there's no connection here; the call must be a safe no-op for it).
         self.assertEqual(runtime.conversation_history_provider.get_info(), "")
+
+    def test_clear_wipes_on_disk_conversation_and_server_logs(self):
+        # "Clear conversation history" is a privacy action, so it must also
+        # delete the on-disk logs — the most detailed copy of the conversation
+        # (inputs, responses, prompts, tool I/O), not just the transcript DB.
+        runtime = self._runtime()
+        conv_root = self._dir / "logs" / "conversation"
+        server_root = self._dir / "logs" / "server"
+        conv_req = conv_root / "2026-06-25" / "c01" / "rq-c01-0001"
+        conv_req.mkdir(parents=True)
+        (conv_req / "request.json").write_text("{}", encoding="utf-8")
+        (server_root / "2026-06-25" / "c01" / "rq-c01-0001").mkdir(parents=True)
+
+        with patch("app.data_paths.conversation_logs_dir", return_value=conv_root), \
+                patch("app.data_paths.server_logs_dir", return_value=server_root):
+            runtime.clear_conversation_state()
+
+        self.assertFalse(conv_req.exists(), "conversation logs were not wiped")
+        self.assertFalse(
+            (server_root / "2026-06-25").exists(), "server logs were not wiped",
+        )
 
     def test_clear_advances_to_a_fresh_conversation(self):
         # A clear opens a fresh conversation for logging/analysis: the counter

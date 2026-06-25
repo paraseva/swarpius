@@ -20,6 +20,7 @@ from typing import Any, Dict, List, Optional
 from app.runtime.result_store_types import ResultStoreEntry
 from app.runtime.state_internals import SearchHistoryEntry
 from app.settings import get_settings
+from app.time_utils import local_strftime
 
 
 class ResultStoreManager:
@@ -91,7 +92,7 @@ class ResultStoreManager:
         """
         handles: List[str] = []
         now_ms = int(time.time() * 1000)
-        ts_display = time.strftime("%H:%M")
+        ts_display = local_strftime(time.time(), "%H:%M")
 
         with self.lock:
             for entry in entries:

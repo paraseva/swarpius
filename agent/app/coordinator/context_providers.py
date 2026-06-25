@@ -4,7 +4,7 @@ from collections import deque
 from datetime import datetime
 from typing import Callable, Deque, Optional
 
-from app.time_utils import format_relative_time
+from app.time_utils import format_relative_time, local_now
 
 
 class ContextProvider:
@@ -20,7 +20,7 @@ class CurrentDateProvider(ContextProvider):
         super().__init__(title)
 
     def get_info(self) -> str:
-        return f"Current date: {datetime.now().strftime('%A, %Y-%m-%d')}"
+        return f"Current date: {local_now().strftime('%A, %Y-%m-%d')}"
 
 
 class CurrentTimeProvider(ContextProvider):
@@ -28,7 +28,7 @@ class CurrentTimeProvider(ContextProvider):
         super().__init__(title)
 
     def get_info(self) -> str:
-        return f"Current time (HH:MM:SS): {datetime.now().strftime('%H:%M:%S')}"
+        return f"Current time (HH:MM:SS): {local_now().strftime('%H:%M:%S')}"
 
 
 class TextContextProvider(ContextProvider):
@@ -77,13 +77,13 @@ class ConversationHistoryProvider(ContextProvider):
         self.history.append({
             "user": user_input,
             "agent": agent_response,
-            "timestamp": timestamp or datetime.now(),
+            "timestamp": timestamp or local_now(),
         })
 
     def get_info(self) -> str:
         if not self.history:
             return ""
-        now = datetime.now()
+        now = local_now()
         blocks = []
         for turn in self.history:
             ts = turn["timestamp"]

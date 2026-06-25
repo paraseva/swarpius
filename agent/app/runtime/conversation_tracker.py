@@ -9,14 +9,16 @@ from __future__ import annotations
 
 import time
 from dataclasses import dataclass
-from datetime import datetime
 from typing import Any, Callable, Dict, List, Optional
+
+from app.time_utils import local_day
 
 
 def day_str(timestamp: float) -> str:
-    """Local calendar day of a wall-clock timestamp, matching the date used for
-    conversation log directories (``request_logger`` uses ``datetime.now()``)."""
-    return datetime.fromtimestamp(timestamp).strftime("%Y-%m-%d")
+    """Configured-local calendar day of a wall-clock timestamp, matching the date
+    used for conversation log directories. Honours ``SWARPIUS_TIMEZONE`` so a
+    process running in UTC (e.g. Docker) still groups by the user's local day."""
+    return local_day(timestamp)
 
 
 @dataclass

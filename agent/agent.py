@@ -591,6 +591,16 @@ def _start_roon_init_async(
     return thread
 
 
+def _log_resolved_timezone() -> None:
+    """Log the resolved timezone once at startup. Placed after per-mode log
+    routing so it follows the normal rules (file-only in CLI/bundle, stderr+file
+    in WS/Docker) — making a container silently left on UTC visible to operators."""
+    from app.time_utils import local_timezone_label
+    logging.getLogger("swarpius").info(
+        "Timezone: %s", local_timezone_label(),
+    )
+
+
 async def start_websocket_server(
     host: str = "127.0.0.1",
     port: int = 8080,
@@ -611,6 +621,7 @@ async def start_websocket_server(
         bundle_log_path = route_info_logs_to_file(default_log_path())
     else:
         ensure_default_log_file(default_log_path())
+    _log_resolved_timezone()
 
     print_brand_banner()
 
@@ -763,6 +774,7 @@ def run_cli_loop() -> None:
     # Route INFO to a file so the terminal stays clean during the
     # spinner; everything from here on is muted from stderr.
     log_file_path = route_info_logs_to_file(default_log_path())
+    _log_resolved_timezone()
 
     # CLI mode has no UI to drive a config fix — bail with a clear
     # hint instead of letting ensure_initialised() raise a generic

@@ -447,9 +447,10 @@ def find_eligible_conversations(staleness_minutes: int) -> list[Path]:
         log.info("Scan eligibility: logs root does not exist: %s", LOGS_ROOT)
         return []
 
-    cutoff = datetime.now() - timedelta(minutes=staleness_minutes)
-    today = datetime.now().strftime("%Y-%m-%d")
-    yesterday = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
+    from app.time_utils import local_now, local_today
+    cutoff = local_now() - timedelta(minutes=staleness_minutes)
+    today = local_today()
+    yesterday = (local_now() - timedelta(days=1)).strftime("%Y-%m-%d")
     eligible: list[Path] = []
     considered = 0
     skipped = {"already_analysed": 0, "no_request_time": 0, "not_stale": 0, "unanalysable": 0}
@@ -504,8 +505,9 @@ def resolve_conversation_path(spec: str) -> Path | None:
         return path if path.is_dir() else None
 
     # Search today, then yesterday
-    today = datetime.now().strftime("%Y-%m-%d")
-    yesterday = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
+    from app.time_utils import local_now, local_today
+    today = local_today()
+    yesterday = (local_now() - timedelta(days=1)).strftime("%Y-%m-%d")
     for date_str in [today, yesterday]:
         path = LOGS_ROOT / date_str / spec
         if path.is_dir():

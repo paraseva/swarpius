@@ -133,12 +133,12 @@ def _migrate_3_to_4(conn: sqlite3.Connection) -> None:
     each '[Request]' error lacking one *that day* — ids reset daily, so the same
     id completed on one day and failed on another are distinct requests."""
     import json
-    from datetime import datetime
 
     from app.runtime.request_logger import extract_conversation_dir
+    from app.time_utils import local_day
 
     def day_of(created_at_ms: int) -> str:
-        return datetime.fromtimestamp(created_at_ms / 1000).date().isoformat()
+        return local_day(created_at_ms / 1000)
 
     completed: set[tuple[str, str]] = set()
     for payload_json, created_at in conn.execute(

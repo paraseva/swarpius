@@ -148,6 +148,9 @@ class Settings:
     tts_url: Optional[str]
     swarpius_data_dir: Optional[str]
     log_file: Optional[str]
+    # IANA timezone for all timestamps; None = system local (correct for
+    # source/installer). Set when the process clock isn't local, e.g. Docker (UTC).
+    time_zone: Optional[str]
 
     # WebSocket bind (--ws mode only). Defaults to loopback so source
     # and bundled-app installs aren't LAN-reachable unless the operator
@@ -256,6 +259,7 @@ class Settings:
             tts_url=_opt_str_env("TTS_URL"),
             swarpius_data_dir=_opt_str_env("SWARPIUS_DATA_DIR"),
             log_file=_opt_str_env("LOG_FILE"),
+            time_zone=_opt_str_env("SWARPIUS_TIMEZONE"),
             ws_host=_opt_str_env("SWARPIUS_WS_HOST") or "127.0.0.1",
             ws_port=_int_env("SWARPIUS_WS_PORT", 8080),
             llm_model=_opt_str_env("LLM_MODEL"),

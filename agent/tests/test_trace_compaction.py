@@ -207,9 +207,8 @@ class TestTraceTimestamps(unittest.TestCase):
             "tool_output": {"result": "ok"},
             "note": None,
         }]
-        with patch("app.coordinator.trace.datetime") as mock_dt:
-            mock_dt.now.return_value = datetime(2026, 5, 25, 13, 35)  # 12h later
-            mock_dt.fromisoformat = datetime.fromisoformat
+        with patch("app.coordinator.trace.local_now") as mock_now:
+            mock_now.return_value = datetime(2026, 5, 25, 13, 35)  # 12h later
             result = json.loads(build_trace_context(trace))
         self.assertEqual(result[0]["age"], "12 hr ago")
 
@@ -222,9 +221,8 @@ class TestTraceTimestamps(unittest.TestCase):
             "tool_output": {},
             "note": None,
         }]
-        with patch("app.coordinator.trace.datetime") as mock_dt:
-            mock_dt.now.return_value = datetime(2026, 5, 25, 14, 0)
-            mock_dt.fromisoformat = datetime.fromisoformat
+        with patch("app.coordinator.trace.local_now") as mock_now:
+            mock_now.return_value = datetime(2026, 5, 25, 14, 0)
             result = json.loads(build_trace_context(trace))
         self.assertEqual(result[0]["timestamp"], "2026-05-25 01:35")
 
@@ -237,9 +235,8 @@ class TestTraceTimestamps(unittest.TestCase):
             "tool_output": {},
             "note": None,
         }]
-        with patch("app.coordinator.trace.datetime") as mock_dt:
-            mock_dt.now.return_value = datetime(2026, 5, 25, 14, 0, 30)
-            mock_dt.fromisoformat = datetime.fromisoformat
+        with patch("app.coordinator.trace.local_now") as mock_now:
+            mock_now.return_value = datetime(2026, 5, 25, 14, 0, 30)
             result = json.loads(build_trace_context(trace))
         self.assertEqual(result[0]["age"], "just now")
 
@@ -273,8 +270,7 @@ class TestTraceTimestamps(unittest.TestCase):
                 "tool_parameters": {}, "tool_output": {}, "note": None,
             },
         ]
-        with patch("app.coordinator.trace.datetime") as mock_dt:
-            mock_dt.now.return_value = datetime(2026, 5, 25, 14, 0, 30)
-            mock_dt.fromisoformat = datetime.fromisoformat
+        with patch("app.coordinator.trace.local_now") as mock_now:
+            mock_now.return_value = datetime(2026, 5, 25, 14, 0, 30)
             result = json.loads(build_trace_context(trace, aggressive=True))
         self.assertEqual(result["latest_step"]["age"], "just now")

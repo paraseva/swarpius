@@ -229,9 +229,8 @@ def _step_trace(
     runtime_state: Any,
     note: Optional[str] = None,
 ) -> Dict[str, Any]:
-    from datetime import datetime
-
     from app.coordinator.trace import compact_for_context as _compact_for_context
+    from app.time_utils import local_now
 
     compact_params = (
         _compact_for_context(tool_params.model_dump(mode="json"), runtime_state)
@@ -251,7 +250,7 @@ def _step_trace(
         "step": step,
         "global_step": global_step,
         "selected_skill": selected_skill,
-        "timestamp": datetime.now().isoformat(timespec="seconds"),
+        "timestamp": local_now().isoformat(timespec="seconds"),
         "tool_parameters": compact_params,
         "tool_output": compact_output,
         "note": note,

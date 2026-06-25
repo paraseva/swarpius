@@ -147,6 +147,7 @@ Primary chat interface. Features:
 ### History browsing & request sync
 
 - **`useHistoryScrollback`** lazy-loads older days when the user nears the top: it fires a fire-and-forget request and anchors the viewport (holds distance-from-bottom) so the read position doesn't jump as a day prepends. One day per scroll-to-top, gated on a batch-complete token. Auto-fill (load until the viewport fills) is on for the chat, off for the sparse diagnostics panels.
+- **Scroll to bottom:** a transient down-arrow (`ScrollToBottomButton`, driven by `useScrollToBottomButton` inside the shared `ScrollableViewport` wrapper) fades in once the user scrolls up from the live edge and smooth-scrolls back on click (matching the request-sync scroll). It highlights when new content lands below while scrolled up. Wired into the chat and the Agents/Tools/Errors panels.
 - **Passive receive:** `WebSocketProvider` sorts and de-dupes every incoming message by a stable server message id (`utils/insertMessage`), so live messages, replay, and lazy-loaded history all assemble through one path with no request/response coupling.
 - **Request sync:** clicking a `RequestIdBadge` on a request-aware surface (chat, Agents, Tools, Errors, Session Requests) focuses that request everywhere via `RequestFocusProvider` / `useRequestFocusSync` — every other open panel scrolls to it and flashes; the clicked panel stays put. `HistoryWindow` panels also lazy-load older days like the chat.
 

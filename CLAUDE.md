@@ -272,6 +272,8 @@ React 19 app using Vite (rolldown-vite). `WebSocketProvider` (`WebSocketProvider
 | `hooks/useDiagnostics.ts` | Shared hook for diagnostics state across panels |
 | `hooks/useHistoryScrollback.ts` | Lazy-loads older days on scroll-up (skip-empty), anchors the viewport on prepend; auto-fill optional |
 | `hooks/useRequestFocusSync.ts` | Scrolls a panel to (and flashes) the focused request; `scrollRequestIntoView` helper shared with the date jump |
+| `hooks/useScrollToBottomButton.ts` | Tracks distance-from-bottom; drives the transient scroll-to-bottom button (show / highlight-on-new / `scrollToBottom`) |
+| `ScrollableViewport.tsx` / `ScrollToBottomButton.tsx` | Shared wrapper + button: a fade-in jump-to-bottom affordance over the chat and Agents/Tools/Errors scroll areas |
 | `RequestFocusProvider.tsx` / `requestFocusContext.ts` | Holds the focused request (id + source); `useRequestFocus()` for badges/panels |
 | `utils/insertMessage.ts` | Passive sorted-insert + dedup of incoming messages by server id (live, replay, lazy-load all flow through it) |
 | `utils/dayLabel.ts` | Day-separator label ("Today"/"Yesterday"/date) + same-day comparison |

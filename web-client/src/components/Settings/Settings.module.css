@@ -3,9 +3,8 @@
   flex-direction: column;
   flex: 1;
   min-height: 0;
-  /* Flat full-view layout, matching the Costs and Conversation Analysis views
-     (.analysisBrowser); the shared app-main-analysis container provides the
-     framing, so no card background/border/radius here. */
+  /* Flat like .analysisBrowser (Costs/Analysis): the app-main-analysis
+     container frames it, so no card background/border/radius here. */
   overflow: hidden;
 }
 
@@ -15,9 +14,8 @@
   grid-template-areas: 'title actions close';
   align-items: center;
   gap: 0.5rem 1rem;
-  /* Fixed height matching the Costs / Conversation Analysis header
-     (.analysisHeader): the taller action buttons would otherwise stretch this
-     row past the others. Content is centred, so the buttons keep their size. */
+  /* Fixed height matching .analysisHeader — without it the taller action
+     buttons stretch this row past the Costs/Analysis headers. */
   min-height: 2.7rem;
   padding: 0 1rem;
   border-bottom: 1px solid var(--color-border);

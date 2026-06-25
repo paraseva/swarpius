@@ -78,8 +78,7 @@ const ClearAction: React.FC<ClearActionProps> = ({
     sendMessage(requestChannel, JSON.stringify({ request_id: requestId }))
   }
 
-  // Let the success note clear itself so it can't linger as stale reassurance;
-  // stable callback so the busy `messages` re-render stream doesn't reset it.
+  // Stable callback so the frequent messages-driven re-renders don't reset the timer.
   const reset = React.useCallback(() => setPhase('idle'), [])
   useAutoDismiss(phase === 'done', reset)
 

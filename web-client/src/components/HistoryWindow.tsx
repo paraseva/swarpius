@@ -2,6 +2,7 @@ import React from 'react'
 import { FormattedMessageBody } from './FormattedMessageBody'
 import { JsonTreeView } from './JsonTreeView'
 import { RequestIdBadge } from './RequestIdBadge'
+import { ScrollableViewport } from './ScrollableViewport'
 import { useChannelHistory } from '../hooks/useChannelHistory'
 import { dayKey } from '../utils/dayLabel'
 import { type ChannelId } from '../websocketContext'
@@ -115,7 +116,11 @@ export const HistoryWindow: React.FC<HistoryWindowProps> = ({
         </div>
       </div>
 
-      <div ref={scrollContainerRef} className="panel-body scrollable">
+      <ScrollableViewport
+        scrollRef={scrollContainerRef}
+        latestKey={channelMessages[channelMessages.length - 1]?.id}
+        className="panel-body scrollable"
+      >
         <div data-history-top aria-hidden="true" />
         {channelMessages.length === 0 ? (
           <p className="empty-placeholder">No events yet.</p>
@@ -161,7 +166,7 @@ export const HistoryWindow: React.FC<HistoryWindowProps> = ({
             })}
           </ul>
         )}
-      </div>
+      </ScrollableViewport>
 
     </div>
   )

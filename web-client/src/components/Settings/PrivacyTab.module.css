@@ -39,10 +39,13 @@
   cursor: not-allowed;
 }
 
-/* Destructive entry point — outlined so it reads as "careful". */
+/* Destructive entry point — outlined so it reads as "careful". The min-width
+   (past the longer label) equalises the two stacked clear buttons. */
 .trigger {
   border-color: var(--color-border-error);
   color: var(--color-error-text);
+  min-width: 15rem;
+  justify-content: center;
 }
 
 /* The confirmation — filled, unmistakably destructive. */

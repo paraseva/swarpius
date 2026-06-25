@@ -53,7 +53,7 @@ Resolved closure of `agent/requirements-server.txt`.
 - **License:** MIT
 - **Source:** https://github.com/annotated-types/annotated-types
 
-### anyio 4.14.0
+### anyio 4.14.1
 
 - **License:** MIT
 - **Source:** https://anyio.readthedocs.io/en/latest/
@@ -188,7 +188,7 @@ Resolved closure of `agent/requirements-server.txt`.
 - **License:** Apache-2.0
 - **Source:** https://github.com/aio-libs/multidict
 
-### openai 2.43.0
+### openai 2.44.0
 
 - **License:** Apache-2.0
 - **Source:** https://github.com/openai/openai-python
@@ -1898,7 +1898,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-### anyio 4.14.0 (LICENSE)
+### anyio 4.14.1 (LICENSE)
 
 ```text
 The MIT License (MIT)
@@ -3445,7 +3445,7 @@ SOFTWARE.
    limitations under the License.
 ```
 
-### openai 2.43.0 (LICENSE)
+### openai 2.44.0 (LICENSE)
 
 ```text
                                  Apache License

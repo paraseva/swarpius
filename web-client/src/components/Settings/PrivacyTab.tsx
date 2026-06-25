@@ -7,6 +7,7 @@ import {
   type SocketMessage,
 } from '../../websocketContext'
 import { createUuid } from '../../utils/uuid'
+import { useAutoDismiss } from '../../hooks/useAutoDismiss'
 
 type Phase = 'idle' | 'confirming' | 'clearing' | 'done' | 'error'
 
@@ -76,6 +77,10 @@ const ClearAction: React.FC<ClearActionProps> = ({
     setPhase('clearing')
     sendMessage(requestChannel, JSON.stringify({ request_id: requestId }))
   }
+
+  // Stable callback so the frequent messages-driven re-renders don't reset the timer.
+  const reset = React.useCallback(() => setPhase('idle'), [])
+  useAutoDismiss(phase === 'done', reset)
 
   const showButton = phase === 'idle' || phase === 'done' || phase === 'error'
 

@@ -116,7 +116,7 @@ def _seed_request(conn, rid: str, cmid: str, base: int, user_text: str,
     _insert(conn, "agent-outputs",
             {"source": "[Request Complete]", "event_type": "request_complete",
              "request_id": rid, "total_steps": 1, "total_duration_ms": 2500,
-             "status": "ok", "coordinator_model": _MODEL, "conversation_id": conv_id},
+             "status": "completed", "coordinator_model": _MODEL, "conversation_id": conv_id},
             base + 2600)
     _insert_cost(conn, agent="Coordinator", model=_MODEL,
                  cost_usd=0.005 + steps * 0.004,
@@ -126,10 +126,12 @@ def _seed_request(conn, rid: str, cmid: str, base: int, user_text: str,
 
 
 def _seed_failed(conn, rid: str, cmid: str, base: int, user_text: str,
-                 error_text: str) -> int:
+                 error_text: str, conv_id: str) -> int:
     """A failed request: the user message (which renders a failed pill in chat),
-    its start event, a tool call, and an errors-channel entry. Appears in Chat,
-    Agents, Tools and Errors. No request_complete — matching the real flow."""
+    its start event, a tool call, an errors-channel entry, and the error
+    completion the real flow emits (status=error, carrying the reason) so it
+    surfaces as failed in Session Requests. Appears in Chat, Agents, Tools,
+    Errors and Session Requests."""
     _insert(conn, "chat", {"channel": "chat", "body": user_text},
             base, {"direction": "outbound", "client_msg_id": cmid})
     _insert(conn, "agent-outputs",
@@ -149,7 +151,13 @@ def _seed_failed(conn, rid: str, cmid: str, base: int, user_text: str,
             {"event_type": "call_failed", "call_id": rid, "request_id": rid,
              "error": error_text},
             base + 2000)
-    return 5
+    _insert(conn, "agent-outputs",
+            {"source": "[Request Complete]", "event_type": "request_complete",
+             "request_id": rid, "total_steps": 0, "total_duration_ms": 0,
+             "status": "error", "error": error_text, "coordinator_model": _MODEL,
+             "conversation_id": conv_id},
+            base + 2100)
+    return 6
 
 
 def seed(days_ago: list[int]) -> int:
@@ -170,7 +178,7 @@ def seed(days_ago: list[int]) -> int:
                     base = _ts_ms(day, 9 + turn)
                     if turn == _TURNS_PER_DAY - 1:
                         user_text, error_text = _FAILURES[conv % len(_FAILURES)]
-                        inserted += _seed_failed(conn, rid, cmid, base, user_text, error_text)
+                        inserted += _seed_failed(conn, rid, cmid, base, user_text, error_text, conv_id)
                     else:
                         user_text, agent_text = _PROMPTS[(conv + turn) % len(_PROMPTS)]
                         # Spread step counts across simple/compound/complex buckets.

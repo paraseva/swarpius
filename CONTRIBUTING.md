@@ -170,13 +170,17 @@ work gets released.)
 Swarpius uses [Semantic Versioning](https://semver.org/) with **one version
 across the whole monorepo**. Releases are cut manually.
 
-**Version-bump rules:**
+**Version-bump rules** — classify by the migration effort a change forces on
+existing users, not merely by whether something was added or removed:
 
 - **PATCH** (`1.0.X`): bug fixes only, no behaviour change for users
   beyond the fix.
-- **MINOR** (`1.X.0`): additive features, no breaking changes.
-- **MAJOR** (`X.0.0`): breaking changes (env vars renamed, removed
-  capabilities, WS protocol changes, etc.).
+- **MINOR** (`1.X.0`): additive features, and removals users can absorb with no
+  real effort — e.g. an env var that is now silently ignored, or a flag that can
+  simply be dropped. Always note such removals in the CHANGELOG.
+- **MAJOR** (`X.0.0`): changes existing users cannot migrate past without work —
+  an incompatible on-disk data format with no upgrade path, a renamed or
+  now-required env var that errors when missing, a WS protocol break, etc.
 
 **The version lives in one place — `agent/VERSION`.** Everything derives from it: the agent's Roon-reported version, the web client's displayed version and update check, and the installer metadata (Windows `version_info`, macOS `CFBundle*`, the Inno installer). The only mirror is `web-client/package.json`'s `"version"` field — npm requires its own, and the web client reads its displayed version from it at build time. It must equal `agent/VERSION`; a unit test (`agent/tests/test_version_sync.py`, run in normal CI) and the installer build both fail if they disagree.
 
@@ -186,8 +190,9 @@ across the whole monorepo**. Releases are cut manually.
 2. **Set the version** in the two source files — and only these two:
    - [ ] `agent/VERSION` → `X.Y.Z`
    - [ ] `web-client/package.json` → `"version": "X.Y.Z"` (keep equal to `agent/VERSION`)
-3. **Add a `CHANGELOG.md` entry** in [Keep a Changelog](https://keepachangelog.com/) format (`### Added` / `### Changed` / `### Fixed` / `### Removed`).
-4. **Open a `chore/release-vX.Y.Z` PR** with the two version bumps + the CHANGELOG entry; merge once green (CI's version-consistency check guards step 2).
+   - [ ] Run `npm install` in `web-client/` so `package-lock.json`'s mirrored version updates to match, and commit the lockfile change with the bump (it is generated, not hand-edited).
+3. **Add a `CHANGELOG.md` entry** in [Keep a Changelog](https://keepachangelog.com/) format (`### Added` / `### Changed` / `### Fixed` / `### Removed`). Move the `## [Unreleased]` items under a new `## [X.Y.Z] - YYYY-MM-DD` heading, leaving an empty `## [Unreleased]` at the top.
+4. **Open a `chore/release-vX.Y.Z` PR** with the version bumps, the synced lockfile, and the CHANGELOG entry; merge once green (CI's version-consistency check guards step 2).
 5. **Tag the merge commit on `main`** — the tag must match `agent/VERSION`:
    ```bash
    git checkout main && git pull

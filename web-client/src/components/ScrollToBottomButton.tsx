@@ -6,9 +6,6 @@ interface ScrollToBottomButtonProps {
   onClick: () => void
 }
 
-/** Transient down-arrow that floats over a scroll container's bottom-right and
- *  jumps it back to the live edge. Highlights itself when new content arrived
- *  below while the user was scrolled up. */
 export const ScrollToBottomButton: React.FC<ScrollToBottomButtonProps> = ({
   show, hasNew, onClick,
 }) => {

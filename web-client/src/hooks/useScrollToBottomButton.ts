@@ -1,26 +1,21 @@
 import React from 'react'
 
-// Matches the at-bottom tolerance the sticky-bottom and scrollback hooks use,
-// so "following live" means the same thing across all three.
+// Matches the at-bottom tolerance of the sticky-bottom + scrollback hooks.
 const AT_BOTTOM_TOLERANCE_PX = 32
-// Hysteresis: the user must scroll at least this far up before the jump-to-
-// bottom button fades in, so a nudge near the live edge doesn't flicker it.
+// Hysteresis: scroll up at least this far before showing, so the button
+// doesn't flicker near the bottom.
 const SHOW_THRESHOLD_PX = 120
 
 export interface ScrollToBottomControls {
-  /** The user is scrolled up far enough to offer a jump-to-bottom button. */
   show: boolean
-  /** New content arrived below while scrolled up — highlight the button. */
   hasNew: boolean
   scrollToBottom: () => void
 }
 
 /**
- * Drives a transient "scroll to bottom" affordance for a scroll container.
- *
- * `latestKey` should change only when content is appended at the bottom (e.g.
- * the last message's id) — prepended history keeps the same newest item, so the
- * highlight fires for new live content but not for paging up.
+ * `latestKey` must change only on bottom-append (e.g. the last message's id):
+ * prepended history keeps the same newest item, so `hasNew` fires for new live
+ * content, not for paging up.
  */
 export function useScrollToBottomButton<T extends HTMLElement>(
   scrollRef: React.RefObject<T | null>,
@@ -57,10 +52,9 @@ export function useScrollToBottomButton<T extends HTMLElement>(
       }
     }
 
-    // Height changes (live append, replay, clear-history) can land the viewport
-    // back at the bottom; only ever *clear* the away-state here — raising it
-    // would flash the button when content grows below while following live, as
-    // the sticky-bottom hook is mid re-pin.
+    // Only ever clears the away-state, never raises it: raising it when content
+    // grows below (while following live) would flash the button as the
+    // sticky-bottom hook re-pins.
     const onResize = () => {
       if (distanceFromBottom() <= AT_BOTTOM_TOLERANCE_PX) reachBottom()
     }
@@ -86,9 +80,7 @@ export function useScrollToBottomButton<T extends HTMLElement>(
   const scrollToBottom = React.useCallback(() => {
     const el = scrollRef.current
     if (!el) return
-    // Glide to the live edge (matches the request-focus-sync scroll). The
-    // animation's own scroll events re-engage the sticky-bottom pin on arrival;
-    // hide right away for immediate feedback as the glide starts.
+    // Smooth, matching the request-focus-sync scroll; hide now for feedback.
     el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' })
     awayRef.current = false
     setShow(false)

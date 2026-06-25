@@ -192,17 +192,60 @@ existing users, not merely by whether something was added or removed:
    - [ ] `web-client/package.json` → `"version": "X.Y.Z"` (keep equal to `agent/VERSION`)
    - [ ] Run `npm install` in `web-client/` so `package-lock.json`'s mirrored version updates to match, and commit the lockfile change with the bump (it is generated, not hand-edited).
 3. **Add a `CHANGELOG.md` entry** in [Keep a Changelog](https://keepachangelog.com/) format (`### Added` / `### Changed` / `### Fixed` / `### Removed`). Move the `## [Unreleased]` items under a new `## [X.Y.Z] - YYYY-MM-DD` heading, leaving an empty `## [Unreleased]` at the top.
-4. **Open a `chore/release-vX.Y.Z` PR** with the version bumps, the synced lockfile, and the CHANGELOG entry; merge once green (CI's version-consistency check guards step 2).
-5. **Tag the merge commit on `main`** — the tag must match `agent/VERSION`:
+4. **Review the installer specs** for anything new this release ships (see **Reviewing the installer specs before a release**, below). Most additions are bundled automatically, but a new explicitly-listed data file or a new dynamically-loading dependency needs a matching change in all three specs — include it in this PR.
+5. **Open a `chore/release-vX.Y.Z` PR** with the version bumps, the synced lockfile, the CHANGELOG entry, and any spec changes from step 4; merge once green (CI's version-consistency check guards step 2).
+6. **Tag the merge commit on `main`** — the tag must match `agent/VERSION`:
    ```bash
    git checkout main && git pull
    git tag vX.Y.Z          # X.Y.Z == agent/VERSION
    git push origin vX.Y.Z
    ```
-6. **Build the installers**: run the **Installer** workflow (`.github/workflows/installer.yml`). It produces the Linux AppImage, macOS `.dmg`, and Windows `Swarpius-Setup.exe`, all stamped from `agent/VERSION`.
-7. **Cut the GitHub Release** from the tag (`gh release create vX.Y.Z` or the web UI), with the CHANGELOG entry as the notes, and attach the three bundles as **direct release assets** (the raw files — not the workflow's artifact zips, which wrap the files and break the download-time security checks).
+7. **Build the installers**: run the **Installer** workflow (`.github/workflows/installer.yml`). It produces the Linux AppImage, macOS `.dmg`, and Windows `Swarpius-Setup.exe`, all stamped from `agent/VERSION`.
+8. **Cut the GitHub Release** from the tag (`gh release create vX.Y.Z` or the web UI), with the CHANGELOG entry as the notes, and attach the three bundles as **direct release assets** (the raw files — not the workflow's artifact zips, which wrap the files and break the download-time security checks).
 
-> The release workflow signs the artefacts — macOS notarised, Windows code-signed, and all three installers GPG-signed (`SHA256SUMS.asc`). Tag-triggered builds and automatic asset upload are a planned convenience; until they land, steps 6–7 are run by hand.
+> The release workflow signs the artefacts — macOS notarised, Windows code-signed, and all three installers GPG-signed (`SHA256SUMS.asc`). Tag-triggered builds and automatic asset upload are a planned convenience; until they land, steps 7–8 are run by hand.
+
+### Reviewing the installer specs before a release
+
+The standalone bundles come from three PyInstaller specs
+(`agent/installer/swarpius-{linux,macos,windows}.spec`) plus the Windows Inno
+script (`swarpius.iss`). Most additions are bundled automatically; a few are not.
+Review this whenever a release adds files or dependencies, and apply any change
+to **all three specs** — they must stay in lockstep.
+
+**Bundled automatically — no spec change needed:**
+
+- **Web client** — the whole `web-client/dist/` is bundled, and CI rebuilds it
+  (`npm run build`) before each PyInstaller run, so any UI change ships.
+- **New skills** — `agent/skills/` is bundled as a whole directory, so a new
+  `skills/<tool>/SKILL.md` rides in.
+- **Statically-imported Python** — PyInstaller follows the import graph from
+  `swarpius.py`, so normally-imported `.py` modules are included.
+- **`.env.template`, `model_profiles.yaml`, `VERSION`** — bundled as whole files,
+  so edits to them ship.
+
+**Needs a manual spec change — easy to miss:**
+
+- **A new non-`.py` data file the agent reads at runtime, outside an
+  already-bundled directory.** These are listed by name in each spec's `datas`.
+  The analyser, for example, bundles `analyser/analysis-guide.md` explicitly — so
+  adding a *second* analyser asset (another taxonomy or prompt file) means adding
+  it to `datas` in all three specs, or it is missing at runtime in the bundle. It
+  still works when run from source, which is the trap.
+- **A new data directory** the agent reads — add a `(src, dest)` entry to
+  `datas`, mirroring how `skills/` is bundled.
+- **A new dependency that loads code or data dynamically** (plugins,
+  entry-points, namespace scanning). Add it to `requirements-server.txt`; if
+  PyInstaller's static analysis can't see its dynamic imports or data files, pull
+  them in with `collect_all` / `collect_submodules` / `hiddenimports` (as already
+  done for `litellm`, `roonapi`, and `tiktoken_ext`).
+- **A new module of ours imported dynamically** (`importlib` / `__import__`).
+  Prefer a static import; otherwise add it to `hiddenimports`.
+
+A missing asset or hidden import is invisible at build time — it surfaces as a
+runtime error only in the bundle. When in doubt, build and smoke-test the new
+feature against the bundle (run the executable directly; see
+`agent/installer/README.md`).
 
 ## Licence
 

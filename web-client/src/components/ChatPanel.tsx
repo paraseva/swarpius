@@ -9,6 +9,7 @@ import { useChatStepLabel } from '../hooks/useChatStepLabel'
 import { useChatBannerManager } from '../hooks/useChatBannerManager'
 import { useChatTtsAutoPlay } from '../hooks/useChatTtsAutoPlay'
 import { useChannelHistory } from '../hooks/useChannelHistory'
+import { ScrollableViewport } from './ScrollableViewport'
 import { HistoryDatePicker } from './HistoryDatePicker'
 import { dayKey, dayLabel, isNewDay } from '../utils/dayLabel'
 import { loadDaysThrough } from '../utils/historyJump'
@@ -241,7 +242,11 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
         </div>
       ) : null}
 
-      <div ref={scrollContainerRef} className="panel-body scrollable">
+      <ScrollableViewport
+        scrollRef={scrollContainerRef}
+        latestKey={visibleChatMessages[visibleChatMessages.length - 1]?.id}
+        className="panel-body scrollable"
+      >
         <div data-history-top aria-hidden="true" />
         {visibleChatMessages.length === 0 && !isLlmCallInProgress ? (
           <div className={cs.emptyState}>
@@ -349,7 +354,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
             ) : null}
           </ul>
         )}
-      </div>
+      </ScrollableViewport>
 
       <form className="panel-footer input-row" onSubmit={handleSubmit}>
         <div className={cs.composerWrapper}>

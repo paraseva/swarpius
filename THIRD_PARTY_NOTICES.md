@@ -148,7 +148,7 @@ Resolved closure of `agent/requirements-server.txt`.
 - **License:** BSD-3-Clause
 - **Source:** https://jinja.palletsprojects.com/changes/
 
-### jiter 0.15.0
+### jiter 0.16.0
 
 - **License:** MIT
 - **Source:** https://github.com/pydantic/jiter/
@@ -3077,7 +3077,7 @@ NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ```
 
-### jiter 0.15.0 (LICENSE)
+### jiter 0.16.0 (LICENSE)
 
 ```text
 The MIT License (MIT)

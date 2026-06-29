@@ -1,12 +1,8 @@
-"""``IMAGE_CACHE_MAX_ENTRIES`` must flow through to the live
-artwork cache after ``ensure_initialised`` runs.
-
-The existing ``test_result_store_bounds.py`` verifies that the
-bounded-dict cap is enforced once set, but constructs the caches
-directly with the default cap — it never exercises the
-env-var-to-cache-cap path. Without this test the
-``_apply_settings_capacity_overrides`` override branch is
-behaviourally uncovered.
+"""``IMAGE_CACHE_MAX_ENTRIES`` must flow through to the live artwork
+cache. ``RuntimeState`` applies it when the cache is constructed, from
+the injected/parsed settings. ``test_result_store_bounds.py`` only
+checks the bound is enforced once set; it never exercises the
+env-var-to-cache-cap path.
 """
 
 from __future__ import annotations

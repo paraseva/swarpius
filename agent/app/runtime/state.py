@@ -23,6 +23,7 @@ from app.coordinator.skill_loader import (  # noqa: F401 — patched by tests vi
 from app.coordinator.skill_loader import (  # noqa: F401 — patched by tests via app.runtime.state.*
     load_agent_skills as _load_agent_skills,
 )
+from app.coordinator.trace import build_trace_context
 from app.data_paths import (
     AGENT_ROOT,
     _running_from_bundle,
@@ -68,6 +69,7 @@ from app.runtime.zones import ZoneSubsystem
 
 if TYPE_CHECKING:
     from app.runtime.persistence import PersistenceManager, PersistentState
+    from app.settings.core import Settings
 from roon_core.connection import RoonConnection
 from usage_metrics import UsageTracker
 
@@ -109,7 +111,13 @@ class RuntimeState(_StateInitMixin, _StateZoneMixin):
     ``get_context_sections`` aggregator.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, settings: Optional["Settings"] = None) -> None:
+        if settings is None:
+            # from_env(), not the cached get_settings(): a no-arg construct
+            # must not lock the global snapshot — tests construct then patch
+            # env before ensure_initialised. Production injects settings.
+            from app.settings.core import Settings
+            settings = Settings.from_env()
         # LLM-client state lives on the manager; legacy attributes
         # (runtime.llm_client / .arbiter_client / .diagnostic_client
         # plus the four resolved profiles) become property
@@ -122,11 +130,9 @@ class RuntimeState(_StateInitMixin, _StateZoneMixin):
         self.skills_provider = TextContextProvider("Skill Definitions")
         self.key_rules_provider = TextContextProvider("Key Rules")
         self.search_history_provider = TextContextProvider("Search History")
-        # ConversationHistoryProvider's deque maxlen is fixed at
-        # construction. Use its built-in default here; ensure_initialised
-        # rebuilds with the locked settings value once env is finalised.
         self.conversation_history_provider = ConversationHistoryProvider(
             "Conversation History",
+            max_turns=settings.conversation_history_max_turns,
         )
         self.current_date_provider = CurrentDateProvider("Current Date")
         self.current_time_provider = CurrentTimeProvider("Current Time")
@@ -165,12 +171,9 @@ class RuntimeState(_StateInitMixin, _StateZoneMixin):
         # Queryable listening history ("what did I listen to…"). Created when
         # persistence attaches (it needs the shared state DB).
         self.listening_history: Optional[ListeningHistoryStore] = None
-        # Zone subsystem bundles the two existing state owners and
-        # exposes the artwork-cache mirror handles tests rely on.
-        # Property delegations below preserve the legacy runtime.<attr>
-        # API. Initial artwork cap matches Settings'
-        # image_cache_max_entries default (200);
-        # ensure_initialised swaps in the locked value if overridden.
+        # Zone subsystem bundles the two state owners and exposes the
+        # artwork-cache mirror handles; the property delegations below
+        # preserve the legacy runtime.<attr> API.
         self.zones = ZoneSubsystem(
             domain=ZoneDomain(
                 zone_aliases_path=config_dir() / "zone_aliases.json",
@@ -178,7 +181,7 @@ class RuntimeState(_StateInitMixin, _StateZoneMixin):
                 ws_send=lambda c, p: self._ws_send_callback(c, p),
                 get_last_played_dict=self.play_history.get_last_played_dict,
             ),
-            artwork=ZoneArtworkCache(max_entries=200),
+            artwork=ZoneArtworkCache(max_entries=settings.image_cache_max_entries),
         )
         self.zone_snapshot = ZoneSnapshotBuilder(
             get_alias=self._get_alias_for_zone,
@@ -342,8 +345,19 @@ class RuntimeState(_StateInitMixin, _StateZoneMixin):
     # inject state) replaces contents in place so identity is preserved.
 
     def set_prompt_state_context(self) -> None:
-        """Inject a compact search history index into the coordinator context."""
+        """Render the working-memory context the coordinator sees at request
+        start — search history and execution trace. Rendering here, rather
+        than as the tool loop runs, is what lets a restored runtime present
+        them on its first request."""
         self.search_history_provider.set_context(self._render_search_history())
+        self.execution_trace_provider.set_context(
+            build_trace_context(
+                self.execution_trace,
+                current_global_step=self.global_step,
+            )
+            if self.execution_trace
+            else ""
+        )
 
     @_locks_result_store
     def _render_search_history(self) -> str:

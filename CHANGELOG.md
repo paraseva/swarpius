@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.2] - 2026-06-29
+
+### Fixed
+
+- Conversation history is now retained across an agent restart when `CONVERSATION_HISTORY_MAX_TURNS` is set above its default. Previously, overriding that setting caused the saved history to be discarded during startup, so the assistant did not carry the previous session's conversation into context on the first request after a restart. Installations using the default value were unaffected, and history already discarded before this fix cannot be recovered.
+- After a restart, the assistant's record of recent tool calls (the execution trace) is now present in its context from the first request, rather than only after it next runs a tool.
+
 ## [1.1.1] - 2026-06-26
 
 ### Added

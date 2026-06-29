@@ -20,11 +20,9 @@ from app.constants import (
     CHANNEL_QUEUE_UPDATES,
     CHANNEL_ZONE_SNAPSHOTS,
 )
-from app.coordinator.context_providers import ConversationHistoryProvider
 from app.data_paths import AGENT_ROOT, data_dir
 from app.llm.tool_registry import ToolRegistry
 from app.roon.stop_marker import StopMarkerCoordinator
-from app.roon.zone_artwork_service import ZoneArtworkCache
 from app.runtime.url_parse import parse_host_port as _parse_host_port
 
 # Patched-in-tests symbols are referenced via the state module so tests
@@ -158,28 +156,12 @@ class _StateInitMixin:
         from app.settings import get_settings
         settings = get_settings()
 
-        self._apply_settings_capacity_overrides(settings)
         coord_model = self._setup_llm_clients()
         self._setup_roon_connection(settings)
         web_search_tool = self._setup_tool_registry(settings)
         self._setup_skills_and_prompt()
         self.initialised = True
         self._log_startup_summary(coord_model, settings, web_search_tool)
-
-    def _apply_settings_capacity_overrides(self, settings) -> None:
-        """Rebuild objects whose construction-time caps depend on
-        settings. ``__init__`` constructed them with the same defaults
-        Settings uses when the env var is unset, so this does nothing
-        when the user hasn't overridden them."""
-        if settings.conversation_history_max_turns != 5:
-            self.conversation_history_provider = ConversationHistoryProvider(
-                "Conversation History",
-                max_turns=settings.conversation_history_max_turns,
-            )
-        if settings.image_cache_max_entries != 200:
-            self.zones.replace_artwork(ZoneArtworkCache(
-                max_entries=settings.image_cache_max_entries,
-            ))
 
     def _setup_llm_clients(self) -> str:
         """Resolve per-agent model specs and delegate to

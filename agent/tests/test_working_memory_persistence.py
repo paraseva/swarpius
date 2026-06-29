@@ -12,11 +12,13 @@ manager, build a *fresh* RuntimeState that restores from the same DB, and
 assert the restored runtime presents the same working memory as the original.
 """
 
+import os
 import shutil
 import tempfile
 import unittest
 from datetime import datetime, timedelta
 from pathlib import Path
+from unittest.mock import MagicMock, patch
 
 try:
     from tests.stub_modules import install_common_test_stubs
@@ -29,6 +31,7 @@ from app.io.state_db import StateDb  # noqa: E402
 from app.runtime.persistence import PersistenceManager  # noqa: E402
 from app.runtime.result_store_types import ResultStoreEntry  # noqa: E402
 from app.runtime.state import RuntimeState  # noqa: E402
+from app.settings.core import reset_settings_for_tests  # noqa: E402
 
 
 class TestWorkingMemoryPersistence(unittest.TestCase):
@@ -114,6 +117,62 @@ class TestWorkingMemoryPersistence(unittest.TestCase):
         restored, _ = self._fresh_runtime()
         self.assertEqual(restored.execution_trace, runtime.execution_trace)
         self.assertEqual(restored.global_step, runtime.global_step)
+
+    def _restart_with_initialised_runtime(self, extra_env: dict) -> RuntimeState:
+        """Start a runtime over the shared DB the way a real process restart
+        does: construct, restore the saved snapshot, then run
+        ``ensure_initialised``. Roon, skill-loading and LLM-client I/O are
+        stubbed at their boundaries so only the real startup wiring runs."""
+        env = {
+            "DEFAULT_ROON_ZONE": "Living Room",
+            "SEARXNG_URL": "http://localhost:8081",
+            "LLM_MODEL": "dummy/dummy-model",
+            "LLM_API_KEY_DUMMY": "dummy-key",
+            "ENABLE_DIAGNOSTIC_AGENT": "false",
+        }
+        env.update(extra_env)
+        with (
+            patch.dict(os.environ, env, clear=False),
+            patch("app.runtime.state.RoonConnection", MagicMock),
+            patch("app.runtime.state._load_agent_skills", return_value=[]),
+            patch(
+                "app.runtime.state._format_agent_skills_for_prompt",
+                return_value=("", ""),
+            ),
+        ):
+            reset_settings_for_tests()
+            try:
+                manager = PersistenceManager(self.db)
+                runtime = RuntimeState()
+                runtime.attach_persistence(manager)
+                runtime.ensure_initialised()
+            finally:
+                reset_settings_for_tests()
+        return runtime
+
+    def test_conversation_survives_restart_when_history_cap_overridden(self):
+        self._populate_and_save()
+        restored = self._restart_with_initialised_runtime(
+            {"CONVERSATION_HISTORY_MAX_TURNS": "20"},
+        )
+        self.assertIn(
+            "play some miles davis",
+            restored.conversation_history_provider.get_info(),
+        )
+
+    def test_execution_trace_rendered_into_prompt_after_restart(self):
+        self._populate_and_save()
+        restored, _ = self._fresh_runtime()
+        restored.set_prompt_state_context()
+        self.assertIn(
+            "searched miles davis",
+            restored.execution_trace_provider.get_info(),
+        )
+
+    def test_no_execution_trace_section_when_trace_empty(self):
+        runtime, _ = self._fresh_runtime()
+        runtime.set_prompt_state_context()
+        self.assertEqual("", runtime.execution_trace_provider.get_info())
 
 
 if __name__ == "__main__":

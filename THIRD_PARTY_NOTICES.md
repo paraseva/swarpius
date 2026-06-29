@@ -238,7 +238,7 @@ Resolved closure of `agent/requirements-server.txt`.
 - **License:** MIT
 - **Source:** https://referencing.readthedocs.io/
 
-### regex 2026.5.9
+### regex 2026.6.28
 
 - **License:** Apache-2.0 AND CNRI-Python
 - **Source:** https://github.com/mrabarnett/mrab-regex
@@ -4338,7 +4338,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-### regex 2026.5.9 (LICENSE.txt)
+### regex 2026.6.28 (LICENSE.txt)
 
 ```text
 This work was derived from the 're' module of CPython 2.6 and CPython 3.1,

@@ -262,9 +262,10 @@ class TestBuildSystemMessageSplit(unittest.TestCase):
         runtime.zone_aliases_provider.set_context("<aliases>")
         runtime.zone_status_provider = TextContextProvider("Zone Status")
         runtime.zone_status_provider.set_context("<status>")
-        # set_prompt_state_context() would overwrite search_history_provider
-        # with the contents of runtime.search_history (empty here). Neutralise
-        # it so our direct set_context("<search>") marker survives.
+        # set_prompt_state_context() re-renders search_history_provider and
+        # execution_trace_provider from runtime state (empty here), clobbering
+        # our direct "<search>"/"<trace>" markers. Neutralise it so they
+        # survive.
         runtime.set_prompt_state_context = lambda: None
         return runtime
 

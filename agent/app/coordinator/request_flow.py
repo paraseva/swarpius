@@ -43,7 +43,6 @@ from app.coordinator.events import (
 )
 from app.coordinator.sanitise import sanitise_agent_chat_text as _sanitise_agent_chat_text
 from app.coordinator.sanitise import sanitise_for_tts as _sanitise_for_tts
-from app.coordinator.trace import build_trace_context as _build_trace_context
 from app.exceptions import RequestInterrupted
 from app.io.cost_ledger import record_cost_from_usage
 from app.io.redact import redact_secrets as _redact_secrets
@@ -620,12 +619,6 @@ class _CoordinatorObserver:
         _trace_max = _gs().execution_trace_max_length
         if len(self.runtime.execution_trace) > _trace_max:
             self.runtime.execution_trace[:] = self.runtime.execution_trace[-_trace_max:]
-        self.runtime.execution_trace_provider.set_context(
-            _build_trace_context(
-                self.runtime.execution_trace,
-                current_global_step=self.runtime.global_step,
-            ),
-        )
 
         # search_attempts / search_retry_notes are only set by roon_search
         # (propagated up from RoonCoreResultsSchema).

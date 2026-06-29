@@ -170,7 +170,7 @@ def sayit(agent_name: str, message: str) -> None:
     )
 
 
-runtime = RuntimeState()
+runtime = RuntimeState(_get_settings())
 runtime.configure_io_callbacks(
     run_mode_getter=lambda: RUN_MODE,
     ws_send_callback=_ws_send,

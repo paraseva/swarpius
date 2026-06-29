@@ -148,7 +148,7 @@ Resolved closure of `agent/requirements-server.txt`.
 - **License:** BSD-3-Clause
 - **Source:** https://jinja.palletsprojects.com/changes/
 
-### jiter 0.15.0
+### jiter 0.16.0
 
 - **License:** MIT
 - **Source:** https://github.com/pydantic/jiter/
@@ -238,7 +238,7 @@ Resolved closure of `agent/requirements-server.txt`.
 - **License:** MIT
 - **Source:** https://referencing.readthedocs.io/
 
-### regex 2026.5.9
+### regex 2026.6.28
 
 - **License:** Apache-2.0 AND CNRI-Python
 - **Source:** https://github.com/mrabarnett/mrab-regex
@@ -3077,7 +3077,7 @@ NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ```
 
-### jiter 0.15.0 (LICENSE)
+### jiter 0.16.0 (LICENSE)
 
 ```text
 The MIT License (MIT)
@@ -4338,7 +4338,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-### regex 2026.5.9 (LICENSE.txt)
+### regex 2026.6.28 (LICENSE.txt)
 
 ```text
 This work was derived from the 're' module of CPython 2.6 and CPython 3.1,

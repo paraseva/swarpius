@@ -258,7 +258,7 @@ Resolved closure of `agent/requirements-server.txt`.
 - **License:** Apache-2.0
 - **Source:** https://github.com/pavoni/pyroon
 
-### rpds-py 2026.5.1
+### rpds-py 2026.6.3
 
 - **License:** MIT
 - **Source:** https://rpds.readthedocs.io/
@@ -4788,7 +4788,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-### rpds-py 2026.5.1 (LICENSE)
+### rpds-py 2026.6.3 (LICENSE)
 
 ```text
 Copyright (c) 2023 Julian Berman

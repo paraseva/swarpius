@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.3] - 2026-07-01
+
+### Added
+
+- Support for Claude Sonnet 5 as the coordinator or sub-agent model. Sonnet 5 does not accept the `temperature` sampling parameter — a request that sets it fails — so the bundled model profile omits it. No configuration beyond selecting the model is required.
+
+### Changed
+
+- In Developer Mode, the Live Diagnostics session statistics (request count, tokens, and cost) now appear in their own row beneath the panel header, rather than sharing the header line with the title and close button.
+- On narrow windows, the Settings header keeps its controls on the header line rather than wrapping to a second row. The "Copy .env path" and "Reload .env" buttons — which apply only to a local agent on the same machine — are hidden at narrow widths, leaving the "Getting Started" button centred in the header.
+
+### Fixed
+
+- In Developer Mode, clicking a conversation card in the Session Requests panel expanded or collapsed every conversation sharing the same identifier across different days at once (conversation and request identifiers reset each day). Each conversation, and each request within it, now expands and collapses independently, disambiguated by date.
+
 ## [1.1.2] - 2026-06-29
 
 ### Fixed

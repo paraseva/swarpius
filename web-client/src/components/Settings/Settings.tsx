@@ -241,7 +241,7 @@ export const Settings: React.FC<SettingsProps> = ({ state, forceOpen, onClose, o
             ) : null}
             <button
               type="button"
-              className={s.headerButton}
+              className={`${s.headerButton} ${s.reloadButton}`}
               onClick={handleReload}
               disabled={reloadStatus === 'loading' || !editable}
               title={

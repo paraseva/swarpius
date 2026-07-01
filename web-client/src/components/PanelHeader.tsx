@@ -11,10 +11,6 @@ interface PanelHeaderProps {
   onClose?: () => void
   guidanceId?: string
   guidanceDevMode?: boolean
-  /** Wrap the extra content on the header's *own* width, not the viewport — for
-   *  a header in a fixed-width container narrower than the viewport (the Live
-   *  Diagnostics drawer), where a viewport breakpoint never matches. */
-  wrapOnOwnWidth?: boolean
   children?: React.ReactNode
 }
 
@@ -22,8 +18,8 @@ interface PanelHeaderProps {
  * The single header for every full-view panel (Costs, Conversation Analysis,
  * Settings, Live Diagnostics) — one implementation so the header and close
  * button are identical everywhere. Title + guidance (?) anchored left, close
- * right; `children` ride the first row when they fit and wrap to a centred
- * second row otherwise (no children → no second row, no growth).
+ * right; `children` ride the first row (right-aligned when wide, centred when
+ * the viewport is narrow).
  */
 export const PanelHeader: React.FC<PanelHeaderProps> = ({
   title,
@@ -31,10 +27,9 @@ export const PanelHeader: React.FC<PanelHeaderProps> = ({
   onClose,
   guidanceId,
   guidanceDevMode,
-  wrapOnOwnWidth,
   children,
 }) => (
-  <header className={wrapOnOwnWidth ? `${s.header} ${s.containerWrap}` : s.header}>
+  <header className={s.header}>
     <span className={`panel-heading-group ${s.titleGroup}`}>
       <h3 className={s.title}>{title}</h3>
       {guidanceId ? <GuidanceButton id={guidanceId} isDevMode={guidanceDevMode} /> : null}

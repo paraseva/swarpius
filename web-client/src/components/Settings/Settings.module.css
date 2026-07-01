@@ -8,11 +8,12 @@
   overflow: hidden;
 }
 
-/* The .env path button is desktop-only (no local agent on a phone), so hide
-   it in tabbed/mobile mode. Compound selector so it wins over .headerButton's
-   own `display` regardless of source order. */
+/* Narrow/mobile: the .env buttons are desktop-only (no local agent on a phone),
+   so hide both, leaving only Getting Started. Compound selectors win over
+   .headerButton's own `display` by specificity, regardless of source order. */
 @media (max-width: 720px) {
-  .headerButton.copyPathButton {
+  .headerButton.copyPathButton,
+  .headerButton.reloadButton {
     display: none;
   }
 }

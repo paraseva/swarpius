@@ -35,6 +35,14 @@ profiles:
   # response handling reads only `message.content` and ignores
   # `thinking_blocks`, so extended thinking would break across tool-loop
   # turns with an opaque API error. See thinking_modes.md.
+  # Claude Sonnet 5 rejects temperature (and top_p/top_k, which we never send
+  # for Claude) — so null it to omit it, per the `defaults` note. Sits above
+  # `claude.*sonnet` so 4-6 and earlier keep temperature.
+  - pattern: "claude.*sonnet-5"
+    temperature: null
+    max_coordinator_steps: 12
+    soft_nudge_step: 8
+
   - pattern: "claude.*sonnet"
     temperature: 0.0
     max_coordinator_steps: 12

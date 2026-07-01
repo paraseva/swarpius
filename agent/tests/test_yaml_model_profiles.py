@@ -406,3 +406,29 @@ class TestShippedOpusTemperature(unittest.TestCase):
         self.assertIsNotNone(temperature("anthropic/claude-opus-4-6"))
 
 
+class TestShippedSonnet5Temperature(unittest.TestCase):
+    """Sonnet 5 rejects temperature/top_p/top_k; the included profile omits
+    temperature for it while Sonnet 4.6 and earlier keep it."""
+
+    def setUp(self):
+        self._config = load_yaml_profiles(AGENT_ROOT / "model_profiles.yaml")
+
+    def _resolved(self, model: str):
+        return get_model_profile(model, yaml_config=self._config)
+
+    def test_sonnet_5_omits_temperature(self):
+        self.assertIsNone(self._resolved("anthropic/claude-sonnet-5").temperature)
+
+    def test_sonnet_4_6_keeps_temperature(self):
+        self.assertIsNotNone(self._resolved("anthropic/claude-sonnet-4-6").temperature)
+
+    def test_sonnet_5_never_sends_top_p(self):
+        # top_k is likewise never added for Claude, so nothing to null there.
+        self.assertIsNone(self._resolved("anthropic/claude-sonnet-5").top_p)
+
+    def test_sonnet_5_keeps_sonnet_step_budget(self):
+        resolved = self._resolved("anthropic/claude-sonnet-5")
+        self.assertEqual(resolved.model_profile.max_coordinator_steps, 12)
+        self.assertEqual(resolved.model_profile.soft_nudge_step, 8)
+
+

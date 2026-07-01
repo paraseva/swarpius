@@ -649,10 +649,10 @@ const AppShell: React.FC = () => {
           guidanceDevMode
           onClose={closeDiagnosticsDrawer}
           closeLabel="Close Live Diagnostics"
-          wrapOnOwnWidth
-        >
+        />
+        <div className={s.diagnosticsStatsBar}>
           <SessionSummaryBar messages={messages} />
-        </PanelHeader>
+        </div>
 
         <ErrorBoundary name="Live Diagnostics">
           <div className={s.accordionContainer} role="tablist" aria-label="Live Diagnostics panels">

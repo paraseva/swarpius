@@ -252,7 +252,7 @@ export const RequestSummaryPanel: React.FC = () => {
     if (!conv) return
     pendingScrollRef.current = { requestId: focused.requestId, day: focused.day }
     setExpandedConversations((prev) =>
-      prev.has(conv.conversationId) ? prev : new Set(prev).add(conv.conversationId))
+      prev.has(conv.groupKey) ? prev : new Set(prev).add(conv.groupKey))
   }, [focused])
 
   React.useEffect(() => {
@@ -275,7 +275,9 @@ export const RequestSummaryPanel: React.FC = () => {
         ) : (
           <ul className={s.list}>
             {conversations.map((conv) => {
-              const isConvOpen = expandedConversations.has(conv.conversationId)
+              // Key expansion by groupKey (cNN|day), not the bare cNN — ids reset
+              // daily, so two same-cNN cards on different days must toggle apart.
+              const isConvOpen = expandedConversations.has(conv.groupKey)
               return (
                 <li key={conv.groupKey} className={s.conversationGroup}>
                   <button
@@ -284,8 +286,8 @@ export const RequestSummaryPanel: React.FC = () => {
                     onClick={() => {
                       setExpandedConversations((prev) => {
                         const next = new Set(prev)
-                        if (next.has(conv.conversationId)) next.delete(conv.conversationId)
-                        else next.add(conv.conversationId)
+                        if (next.has(conv.groupKey)) next.delete(conv.groupKey)
+                        else next.add(conv.groupKey)
                         return next
                       })
                     }}
@@ -323,12 +325,16 @@ export const RequestSummaryPanel: React.FC = () => {
                   {isConvOpen ? (
                     <ul className={s.conversationRequests}>
                       {conv.requests.map((req) => {
-                        const isReqOpen = expandedRequests.has(req.requestId)
+                        // Same daily-reset reasoning as conversations: key by
+                        // id+day so a request card only toggles its own row.
+                        const reqDay = dayKey(req.timestampMs)
+                        const reqKey = `${req.requestId}|${reqDay}`
+                        const isReqOpen = expandedRequests.has(reqKey)
                         return (
                           <li
-                            key={req.requestId}
+                            key={reqKey}
                             data-request-id={req.requestId}
-                            data-request-day={dayKey(req.timestampMs)}
+                            data-request-day={reqDay}
                             className={`${s.requestItem} ${req.status !== 'completed' ? s.requestStatusError : ''}`}
                           >
                             <button
@@ -336,8 +342,8 @@ export const RequestSummaryPanel: React.FC = () => {
                               className={s.requestHeader}
                               onClick={() => setExpandedRequests((prev) => {
                                 const next = new Set(prev)
-                                if (next.has(req.requestId)) next.delete(req.requestId)
-                                else next.add(req.requestId)
+                                if (next.has(reqKey)) next.delete(reqKey)
+                                else next.add(reqKey)
                                 return next
                               })}
                               aria-expanded={isReqOpen}

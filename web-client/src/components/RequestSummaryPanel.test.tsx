@@ -354,6 +354,63 @@ describe('RequestSummaryPanel', () => {
 
   // ── Collapse behaviour ─────────────────────────────────────────
 
+  it('expanding one conversation leaves a same-id conversation on another day collapsed', async () => {
+    // cNN ids reset daily, so c01-Monday and c01-Wednesday are two distinct
+    // conversations — clicking one card must toggle only that card.
+    const user = userEvent.setup()
+    const DAY = 24 * 60 * 60 * 1000
+    tsCounter = 1711900000000
+    const day1 = buildRequest('rq-c01-0001', { conversationId: 'c01', inputText: 'Monday ask' })
+    tsCounter = 1711900000000 + 2 * DAY
+    const day2 = buildRequest('rq-c01-0002', { conversationId: 'c01', inputText: 'Wednesday ask' })
+
+    const { container } = renderWithMessages([...day1, ...day2])
+
+    const groups = getConversationGroups(container)
+    expect(groups.length).toBe(2)
+
+    // Expand the most-recent (day2) conversation only.
+    await user.click(getConversationButton(groups[0]))
+
+    expect(screen.getByText('Wednesday ask')).toBeInTheDocument()
+    expect(screen.queryByText('Monday ask')).toBeNull()
+  })
+
+  it('expanding one request leaves a same-id request on another day collapsed', async () => {
+    // Request ids reset daily too, so rq-c01-0001 on two days is two distinct
+    // requests. Expanding one request card must not expand the other.
+    const user = userEvent.setup()
+    const DAY = 24 * 60 * 60 * 1000
+    tsCounter = 1711900000000
+    const day1 = buildRequest('rq-c01-0001', {
+      conversationId: 'c01',
+      error: 'Monday failure',
+      status: 'error',
+    })
+    tsCounter = 1711900000000 + 2 * DAY
+    const day2 = buildRequest('rq-c01-0001', {
+      conversationId: 'c01',
+      error: 'Wednesday failure',
+      status: 'error',
+    })
+
+    const { container } = renderWithMessages([...day1, ...day2])
+
+    // Expand both day-groups so both request cards render.
+    const groups = getConversationGroups(container)
+    await user.click(getConversationButton(groups[0]))
+    await user.click(getConversationButton(groups[1]))
+
+    // Expand the request in the most-recent group only.
+    const reqButtons = getRequestButtons(container)
+    expect(reqButtons.length).toBe(2)
+    await user.click(reqButtons[0])
+
+    // Only that day's failure reason is shown.
+    expect(screen.getByText('Wednesday failure')).toBeInTheDocument()
+    expect(screen.queryByText('Monday failure')).toBeNull()
+  })
+
   it('collapses conversation on second click', async () => {
     const user = userEvent.setup()
     const msgs = buildRequest('rq-c01-0001', { conversationId: 'c01', inputText: 'Hello' })

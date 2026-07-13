@@ -8,11 +8,10 @@ Covers the third-party software Swarpius **redistributes** in a built artefact: 
 
 | Licence | Count |
 |---|---|
-| MIT | 132 |
+| MIT | 130 |
 | Apache-2.0 | 14 |
 | BSD-3-Clause | 10 |
 | PSF-2.0 | 2 |
-| ISC | 2 |
 | OFL-1.1 | 2 |
 | Apache-2.0 AND MIT | 1 |
 | MPL-2.0 | 1 |
@@ -21,14 +20,15 @@ Covers the third-party software Swarpius **redistributes** in a built artefact: 
 | Apache-2.0 AND CNRI-Python | 1 |
 | MIT AND Apache-2.0 | 1 |
 | MPL-2.0 AND MIT | 1 |
+| ISC | 1 |
 
-**Total components: 169** (62 Python, 107 JavaScript)
+**Total components: 166** (59 Python, 107 JavaScript)
 
 ## Python (Agent)
 
 Resolved closure of `agent/requirements-server.txt`.
 
-### aiohappyeyeballs 2.6.2
+### aiohappyeyeballs 2.7.1
 
 - **License:** PSF-2.0
 - **Source:** https://github.com/aio-libs/aiohappyeyeballs/issues
@@ -43,17 +43,12 @@ Resolved closure of `agent/requirements-server.txt`.
 - **License:** Apache-2.0
 - **Source:** https://github.com/aio-libs/aiosignal
 
-### annotated-doc 0.0.4
-
-- **License:** MIT
-- **Source:** https://github.com/fastapi/annotated-doc
-
 ### annotated-types 0.7.0
 
 - **License:** MIT
 - **Source:** https://github.com/annotated-types/annotated-types
 
-### anyio 4.14.1
+### anyio 4.14.2
 
 - **License:** MIT
 - **Source:** https://anyio.readthedocs.io/en/latest/
@@ -68,7 +63,7 @@ Resolved closure of `agent/requirements-server.txt`.
 - **License:** MPL-2.0
 - **Source:** https://github.com/certifi/python-certifi
 
-### charset-normalizer 3.4.7
+### charset-normalizer 3.4.9
 
 - **License:** MIT
 - **Source:** https://github.com/jawah/charset_normalizer/blob/master/CHANGELOG.md
@@ -123,7 +118,7 @@ Resolved closure of `agent/requirements-server.txt`.
 - **License:** BSD-3-Clause
 - **Source:** https://github.com/encode/httpx/blob/master/CHANGELOG.md
 
-### huggingface_hub 1.21.0
+### huggingface_hub 1.23.0
 
 - **License:** Apache-2.0
 - **Source:** https://github.com/huggingface/huggingface_hub
@@ -188,7 +183,7 @@ Resolved closure of `agent/requirements-server.txt`.
 - **License:** Apache-2.0
 - **Source:** https://github.com/aio-libs/multidict
 
-### openai 2.44.0
+### openai 2.45.0
 
 - **License:** Apache-2.0
 - **Source:** https://github.com/openai/openai-python
@@ -238,7 +233,7 @@ Resolved closure of `agent/requirements-server.txt`.
 - **License:** MIT
 - **Source:** https://referencing.readthedocs.io/
 
-### regex 2026.6.28
+### regex 2026.7.10
 
 - **License:** Apache-2.0 AND CNRI-Python
 - **Source:** https://github.com/mrabarnett/mrab-regex
@@ -262,11 +257,6 @@ Resolved closure of `agent/requirements-server.txt`.
 
 - **License:** MIT
 - **Source:** https://rpds.readthedocs.io/
-
-### shellingham 1.5.4
-
-- **License:** ISC
-- **Source:** https://github.com/sarugaku/shellingham
 
 ### six 1.17.0
 
@@ -293,17 +283,12 @@ Resolved closure of `agent/requirements-server.txt`.
 - **License:** Apache-2.0
 - **Source:** https://github.com/huggingface/tokenizers
 
-### tqdm 4.68.3
+### tqdm 4.68.4
 
 - **License:** MPL-2.0 AND MIT
 - **Source:** https://tqdm.github.io
 
-### typer 0.25.1
-
-- **License:** MIT
-- **Source:** https://github.com/fastapi/typer
-
-### typing_extensions 4.15.0
+### typing_extensions 4.16.0
 
 - **License:** PSF-2.0
 - **Source:** https://github.com/python/typing_extensions/issues
@@ -1123,7 +1108,7 @@ OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
 PERFORMANCE OF THIS SOFTWARE.
 ```
 
-### aiohappyeyeballs 2.6.2 (LICENSE); typing_extensions 4.15.0 (LICENSE)
+### aiohappyeyeballs 2.7.1 (LICENSE); typing_extensions 4.16.0 (LICENSE)
 
 ```text
 A. HISTORY OF THE SOFTWARE
@@ -1846,32 +1831,6 @@ Apache License
    limitations under the License.
 ```
 
-### annotated-doc 0.0.4 (LICENSE)
-
-```text
-The MIT License (MIT)
-
-Copyright (c) 2025 Sebastián Ramírez
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in
-all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-THE SOFTWARE.
-```
-
 ### annotated-types 0.7.0 (LICENSE)
 
 ```text
@@ -1898,7 +1857,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-### anyio 4.14.1 (LICENSE)
+### anyio 4.14.2 (LICENSE)
 
 ```text
 The MIT License (MIT)
@@ -2001,7 +1960,7 @@ one at http://mozilla.org/MPL/2.0/.
 @(#) $RCSfile: certdata.txt,v $ $Revision: 1.80 $ $Date: 2011/11/03 15:11:58 $
 ```
 
-### charset-normalizer 3.4.7 (LICENSE)
+### charset-normalizer 3.4.9 (LICENSE)
 
 ```text
 MIT License
@@ -2609,7 +2568,7 @@ OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ```
 
-### hf-xet 1.5.1 (LICENSE); huggingface_hub 1.21.0 (LICENSE); roonapi 0.1.6 (LICENSE)
+### hf-xet 1.5.1 (LICENSE); huggingface_hub 1.23.0 (LICENSE); roonapi 0.1.6 (LICENSE)
 
 ```text
                                  Apache License
@@ -3445,7 +3404,7 @@ SOFTWARE.
    limitations under the License.
 ```
 
-### openai 2.44.0 (LICENSE)
+### openai 2.45.0 (LICENSE)
 
 ```text
                                  Apache License
@@ -4338,7 +4297,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-### regex 2026.6.28 (LICENSE.txt)
+### regex 2026.7.10 (LICENSE.txt)
 
 ```text
 This work was derived from the 're' module of CPython 2.6 and CPython 3.1,
@@ -4812,24 +4771,6 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 ```
 
-### shellingham 1.5.4 (LICENSE)
-
-```text
-Copyright (c) 2018, Tzu-ping Chung <uranusjr@gmail.com>
-
-Permission to use, copy, modify, and distribute this software for any
-purpose with or without fee is hereby granted, provided that the above
-copyright notice and this permission notice appear in all copies.
-
-THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
-MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
-ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-```
-
 ### six 1.17.0 (LICENSE)
 
 ```text
@@ -5205,7 +5146,7 @@ Source: https://github.com/huggingface/tokenizers
    limitations under the License.
 ```
 
-### tqdm 4.68.3 (LICENCE)
+### tqdm 4.68.4 (LICENCE)
 
 ```text
 `tqdm` is a product of collaborative work.
@@ -5265,32 +5206,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 (The MIT License)
 
 Copyright (c) 2016 Titus Wormer <tituswormer@gmail.com>
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in
-all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-THE SOFTWARE.
-```
-
-### typer 0.25.1 (LICENSE)
-
-```text
-The MIT License (MIT)
-
-Copyright (c) 2019 Sebastián Ramírez
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

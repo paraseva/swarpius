@@ -58,7 +58,7 @@ Resolved closure of `agent/requirements-server.txt`.
 - **License:** MIT
 - **Source:** https://www.attrs.org/
 
-### certifi 2026.6.17
+### certifi 2026.7.22
 
 - **License:** MPL-2.0
 - **Source:** https://github.com/certifi/python-certifi
@@ -1935,7 +1935,7 @@ TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ```
 
-### certifi 2026.6.17 (LICENSE)
+### certifi 2026.7.22 (LICENSE)
 
 ```text
 This package contains a modified version of ca-bundle.crt:

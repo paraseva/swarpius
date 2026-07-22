@@ -4,13 +4,13 @@
   "components": [
     {
       "name": "@fontsource-variable/inter",
-      "version": "5.2.8",
+      "version": "5.3.0",
       "license": "OFL-1.1",
       "url": "https://www.npmjs.com/package/@fontsource-variable/inter"
     },
     {
       "name": "@fontsource-variable/jetbrains-mono",
-      "version": "5.2.8",
+      "version": "5.3.0",
       "license": "OFL-1.1",
       "url": "https://www.npmjs.com/package/@fontsource-variable/jetbrains-mono"
     },

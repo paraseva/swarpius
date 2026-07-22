@@ -327,12 +327,12 @@ Resolved closure of `agent/requirements-server.txt`.
 
 Production closure of `web-client/package.json` (devDependencies excluded).
 
-### @fontsource-variable/inter 5.2.8
+### @fontsource-variable/inter 5.3.0
 
 - **License:** OFL-1.1
 - **Source:** https://www.npmjs.com/package/@fontsource-variable/inter
 
-### @fontsource-variable/jetbrains-mono 5.2.8
+### @fontsource-variable/jetbrains-mono 5.3.0
 
 - **License:** OFL-1.1
 - **Source:** https://www.npmjs.com/package/@fontsource-variable/jetbrains-mono
@@ -866,7 +866,7 @@ Production closure of `web-client/package.json` (devDependencies excluded).
 
 Reproduced verbatim as bundled with each component. Byte-identical texts are grouped under the packages that share them.
 
-### @fontsource-variable/inter 5.2.8 (LICENSE)
+### @fontsource-variable/inter 5.3.0 (LICENSE)
 
 ```text
 Copyright 2016 The Inter Project Authors (https://github.com/rsms/inter) Inter-Italic[opsz,wght].ttf: Copyright 2016 The Inter Project Authors (https://github.com/rsms/inter)
@@ -964,7 +964,7 @@ FROM, OUT OF THE USE OR INABILITY TO USE THE FONT SOFTWARE OR FROM
 OTHER DEALINGS IN THE FONT SOFTWARE.
 ```
 
-### @fontsource-variable/jetbrains-mono 5.2.8 (LICENSE)
+### @fontsource-variable/jetbrains-mono 5.3.0 (LICENSE)
 
 ```text
 Copyright 2020 The JetBrains Mono Project Authors (https://github.com/JetBrains/JetBrainsMono) JetBrainsMono-Italic[wght].ttf: Copyright 2020 The JetBrains Mono Project Authors (https://github.com/JetBrains/JetBrainsMono)

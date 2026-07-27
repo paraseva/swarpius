@@ -43,7 +43,7 @@ Resolved closure of `agent/requirements-server.txt`.
 - **License:** Apache-2.0
 - **Source:** https://github.com/aio-libs/aiosignal
 
-### annotated-types 0.7.0
+### annotated-types 0.8.0
 
 - **License:** MIT
 - **Source:** https://github.com/annotated-types/annotated-types
@@ -183,7 +183,7 @@ Resolved closure of `agent/requirements-server.txt`.
 - **License:** Apache-2.0
 - **Source:** https://github.com/aio-libs/multidict
 
-### openai 2.46.0
+### openai 2.48.0
 
 - **License:** Apache-2.0
 - **Source:** https://github.com/openai/openai-python
@@ -283,7 +283,7 @@ Resolved closure of `agent/requirements-server.txt`.
 - **License:** Apache-2.0
 - **Source:** https://github.com/huggingface/tokenizers
 
-### tqdm 4.69.0
+### tqdm 4.69.1
 
 - **License:** MPL-2.0 AND MIT
 - **Source:** https://tqdm.github.io
@@ -1831,7 +1831,7 @@ Apache License
    limitations under the License.
 ```
 
-### annotated-types 0.7.0 (LICENSE)
+### annotated-types 0.8.0 (LICENSE)
 
 ```text
 The MIT License (MIT)
@@ -3404,7 +3404,7 @@ SOFTWARE.
    limitations under the License.
 ```
 
-### openai 2.46.0 (LICENSE)
+### openai 2.48.0 (LICENSE)
 
 ```text
                                  Apache License
@@ -5146,7 +5146,7 @@ Source: https://github.com/huggingface/tokenizers
    limitations under the License.
 ```
 
-### tqdm 4.69.0 (LICENCE)
+### tqdm 4.69.1 (LICENCE)
 
 ```text
 `tqdm` is a product of collaborative work.

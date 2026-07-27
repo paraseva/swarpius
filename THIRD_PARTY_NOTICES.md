@@ -33,7 +33,7 @@ Resolved closure of `agent/requirements-server.txt`.
 - **License:** PSF-2.0
 - **Source:** https://github.com/aio-libs/aiohappyeyeballs/issues
 
-### aiohttp 3.14.1
+### aiohttp 3.14.3
 
 - **License:** Apache-2.0 AND MIT
 - **Source:** https://github.com/aio-libs/aiohttp
@@ -43,7 +43,7 @@ Resolved closure of `agent/requirements-server.txt`.
 - **License:** Apache-2.0
 - **Source:** https://github.com/aio-libs/aiosignal
 
-### annotated-types 0.7.0
+### annotated-types 0.8.0
 
 - **License:** MIT
 - **Source:** https://github.com/annotated-types/annotated-types
@@ -83,7 +83,7 @@ Resolved closure of `agent/requirements-server.txt`.
 - **License:** BSD-3-Clause
 - **Source:** https://github.com/thedrow/fastuuid/
 
-### filelock 3.31.0
+### filelock 3.32.0
 
 - **License:** MIT
 - **Source:** https://py-filelock.readthedocs.io
@@ -183,7 +183,7 @@ Resolved closure of `agent/requirements-server.txt`.
 - **License:** Apache-2.0
 - **Source:** https://github.com/aio-libs/multidict
 
-### openai 2.46.0
+### openai 2.48.0
 
 - **License:** Apache-2.0
 - **Source:** https://github.com/openai/openai-python
@@ -283,7 +283,7 @@ Resolved closure of `agent/requirements-server.txt`.
 - **License:** Apache-2.0
 - **Source:** https://github.com/huggingface/tokenizers
 
-### tqdm 4.69.0
+### tqdm 4.69.1
 
 - **License:** MPL-2.0 AND MIT
 - **Source:** https://tqdm.github.io
@@ -1392,7 +1392,7 @@ OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
 PERFORMANCE OF THIS SOFTWARE.
 ```
 
-### aiohttp 3.14.1 (LICENSE)
+### aiohttp 3.14.3 (LICENSE)
 
 ```text
 MIT License
@@ -1419,7 +1419,7 @@ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
 USE OR OTHER DEALINGS IN THE SOFTWARE.
 ```
 
-### aiohttp 3.14.1 (LICENSE.txt)
+### aiohttp 3.14.3 (LICENSE.txt)
 
 ```text
 Apache License
@@ -1831,7 +1831,7 @@ Apache License
    limitations under the License.
 ```
 
-### annotated-types 0.7.0 (LICENSE)
+### annotated-types 0.8.0 (LICENSE)
 
 ```text
 The MIT License (MIT)
@@ -2481,7 +2481,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ```
 
-### filelock 3.31.0 (LICENSE)
+### filelock 3.32.0 (LICENSE)
 
 ```text
 MIT License
@@ -3404,7 +3404,7 @@ SOFTWARE.
    limitations under the License.
 ```
 
-### openai 2.46.0 (LICENSE)
+### openai 2.48.0 (LICENSE)
 
 ```text
                                  Apache License
@@ -5146,7 +5146,7 @@ Source: https://github.com/huggingface/tokenizers
    limitations under the License.
 ```
 
-### tqdm 4.69.0 (LICENCE)
+### tqdm 4.69.1 (LICENCE)
 
 ```text
 `tqdm` is a product of collaborative work.

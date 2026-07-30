@@ -93,7 +93,7 @@ Resolved closure of `agent/requirements-server.txt`.
 - **License:** Apache-2.0
 - **Source:** https://github.com/aio-libs/frozenlist
 
-### fsspec 2026.6.0
+### fsspec 2026.7.0
 
 - **License:** BSD-3-Clause
 - **Source:** https://filesystem-spec.readthedocs.io/en/latest/changelog.html
@@ -118,7 +118,7 @@ Resolved closure of `agent/requirements-server.txt`.
 - **License:** BSD-3-Clause
 - **Source:** https://github.com/encode/httpx/blob/master/CHANGELOG.md
 
-### huggingface_hub 1.24.0
+### huggingface_hub 1.26.0
 
 - **License:** Apache-2.0
 - **Source:** https://github.com/huggingface/huggingface_hub
@@ -183,7 +183,7 @@ Resolved closure of `agent/requirements-server.txt`.
 - **License:** Apache-2.0
 - **Source:** https://github.com/aio-libs/multidict
 
-### openai 2.48.0
+### openai 2.50.0
 
 - **License:** Apache-2.0
 - **Source:** https://github.com/openai/openai-python
@@ -283,7 +283,7 @@ Resolved closure of `agent/requirements-server.txt`.
 - **License:** Apache-2.0
 - **Source:** https://github.com/huggingface/tokenizers
 
-### tqdm 4.69.1
+### tqdm 4.70.0
 
 - **License:** MPL-2.0 AND MIT
 - **Source:** https://tqdm.github.io
@@ -2507,7 +2507,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-### fsspec 2026.6.0 (LICENSE)
+### fsspec 2026.7.0 (LICENSE)
 
 ```text
 BSD 3-Clause License
@@ -2568,7 +2568,7 @@ OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ```
 
-### hf-xet 1.5.2 (LICENSE); huggingface_hub 1.24.0 (LICENSE); roonapi 0.1.6 (LICENSE)
+### hf-xet 1.5.2 (LICENSE); huggingface_hub 1.26.0 (LICENSE); roonapi 0.1.6 (LICENSE)
 
 ```text
                                  Apache License
@@ -3404,7 +3404,7 @@ SOFTWARE.
    limitations under the License.
 ```
 
-### openai 2.48.0 (LICENSE)
+### openai 2.50.0 (LICENSE)
 
 ```text
                                  Apache License
@@ -5146,7 +5146,7 @@ Source: https://github.com/huggingface/tokenizers
    limitations under the License.
 ```
 
-### tqdm 4.69.1 (LICENCE)
+### tqdm 4.70.0 (LICENCE)
 
 ```text
 `tqdm` is a product of collaborative work.

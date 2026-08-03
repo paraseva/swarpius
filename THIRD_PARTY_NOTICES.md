@@ -183,7 +183,7 @@ Resolved closure of `agent/requirements-server.txt`.
 - **License:** Apache-2.0
 - **Source:** https://github.com/aio-libs/multidict
 
-### openai 2.50.0
+### openai 2.52.0
 
 - **License:** Apache-2.0
 - **Source:** https://github.com/openai/openai-python
@@ -308,7 +308,7 @@ Resolved closure of `agent/requirements-server.txt`.
 - **License:** Apache-2.0
 - **Source:** https://github.com/websocket-client/websocket-client.git
 
-### websockets 16.1.1
+### websockets 17.0
 
 - **License:** BSD-3-Clause
 - **Source:** https://github.com/python-websockets/websockets
@@ -3404,7 +3404,7 @@ SOFTWARE.
    limitations under the License.
 ```
 
-### openai 2.50.0 (LICENSE)
+### openai 2.52.0 (LICENSE)
 
 ```text
                                  Apache License
@@ -5538,7 +5538,7 @@ SOFTWARE.
    limitations under the License.
 ```
 
-### websockets 16.1.1 (LICENSE)
+### websockets 17.0 (LICENSE)
 
 ```text
 Copyright (c) Aymeric Augustin and contributors

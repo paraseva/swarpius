@@ -83,7 +83,7 @@ Resolved closure of `agent/requirements-server.txt`.
 - **License:** BSD-3-Clause
 - **Source:** https://github.com/thedrow/fastuuid/
 
-### filelock 3.32.0
+### filelock 3.32.2
 
 - **License:** MIT
 - **Source:** https://py-filelock.readthedocs.io
@@ -158,7 +158,7 @@ Resolved closure of `agent/requirements-server.txt`.
 - **License:** MIT
 - **Source:** https://jsonschema-specifications.readthedocs.io/
 
-### litellm 1.93.0
+### litellm 1.94.1
 
 - **License:** MIT
 - **Source:** https://litellm.ai
@@ -183,7 +183,7 @@ Resolved closure of `agent/requirements-server.txt`.
 - **License:** Apache-2.0
 - **Source:** https://github.com/aio-libs/multidict
 
-### openai 2.50.0
+### openai 2.52.0
 
 - **License:** Apache-2.0
 - **Source:** https://github.com/openai/openai-python
@@ -2481,7 +2481,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ```
 
-### filelock 3.32.0 (LICENSE)
+### filelock 3.32.2 (LICENSE)
 
 ```text
 MIT License
@@ -3110,7 +3110,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 ```
 
-### litellm 1.93.0 (LICENSE)
+### litellm 1.94.1 (LICENSE)
 
 ```text
 Portions of this software are licensed as follows:
@@ -3404,7 +3404,7 @@ SOFTWARE.
    limitations under the License.
 ```
 
-### openai 2.50.0 (LICENSE)
+### openai 2.52.0 (LICENSE)
 
 ```text
                                  Apache License

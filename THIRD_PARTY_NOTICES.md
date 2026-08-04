@@ -103,7 +103,7 @@ Resolved closure of `agent/requirements-server.txt`.
 - **License:** MIT
 - **Source:** https://github.com/python-hyper/h11
 
-### hf-xet 1.5.2
+### hf-xet 1.6.0
 
 - **License:** Apache-2.0
 - **Source:** https://huggingface.co/docs/hub/xet/index
@@ -183,7 +183,7 @@ Resolved closure of `agent/requirements-server.txt`.
 - **License:** Apache-2.0
 - **Source:** https://github.com/aio-libs/multidict
 
-### openai 2.50.0
+### openai 2.53.0
 
 - **License:** Apache-2.0
 - **Source:** https://github.com/openai/openai-python
@@ -2568,7 +2568,7 @@ OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ```
 
-### hf-xet 1.5.2 (LICENSE); huggingface_hub 1.26.0 (LICENSE); roonapi 0.1.6 (LICENSE)
+### hf-xet 1.6.0 (LICENSE); huggingface_hub 1.26.0 (LICENSE); roonapi 0.1.6 (LICENSE)
 
 ```text
                                  Apache License
@@ -3404,7 +3404,7 @@ SOFTWARE.
    limitations under the License.
 ```
 
-### openai 2.50.0 (LICENSE)
+### openai 2.53.0 (LICENSE)
 
 ```text
                                  Apache License

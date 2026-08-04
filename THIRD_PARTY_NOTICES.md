@@ -103,7 +103,7 @@ Resolved closure of `agent/requirements-server.txt`.
 - **License:** MIT
 - **Source:** https://github.com/python-hyper/h11
 
-### hf-xet 1.5.2
+### hf-xet 1.6.0
 
 - **License:** Apache-2.0
 - **Source:** https://huggingface.co/docs/hub/xet/index
@@ -183,12 +183,12 @@ Resolved closure of `agent/requirements-server.txt`.
 - **License:** Apache-2.0
 - **Source:** https://github.com/aio-libs/multidict
 
-### openai 2.50.0
+### openai 2.53.0
 
 - **License:** Apache-2.0
 - **Source:** https://github.com/openai/openai-python
 
-### packaging 26.2
+### packaging 26.3
 
 - **License:** Apache-2.0 AND BSD-2-Clause
 - **Source:** https://packaging.pypa.io/
@@ -367,7 +367,7 @@ Production closure of `web-client/package.json` (devDependencies excluded).
 - **License:** MIT
 - **Source:** https://www.npmjs.com/package/@types/ms
 
-### @types/react 19.2.17
+### @types/react 19.2.18
 
 - **License:** MIT
 - **Source:** https://www.npmjs.com/package/@types/react
@@ -747,12 +747,12 @@ Production closure of `web-client/package.json` (devDependencies excluded).
 - **License:** MIT
 - **Source:** https://www.npmjs.com/package/property-information
 
-### react 19.2.7
+### react 19.2.8
 
 - **License:** MIT
 - **Source:** https://www.npmjs.com/package/react
 
-### react-dom 19.2.7
+### react-dom 19.2.8
 
 - **License:** MIT
 - **Source:** https://www.npmjs.com/package/react-dom
@@ -1062,7 +1062,7 @@ FROM, OUT OF THE USE OR INABILITY TO USE THE FONT SOFTWARE OR FROM
 OTHER DEALINGS IN THE FONT SOFTWARE.
 ```
 
-### @types/debug 4.1.13 (LICENSE); @types/estree 1.0.8 (LICENSE); @types/estree-jsx 1.0.5 (LICENSE); @types/hast 3.0.4 (LICENSE); @types/mdast 4.0.4 (LICENSE); @types/ms 2.1.0 (LICENSE); @types/react 19.2.17 (LICENSE); @types/unist 2.0.11 (LICENSE); @types/unist 3.0.3 (LICENSE)
+### @types/debug 4.1.13 (LICENSE); @types/estree 1.0.8 (LICENSE); @types/estree-jsx 1.0.5 (LICENSE); @types/hast 3.0.4 (LICENSE); @types/mdast 4.0.4 (LICENSE); @types/ms 2.1.0 (LICENSE); @types/react 19.2.18 (LICENSE); @types/unist 2.0.11 (LICENSE); @types/unist 3.0.3 (LICENSE)
 
 ```text
     MIT License
@@ -2568,7 +2568,7 @@ OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ```
 
-### hf-xet 1.5.2 (LICENSE); huggingface_hub 1.26.0 (LICENSE); roonapi 0.1.6 (LICENSE)
+### hf-xet 1.6.0 (LICENSE); huggingface_hub 1.26.0 (LICENSE); roonapi 0.1.6 (LICENSE)
 
 ```text
                                  Apache License
@@ -3404,7 +3404,7 @@ SOFTWARE.
    limitations under the License.
 ```
 
-### openai 2.50.0 (LICENSE)
+### openai 2.53.0 (LICENSE)
 
 ```text
                                  Apache License
@@ -3610,7 +3610,7 @@ SOFTWARE.
    limitations under the License.
 ```
 
-### packaging 26.2 (LICENSE)
+### packaging 26.3 (LICENSE)
 
 ```text
 This software is made available under the terms of *either* of the licenses
@@ -3618,7 +3618,7 @@ found in LICENSE.APACHE or LICENSE.BSD. Contributions to this software is made
 under the terms of *both* these licenses.
 ```
 
-### packaging 26.2 (LICENSE.APACHE)
+### packaging 26.3 (LICENSE.APACHE)
 
 ```text
 
@@ -3800,7 +3800,7 @@ under the terms of *both* these licenses.
    END OF TERMS AND CONDITIONS
 ```
 
-### packaging 26.2 (LICENSE.BSD)
+### packaging 26.3 (LICENSE.BSD)
 
 ```text
 Copyright (c) Donald Stufft and individual contributors.
@@ -4245,7 +4245,7 @@ OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ```
 
-### react 19.2.7 (LICENSE); react-dom 19.2.7 (LICENSE); scheduler 0.27.0 (LICENSE)
+### react 19.2.8 (LICENSE); react-dom 19.2.8 (LICENSE); scheduler 0.27.0 (LICENSE)
 
 ```text
 MIT License

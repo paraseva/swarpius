@@ -293,7 +293,7 @@ Resolved closure of `agent/requirements-server.txt`.
 - **License:** PSF-2.0
 - **Source:** https://github.com/python/typing_extensions/issues
 
-### typing-inspection 0.4.2
+### typing-inspection 0.4.3
 
 - **License:** MIT
 - **Source:** https://github.com/pydantic/typing-inspection
@@ -5226,7 +5226,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 ```
 
-### typing-inspection 0.4.2 (LICENSE)
+### typing-inspection 0.4.3 (LICENSE)
 
 ```text
 MIT License

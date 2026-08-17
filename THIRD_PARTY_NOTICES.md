@@ -63,7 +63,7 @@ Resolved closure of `agent/requirements-server.txt`.
 - **License:** MPL-2.0
 - **Source:** https://github.com/certifi/python-certifi
 
-### charset-normalizer 3.4.9
+### charset-normalizer 3.5.1
 
 - **License:** MIT
 - **Source:** https://github.com/jawah/charset_normalizer/blob/master/CHANGELOG.md
@@ -183,7 +183,7 @@ Resolved closure of `agent/requirements-server.txt`.
 - **License:** Apache-2.0
 - **Source:** https://github.com/aio-libs/multidict
 
-### openai 2.53.0
+### openai 2.54.0
 
 - **License:** Apache-2.0
 - **Source:** https://github.com/openai/openai-python
@@ -293,7 +293,7 @@ Resolved closure of `agent/requirements-server.txt`.
 - **License:** PSF-2.0
 - **Source:** https://github.com/python/typing_extensions/issues
 
-### typing-inspection 0.4.3
+### typing-inspection 0.4.4
 
 - **License:** MIT
 - **Source:** https://github.com/pydantic/typing-inspection
@@ -1960,7 +1960,7 @@ one at http://mozilla.org/MPL/2.0/.
 @(#) $RCSfile: certdata.txt,v $ $Revision: 1.80 $ $Date: 2011/11/03 15:11:58 $
 ```
 
-### charset-normalizer 3.4.9 (LICENSE)
+### charset-normalizer 3.5.1 (LICENSE)
 
 ```text
 MIT License
@@ -3404,7 +3404,7 @@ SOFTWARE.
    limitations under the License.
 ```
 
-### openai 2.53.0 (LICENSE)
+### openai 2.54.0 (LICENSE)
 
 ```text
                                  Apache License
@@ -5226,7 +5226,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 ```
 
-### typing-inspection 0.4.3 (LICENSE)
+### typing-inspection 0.4.4 (LICENSE)
 
 ```text
 MIT License

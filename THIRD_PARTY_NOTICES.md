@@ -63,7 +63,7 @@ Resolved closure of `agent/requirements-server.txt`.
 - **License:** MPL-2.0
 - **Source:** https://github.com/certifi/python-certifi
 
-### charset-normalizer 3.4.9
+### charset-normalizer 3.5.1
 
 - **License:** MIT
 - **Source:** https://github.com/jawah/charset_normalizer/blob/master/CHANGELOG.md
@@ -118,12 +118,12 @@ Resolved closure of `agent/requirements-server.txt`.
 - **License:** BSD-3-Clause
 - **Source:** https://github.com/encode/httpx/blob/master/CHANGELOG.md
 
-### huggingface_hub 1.27.0
+### huggingface_hub 1.28.0
 
 - **License:** Apache-2.0
 - **Source:** https://github.com/huggingface/huggingface_hub
 
-### idna 3.18
+### idna 3.19
 
 - **License:** BSD-3-Clause
 - **Source:** https://github.com/kjd/idna/blob/master/HISTORY.md
@@ -183,7 +183,7 @@ Resolved closure of `agent/requirements-server.txt`.
 - **License:** Apache-2.0
 - **Source:** https://github.com/aio-libs/multidict
 
-### openai 2.53.0
+### openai 2.54.0
 
 - **License:** Apache-2.0
 - **Source:** https://github.com/openai/openai-python
@@ -208,7 +208,7 @@ Resolved closure of `agent/requirements-server.txt`.
 - **License:** MIT
 - **Source:** https://github.com/pydantic/pydantic
 
-### Pygments 2.20.0
+### Pygments 2.21.0
 
 - **License:** BSD-2-Clause
 - **Source:** https://pygments.org
@@ -273,7 +273,7 @@ Resolved closure of `agent/requirements-server.txt`.
 - **License:** MIT
 - **Source:** https://github.com/seatgeek/thefuzz
 
-### tiktoken 0.13.0
+### tiktoken 0.14.0
 
 - **License:** MIT
 - **Source:** https://github.com/openai/tiktoken
@@ -293,7 +293,7 @@ Resolved closure of `agent/requirements-server.txt`.
 - **License:** PSF-2.0
 - **Source:** https://github.com/python/typing_extensions/issues
 
-### typing-inspection 0.4.3
+### typing-inspection 0.4.4
 
 - **License:** MIT
 - **Source:** https://github.com/pydantic/typing-inspection
@@ -1960,7 +1960,7 @@ one at http://mozilla.org/MPL/2.0/.
 @(#) $RCSfile: certdata.txt,v $ $Revision: 1.80 $ $Date: 2011/11/03 15:11:58 $
 ```
 
-### charset-normalizer 3.4.9 (LICENSE)
+### charset-normalizer 3.5.1 (LICENSE)
 
 ```text
 MIT License
@@ -2568,7 +2568,7 @@ OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ```
 
-### hf-xet 1.6.0 (LICENSE); huggingface_hub 1.27.0 (LICENSE); roonapi 0.1.6 (LICENSE)
+### hf-xet 1.6.0 (LICENSE); huggingface_hub 1.28.0 (LICENSE); roonapi 0.1.6 (LICENSE)
 
 ```text
                                  Apache License
@@ -2849,7 +2849,7 @@ Redistribution and use in source and binary forms, with or without modification,
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ```
 
-### idna 3.18 (LICENSE.md)
+### idna 3.19 (LICENSE.md)
 
 ```text
 BSD 3-Clause License
@@ -3404,7 +3404,7 @@ SOFTWARE.
    limitations under the License.
 ```
 
-### openai 2.53.0 (LICENSE)
+### openai 2.54.0 (LICENSE)
 
 ```text
                                  Apache License
@@ -4132,7 +4132,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-### Pygments 2.20.0 (LICENSE)
+### Pygments 2.21.0 (LICENSE)
 
 ```text
 Copyright (c) 2006-2022 by the respective authors (see AUTHORS file).
@@ -4907,7 +4907,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-### tiktoken 0.13.0 (LICENSE)
+### tiktoken 0.14.0 (LICENSE)
 
 ```text
 MIT License
@@ -5226,7 +5226,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 ```
 
-### typing-inspection 0.4.3 (LICENSE)
+### typing-inspection 0.4.4 (LICENSE)
 
 ```text
 MIT License

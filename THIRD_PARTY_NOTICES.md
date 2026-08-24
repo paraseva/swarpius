@@ -8,7 +8,7 @@ Covers the third-party software Swarpius **redistributes** in a built artefact: 
 
 | Licence | Count |
 |---|---|
-| MIT | 130 |
+| MIT | 131 |
 | Apache-2.0 | 14 |
 | BSD-3-Clause | 10 |
 | PSF-2.0 | 2 |
@@ -22,7 +22,7 @@ Covers the third-party software Swarpius **redistributes** in a built artefact: 
 | MPL-2.0 AND MIT | 1 |
 | ISC | 1 |
 
-**Total components: 166** (59 Python, 107 JavaScript)
+**Total components: 167** (60 Python, 107 JavaScript)
 
 ## Python (Agent)
 
@@ -63,7 +63,7 @@ Resolved closure of `agent/requirements-server.txt`.
 - **License:** MPL-2.0
 - **Source:** https://github.com/certifi/python-certifi
 
-### charset-normalizer 3.4.9
+### charset-normalizer 3.5.1
 
 - **License:** MIT
 - **Source:** https://github.com/jawah/charset_normalizer/blob/master/CHANGELOG.md
@@ -83,7 +83,7 @@ Resolved closure of `agent/requirements-server.txt`.
 - **License:** BSD-3-Clause
 - **Source:** https://github.com/thedrow/fastuuid/
 
-### filelock 3.32.0
+### filelock 3.32.3
 
 - **License:** MIT
 - **Source:** https://py-filelock.readthedocs.io
@@ -118,12 +118,12 @@ Resolved closure of `agent/requirements-server.txt`.
 - **License:** BSD-3-Clause
 - **Source:** https://github.com/encode/httpx/blob/master/CHANGELOG.md
 
-### huggingface_hub 1.27.0
+### huggingface_hub 1.28.0
 
 - **License:** Apache-2.0
 - **Source:** https://github.com/huggingface/huggingface_hub
 
-### idna 3.18
+### idna 3.19
 
 - **License:** BSD-3-Clause
 - **Source:** https://github.com/kjd/idna/blob/master/HISTORY.md
@@ -158,7 +158,7 @@ Resolved closure of `agent/requirements-server.txt`.
 - **License:** MIT
 - **Source:** https://jsonschema-specifications.readthedocs.io/
 
-### litellm 1.93.0
+### litellm 1.97.0
 
 - **License:** MIT
 - **Source:** https://litellm.ai
@@ -183,7 +183,7 @@ Resolved closure of `agent/requirements-server.txt`.
 - **License:** Apache-2.0
 - **Source:** https://github.com/aio-libs/multidict
 
-### openai 2.53.0
+### openai 2.54.0
 
 - **License:** Apache-2.0
 - **Source:** https://github.com/openai/openai-python
@@ -208,12 +208,17 @@ Resolved closure of `agent/requirements-server.txt`.
 - **License:** MIT
 - **Source:** https://github.com/pydantic/pydantic
 
-### Pygments 2.20.0
+### pydantic-settings 2.15.0
+
+- **License:** MIT
+- **Source:** https://github.com/pydantic/pydantic-settings
+
+### Pygments 2.21.0
 
 - **License:** BSD-2-Clause
 - **Source:** https://pygments.org
 
-### python-dotenv 1.2.2
+### python-dotenv 1.2.3
 
 - **License:** BSD-3-Clause
 - **Source:** https://github.com/theskumar/python-dotenv
@@ -273,7 +278,7 @@ Resolved closure of `agent/requirements-server.txt`.
 - **License:** MIT
 - **Source:** https://github.com/seatgeek/thefuzz
 
-### tiktoken 0.13.0
+### tiktoken 0.14.0
 
 - **License:** MIT
 - **Source:** https://github.com/openai/tiktoken
@@ -293,7 +298,7 @@ Resolved closure of `agent/requirements-server.txt`.
 - **License:** PSF-2.0
 - **Source:** https://github.com/python/typing_extensions/issues
 
-### typing-inspection 0.4.3
+### typing-inspection 0.4.4
 
 - **License:** MIT
 - **Source:** https://github.com/pydantic/typing-inspection
@@ -1960,7 +1965,7 @@ one at http://mozilla.org/MPL/2.0/.
 @(#) $RCSfile: certdata.txt,v $ $Revision: 1.80 $ $Date: 2011/11/03 15:11:58 $
 ```
 
-### charset-normalizer 3.4.9 (LICENSE)
+### charset-normalizer 3.5.1 (LICENSE)
 
 ```text
 MIT License
@@ -2481,7 +2486,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ```
 
-### filelock 3.32.0 (LICENSE)
+### filelock 3.32.3 (LICENSE)
 
 ```text
 MIT License
@@ -2568,7 +2573,7 @@ OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ```
 
-### hf-xet 1.6.0 (LICENSE); huggingface_hub 1.27.0 (LICENSE); roonapi 0.1.6 (LICENSE)
+### hf-xet 1.6.0 (LICENSE); huggingface_hub 1.28.0 (LICENSE); roonapi 0.1.6 (LICENSE)
 
 ```text
                                  Apache License
@@ -2849,7 +2854,7 @@ Redistribution and use in source and binary forms, with or without modification,
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ```
 
-### idna 3.18 (LICENSE.md)
+### idna 3.19 (LICENSE.md)
 
 ```text
 BSD 3-Clause License
@@ -3110,7 +3115,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 ```
 
-### litellm 1.93.0 (LICENSE)
+### litellm 1.97.0 (LICENSE)
 
 ```text
 Portions of this software are licensed as follows:
@@ -3404,7 +3409,7 @@ SOFTWARE.
    limitations under the License.
 ```
 
-### openai 2.53.0 (LICENSE)
+### openai 2.54.0 (LICENSE)
 
 ```text
                                  Apache License
@@ -4106,6 +4111,32 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
+### pydantic-settings 2.15.0 (LICENSE)
+
+```text
+The MIT License (MIT)
+
+Copyright (c) 2022 Samuel Colvin and other contributors
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
 ### pydantic_core 2.46.4 (LICENSE)
 
 ```text
@@ -4132,7 +4163,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-### Pygments 2.20.0 (LICENSE)
+### Pygments 2.21.0 (LICENSE)
 
 ```text
 Copyright (c) 2006-2022 by the respective authors (see AUTHORS file).
@@ -4162,7 +4193,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ```
 
-### python-dotenv 1.2.2 (LICENSE)
+### python-dotenv 1.2.3 (LICENSE)
 
 ```text
 Copyright (c) 2014, Saurabh Kumar (python-dotenv), 2013, Ted Tieken (django-dotenv-rw), 2013, Jacob Kaplan-Moss (django-dotenv)
@@ -4907,7 +4938,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-### tiktoken 0.13.0 (LICENSE)
+### tiktoken 0.14.0 (LICENSE)
 
 ```text
 MIT License
@@ -5226,7 +5257,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 ```
 
-### typing-inspection 0.4.3 (LICENSE)
+### typing-inspection 0.4.4 (LICENSE)
 
 ```text
 MIT License

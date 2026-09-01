@@ -1,5 +1,5 @@
 # ---------- build stage: compile any C extensions ---------------------------
-FROM python:3.13.14-slim-bookworm AS build
+FROM python:3.13.15-slim-bookworm AS build
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends build-essential \
@@ -11,7 +11,7 @@ COPY requirements-server.txt .
 RUN pip install --no-cache-dir --prefix=/install -r requirements-server.txt
 
 # ---------- runtime stage: slim image with only what's needed ----------------
-FROM python:3.13.14-slim-bookworm
+FROM python:3.13.15-slim-bookworm
 
 # Run as a non-root user. UID 1000 matches typical desktop Linux/macOS
 # accounts so host bind-mounts under ./agent/data/ remain writeable

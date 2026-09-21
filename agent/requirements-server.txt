@@ -1,7 +1,7 @@
-litellm==1.93.0
-pydantic==2.13.4
+litellm==1.101.0
+pydantic==2.13.5
 websockets==16.1.1
-python-dotenv==1.2.2
+python-dotenv==1.2.3
 rich==15.0.0
 PyYAML==6.0.3
 roonapi==0.1.6

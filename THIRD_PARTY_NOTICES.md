@@ -8,9 +8,9 @@ Covers the third-party software Swarpius **redistributes** in a built artefact: 
 
 | Licence | Count |
 |---|---|
-| MIT | 130 |
+| MIT | 131 |
 | Apache-2.0 | 14 |
-| BSD-3-Clause | 10 |
+| BSD-3-Clause | 12 |
 | PSF-2.0 | 2 |
 | OFL-1.1 | 2 |
 | Apache-2.0 AND MIT | 1 |
@@ -22,7 +22,7 @@ Covers the third-party software Swarpius **redistributes** in a built artefact: 
 | MPL-2.0 AND MIT | 1 |
 | ISC | 1 |
 
-**Total components: 166** (59 Python, 107 JavaScript)
+**Total components: 169** (62 Python, 107 JavaScript)
 
 ## Python (Agent)
 
@@ -48,7 +48,7 @@ Resolved closure of `agent/requirements-server.txt`.
 - **License:** MIT
 - **Source:** https://github.com/annotated-types/annotated-types
 
-### anyio 4.14.2
+### anyio 4.15.1
 
 - **License:** MIT
 - **Source:** https://anyio.readthedocs.io/en/latest/
@@ -58,17 +58,17 @@ Resolved closure of `agent/requirements-server.txt`.
 - **License:** MIT
 - **Source:** https://www.attrs.org/
 
-### certifi 2026.7.22
+### certifi 2026.10.23
 
 - **License:** MPL-2.0
 - **Source:** https://github.com/certifi/python-certifi
 
-### charset-normalizer 3.4.9
+### charset-normalizer 3.5.2
 
 - **License:** MIT
 - **Source:** https://github.com/jawah/charset_normalizer/blob/master/CHANGELOG.md
 
-### click 8.4.2
+### click 8.5.0
 
 - **License:** BSD-3-Clause
 - **Source:** https://click.palletsprojects.com/page/changes/
@@ -83,7 +83,7 @@ Resolved closure of `agent/requirements-server.txt`.
 - **License:** BSD-3-Clause
 - **Source:** https://github.com/thedrow/fastuuid/
 
-### filelock 3.32.0
+### filelock 4.2.1
 
 - **License:** MIT
 - **Source:** https://py-filelock.readthedocs.io
@@ -93,7 +93,7 @@ Resolved closure of `agent/requirements-server.txt`.
 - **License:** Apache-2.0
 - **Source:** https://github.com/aio-libs/frozenlist
 
-### fsspec 2026.7.0
+### fsspec 2026.9.0
 
 - **License:** BSD-3-Clause
 - **Source:** https://filesystem-spec.readthedocs.io/en/latest/changelog.html
@@ -103,7 +103,7 @@ Resolved closure of `agent/requirements-server.txt`.
 - **License:** MIT
 - **Source:** https://github.com/python-hyper/h11
 
-### hf-xet 1.6.0
+### hf-xet 1.7.1
 
 - **License:** Apache-2.0
 - **Source:** https://huggingface.co/docs/hub/xet/index
@@ -113,17 +113,27 @@ Resolved closure of `agent/requirements-server.txt`.
 - **License:** BSD-3-Clause
 - **Source:** https://www.encode.io/httpcore
 
+### httpcore2 2.16.0
+
+- **License:** BSD-3-Clause
+- **Source:** https://github.com/pydantic/httpx2/blob/main/src/httpcore2/CHANGELOG.md
+
 ### httpx 0.28.1
 
 - **License:** BSD-3-Clause
 - **Source:** https://github.com/encode/httpx/blob/master/CHANGELOG.md
 
-### huggingface_hub 1.27.0
+### httpx2 2.16.0
+
+- **License:** BSD-3-Clause
+- **Source:** https://github.com/pydantic/httpx2/blob/main/src/httpx2/CHANGELOG.md
+
+### huggingface_hub 2.4.0
 
 - **License:** Apache-2.0
 - **Source:** https://github.com/huggingface/huggingface_hub
 
-### idna 3.18
+### idna 3.20
 
 - **License:** BSD-3-Clause
 - **Source:** https://github.com/kjd/idna/blob/master/HISTORY.md
@@ -143,7 +153,7 @@ Resolved closure of `agent/requirements-server.txt`.
 - **License:** BSD-3-Clause
 - **Source:** https://jinja.palletsprojects.com/changes/
 
-### jiter 0.16.0
+### jiter 0.18.0
 
 - **License:** MIT
 - **Source:** https://github.com/pydantic/jiter/
@@ -168,7 +178,7 @@ Resolved closure of `agent/requirements-server.txt`.
 - **License:** MIT
 - **Source:** https://markdown-it-py.readthedocs.io
 
-### MarkupSafe 3.0.3
+### MarkupSafe 3.0.4
 
 - **License:** BSD-3-Clause
 - **Source:** https://palletsprojects.com/donate
@@ -178,12 +188,12 @@ Resolved closure of `agent/requirements-server.txt`.
 - **License:** MIT
 - **Source:** https://github.com/executablebooks/mdurl
 
-### multidict 6.7.1
+### multidict 6.9.1
 
 - **License:** Apache-2.0
 - **Source:** https://github.com/aio-libs/multidict
 
-### openai 2.53.0
+### openai 2.54.0
 
 - **License:** Apache-2.0
 - **Source:** https://github.com/openai/openai-python
@@ -193,7 +203,7 @@ Resolved closure of `agent/requirements-server.txt`.
 - **License:** Apache-2.0 AND BSD-2-Clause
 - **Source:** https://packaging.pypa.io/
 
-### propcache 0.5.2
+### propcache 0.5.4
 
 - **License:** Apache-2.0
 - **Source:** https://github.com/aio-libs/propcache
@@ -208,7 +218,7 @@ Resolved closure of `agent/requirements-server.txt`.
 - **License:** MIT
 - **Source:** https://github.com/pydantic/pydantic
 
-### Pygments 2.20.0
+### Pygments 2.21.0
 
 - **License:** BSD-2-Clause
 - **Source:** https://pygments.org
@@ -223,7 +233,7 @@ Resolved closure of `agent/requirements-server.txt`.
 - **License:** MIT
 - **Source:** https://pyyaml.org/
 
-### RapidFuzz 3.14.5
+### RapidFuzz 3.14.6
 
 - **License:** MIT
 - **Source:** https://github.com/rapidfuzz/RapidFuzz
@@ -233,7 +243,7 @@ Resolved closure of `agent/requirements-server.txt`.
 - **License:** MIT
 - **Source:** https://referencing.readthedocs.io/
 
-### regex 2026.7.19
+### regex 2026.9.29
 
 - **License:** Apache-2.0 AND CNRI-Python
 - **Source:** https://github.com/mrabarnett/mrab-regex
@@ -253,7 +263,7 @@ Resolved closure of `agent/requirements-server.txt`.
 - **License:** Apache-2.0
 - **Source:** https://github.com/pavoni/pyroon
 
-### rpds-py 2026.6.3
+### rpds-py 2026.9.1
 
 - **License:** MIT
 - **Source:** https://rpds.readthedocs.io/
@@ -273,52 +283,57 @@ Resolved closure of `agent/requirements-server.txt`.
 - **License:** MIT
 - **Source:** https://github.com/seatgeek/thefuzz
 
-### tiktoken 0.13.0
+### tiktoken 0.14.0
 
 - **License:** MIT
 - **Source:** https://github.com/openai/tiktoken
 
-### tokenizers 0.23.1
+### tokenizers 0.23.3
 
 - **License:** Apache-2.0
 - **Source:** https://github.com/huggingface/tokenizers
 
-### tqdm 4.70.0
+### tqdm 4.70.1
 
 - **License:** MPL-2.0 AND MIT
 - **Source:** https://tqdm.github.io
+
+### truststore 0.10.5
+
+- **License:** MIT
+- **Source:** https://truststore.readthedocs.io
 
 ### typing_extensions 4.16.0
 
 - **License:** PSF-2.0
 - **Source:** https://github.com/python/typing_extensions/issues
 
-### typing-inspection 0.4.3
+### typing-inspection 0.4.4
 
 - **License:** MIT
 - **Source:** https://github.com/pydantic/typing-inspection
 
-### urllib3 2.7.0
+### urllib3 2.8.0
 
 - **License:** MIT
 - **Source:** https://github.com/urllib3/urllib3/blob/main/CHANGES.rst
 
-### websocket-client 1.9.0
+### websocket-client 1.9.2
 
 - **License:** Apache-2.0
-- **Source:** https://github.com/websocket-client/websocket-client.git
+- **Source:** https://github.com/websocket-client/websocket-client
 
 ### websockets 16.1.1
 
 - **License:** BSD-3-Clause
 - **Source:** https://github.com/python-websockets/websockets
 
-### yarl 1.24.5
+### yarl 1.25.1
 
 - **License:** Apache-2.0
 - **Source:** https://github.com/aio-libs/yarl
 
-### zipp 4.1.0
+### zipp 4.1.2
 
 - **License:** MIT
 - **Source:** https://github.com/jaraco/zipp
@@ -1419,7 +1434,7 @@ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
 USE OR OTHER DEALINGS IN THE SOFTWARE.
 ```
 
-### aiohttp 3.14.3 (LICENSE.txt)
+### aiohttp 3.14.3 (LICENSE.txt); multidict 6.9.1 (LICENSE)
 
 ```text
 Apache License
@@ -1857,7 +1872,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-### anyio 4.14.2 (LICENSE)
+### anyio 4.15.1 (LICENSE)
 
 ```text
 The MIT License (MIT)
@@ -1935,7 +1950,7 @@ TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ```
 
-### certifi 2026.7.22 (LICENSE)
+### certifi 2026.10.23 (LICENSE)
 
 ```text
 This package contains a modified version of ca-bundle.crt:
@@ -1960,7 +1975,7 @@ one at http://mozilla.org/MPL/2.0/.
 @(#) $RCSfile: certdata.txt,v $ $Revision: 1.80 $ $Date: 2011/11/03 15:11:58 $
 ```
 
-### charset-normalizer 3.4.9 (LICENSE)
+### charset-normalizer 3.5.2 (LICENSE)
 
 ```text
 MIT License
@@ -1986,7 +2001,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-### click 8.4.2 (LICENSE.txt)
+### click 8.5.0 (LICENSE.txt)
 
 ```text
 Copyright 2014 Pallets
@@ -2481,7 +2496,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ```
 
-### filelock 3.32.0 (LICENSE)
+### filelock 4.2.1 (LICENSE)
 
 ```text
 MIT License
@@ -2507,7 +2522,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-### fsspec 2026.7.0 (LICENSE)
+### fsspec 2026.9.0 (LICENSE)
 
 ```text
 BSD 3-Clause License
@@ -2568,7 +2583,7 @@ OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ```
 
-### hf-xet 1.6.0 (LICENSE); huggingface_hub 1.27.0 (LICENSE); roonapi 0.1.6 (LICENSE)
+### hf-xet 1.7.1 (LICENSE); huggingface_hub 2.4.0 (LICENSE); roonapi 0.1.6 (LICENSE)
 
 ```text
                                  Apache License
@@ -2832,6 +2847,39 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ```
 
+### httpcore2 2.16.0 (LICENSE.md)
+
+```text
+Copyright © 2026 to present Pydantic Services Inc. and individual contributors.
+Copyright © 2020, [Encode OSS Ltd](https://www.encode.io/).
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+* Redistributions of source code must retain the above copyright notice, this
+  list of conditions and the following disclaimer.
+
+* Redistributions in binary form must reproduce the above copyright notice,
+  this list of conditions and the following disclaimer in the documentation
+  and/or other materials provided with the distribution.
+
+* Neither the name of the copyright holder nor the names of its
+  contributors may be used to endorse or promote products derived from
+  this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+```
+
 ### httpx 0.28.1 (LICENSE.md)
 
 ```text
@@ -2849,7 +2897,25 @@ Redistribution and use in source and binary forms, with or without modification,
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ```
 
-### idna 3.18 (LICENSE.md)
+### httpx2 2.16.0 (LICENSE.md)
+
+```text
+Copyright © 2026 to present Pydantic Services Inc. and individual contributors.
+Copyright © 2019, [Encode OSS Ltd](https://www.encode.io/).
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+
+* Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+
+* Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
+
+* Neither the name of the copyright holder nor the names of its contributors may be used to endorse or promote products derived from this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+```
+
+### idna 3.20 (LICENSE.md)
 
 ```text
 BSD 3-Clause License
@@ -3036,7 +3102,7 @@ NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ```
 
-### jiter 0.16.0 (LICENSE)
+### jiter 0.18.0 (LICENSE)
 
 ```text
 The MIT License (MIT)
@@ -3221,7 +3287,7 @@ FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 OTHER DEALINGS IN THE SOFTWARE.
 ```
 
-### MarkupSafe 3.0.3 (LICENSE.txt)
+### MarkupSafe 3.0.4 (LICENSE.txt)
 
 ```text
 Copyright 2010 Pallets
@@ -3386,25 +3452,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-### multidict 6.7.1 (LICENSE)
-
-```text
-   Copyright 2016 Andrew Svetlov and aio-libs contributors
-
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-       http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
-```
-
-### openai 2.53.0 (LICENSE)
+### openai 2.54.0 (LICENSE)
 
 ```text
                                  Apache License
@@ -3855,7 +3903,7 @@ TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ```
 
-### propcache 0.5.2 (LICENSE); sniffio 1.3.1 (LICENSE.APACHE2); yarl 1.24.5 (LICENSE)
+### propcache 0.5.4 (LICENSE); sniffio 1.3.1 (LICENSE.APACHE2); yarl 1.25.1 (LICENSE)
 
 ```text
 
@@ -4062,7 +4110,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
    limitations under the License.
 ```
 
-### propcache 0.5.2 (NOTICE); yarl 1.24.5 (NOTICE)
+### propcache 0.5.4 (NOTICE); yarl 1.25.1 (NOTICE)
 
 ```text
    Copyright 2016-2021, Andrew Svetlov and aio-libs team
@@ -4132,7 +4180,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-### Pygments 2.20.0 (LICENSE)
+### Pygments 2.21.0 (LICENSE)
 
 ```text
 Copyright (c) 2006-2022 by the respective authors (see AUTHORS file).
@@ -4219,7 +4267,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-### RapidFuzz 3.14.5 (LICENSE)
+### RapidFuzz 3.14.6 (LICENSE)
 
 ```text
 Copyright © 2020-present Max Bachmann
@@ -4297,7 +4345,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-### regex 2026.7.19 (LICENSE.txt)
+### regex 2026.9.29 (LICENSE.txt)
 
 ```text
 This work was derived from the 're' module of CPython 2.6 and CPython 3.1,
@@ -4747,7 +4795,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-### rpds-py 2026.6.3 (LICENSE)
+### rpds-py 2026.9.1 (LICENSE)
 
 ```text
 Copyright (c) 2023 Julian Berman
@@ -4907,7 +4955,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-### tiktoken 0.13.0 (LICENSE)
+### tiktoken 0.14.0 (LICENSE)
 
 ```text
 MIT License
@@ -4933,7 +4981,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-### tokenizers 0.23.1 (override:tokenizers.txt)
+### tokenizers 0.23.3 (override:tokenizers.txt)
 
 ```text
 Vendored licence text for "tokenizers" (huggingface/tokenizers).
@@ -5146,7 +5194,7 @@ Source: https://github.com/huggingface/tokenizers
    limitations under the License.
 ```
 
-### tqdm 4.70.0 (LICENCE)
+### tqdm 4.70.1 (LICENCE)
 
 ```text
 `tqdm` is a product of collaborative work.
@@ -5226,7 +5274,33 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 ```
 
-### typing-inspection 0.4.3 (LICENSE)
+### truststore 0.10.5 (LICENSE)
+
+```text
+The MIT License (MIT)
+
+Copyright (c) 2022 Seth Michael Larson
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+```
+
+### typing-inspection 0.4.4 (LICENSE)
 
 ```text
 MIT License
@@ -5305,7 +5379,7 @@ TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ```
 
-### urllib3 2.7.0 (LICENSE.txt)
+### urllib3 2.8.0 (LICENSE.txt)
 
 ```text
 MIT License
@@ -5331,7 +5405,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-### websocket-client 1.9.0 (LICENSE)
+### websocket-client 1.9.2 (LICENSE)
 
 ```text
 
@@ -5523,7 +5597,7 @@ SOFTWARE.
       same "printed page" as the copyright notice for easier
       identification within third-party archives.
 
-   Copyright 2025 engn33r
+   Copyright 2026 engn33r
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -5567,7 +5641,7 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ```
 
-### zipp 4.1.0 (LICENSE)
+### zipp 4.1.2 (LICENSE)
 
 ```text
 MIT License
